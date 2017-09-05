@@ -167,7 +167,8 @@ const speed = 1; // duration between frames, in milliseconds. Note that time for
 var fileName;
 var data;
 
-var frame; // from 0
+var frame = -1; // From 0. The frames from 0 to frames have been shown.
+var missingFrames = []; // Contains the frames to show as soon as possible. The frames with index frame.. will be shown afterwards.
 
 var qrcode;
 
@@ -203,10 +204,6 @@ function openFile(event) {
         // b64 = dataURL.substring(pos + 1);
         //alert(b64);
         //alert(atob(b64));
-
-        // Hide the file selector
-        el = document.getElementById("filename");
-        el.style.visibility = "hidden";
 
         show(reader.fileName, dataURL)
     };
@@ -295,7 +292,6 @@ function onPlay() {
     el = document.getElementById("qrcode");
     el.style.visibility = "visible";
 
-    frame = -1;
     showFrame();
 }
 
@@ -309,7 +305,7 @@ function onShowFrame(frame) {
 function onEnd() {
     log("Finished");
 
-    // TODO the following should work (and the hiding/showing of element should be removed)
+    // TODO Hide the QR code - the following should work (and the hiding/showing of element should be removed)
     // qrcode.clear();
 
     // Hide the QR code
@@ -318,13 +314,39 @@ function onEnd() {
 }
 
 function showFrame() {
-    frame++;
-
-    if (frame < getNumberOfFrames()) {
-        onShowFrame(frame);
-
-        setTimeout(showFrame, speed);
+    let f;
+    if (0 < missingFrames.length) {
+        // log("Missing frames are " + missingFrames);
+        f = missingFrames.shift();
     } else {
-        onEnd();
+        frame++;
+
+        if (frame >= getNumberOfFrames()) {
+            onEnd();
+            return;
+        }
+
+        f = frame;
+    }
+
+    onShowFrame(f);
+
+    setTimeout(showFrame, speed);
+}
+
+function onMissingFramesChange(event) {
+    if (event.keyCode === 13) {
+        const el = document.getElementById("missing");
+
+        const missingStr = el.value;
+        const missingFramesNew = missingStr.split(/[,\. ]+/);
+
+        log("Add to missing: " + missingFramesNew);
+        // Add to missing frames to show
+        let missingFramesWithDuplicates = missingFrames.concat(missingFramesNew);
+        // Remove duplicates
+        missingFrames = missingFramesWithDuplicates.filter(function (item, pos, a) {
+            return a.indexOf(item) == pos;
+        });
     }
 }
