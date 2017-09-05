@@ -44,6 +44,7 @@ function scanSimulated() {
         return;
 
     onScan(testFrames[frameSimulated]);
+    // Send the first frame as last
     // if (frameSimulated == 0) onScan(testFrames[1]);
     // if (frameSimulated == 1) onScan(testFrames[2]);
     // if (frameSimulated == 2) onScan(testFrames[0]);
