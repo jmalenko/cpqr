@@ -1,18 +1,4 @@
 /*
-FUTURE
-
-Check sum
-
-Estimate max file size
-
-Multiple files
-https://developer.mozilla.org/en-US/docs/Using_files_from_web_applications
-
-Keep progress in blob. 5 MB is limit for Blob. Split to files that can be merged by Total Commander.
-
- */
-
-/*
     Common
     ======
  */
@@ -163,9 +149,10 @@ function decodeWithLength(str, from) {
 }
 
 function decodeFrameContent(content) {
-    let [, index, from] = decodeWithLength(content, 0);
+    let [, indexStr, from] = decodeWithLength(content, 0);
     const contentFrame = content.substring(from);
 
+    const index = Number(indexStr);
     return [index, contentFrame];
 }
 
@@ -176,15 +163,13 @@ function getContent() {
     for (let i = 0; i < contentRead.length; i++) {
         if (typeof contentRead[i] === "undefined") {
             missing.push(i);
-            // log("Missing frame " + i);
-            // throw Exception("Missing frame " + i);
         }
         content += contentRead[i];
     }
 
     if (0 < missing.length) {
-        log("Missing frames " + i);
-        throw Exception("Missing frames " + i);
+        log("Missing frames " + missing);
+        throw Exception("Missing frames " + missing);
     }
 
     return content;
@@ -210,6 +195,32 @@ function decodeContent() {
     return [fileName, data];
 }
 
+function getContentInfo() {
+    // Copy of decodeContent() that uses only the first frame
+
+    // TODO Assumption: data start in the first (with counted from 0) frame
+
+    const content = contentRead[0];
+    let length, from = 0;
+    let versionStr, fileName, data;
+
+    [length, versionStr, from] = decodeWithLength(content, from);
+    let version = Number(versionStr);
+    if (version !== 1)
+        throw Exception("Unsupported version " + version);
+
+    [length, fileName, from] = decodeWithLength(content, from);
+
+    [length, data, from] = decodeWithLength(content, from);
+
+    // End of copy of decodeContent()
+
+    const capacityForDataInOneFrame = contentRead[0].length - 3; // We know that the first frame has farame number: 1 1 0
+    const numberOfFrames = Math.ceil(length / capacityForDataInOneFrame) + 1;
+
+    return [fileName, numberOfFrames];
+}
+
 function onScan(content) {
     console.log("READ: " + content);
     // log("READ: " + content);
@@ -219,6 +230,12 @@ function onScan(content) {
         let [index, contentFrame] = decodeFrameContent(content);
         log("Read frame index " + index + "; " + contentFrame);
         contentRead[index] = contentFrame;
+
+        if (index === 0) {
+            let [fileName, numberOfFrames] = getContentInfo();
+            log("File name = " + fileName);
+            log("Frames = " + numberOfFrames);
+        }
 
         // If all frames then save
         try {
@@ -288,5 +305,4 @@ function init() {
     // Hack: flip video vertically
     video = document.getElementById("preview");
     video.style.cssText = "transform: scale(1, 1);";
-
 }
