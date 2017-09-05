@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Show</title>
+    <link rel="stylesheet" href="show.css">
+    <script src="lib/jquery.min.js"></script>
+    <script src="lib/qrcode.min.js"></script>
+    <script src="show.js"></script>
+</head>
+<body onload="init()">
+    <input id="filename" type="file" onchange="openFile(event)">
+    <br>
+    <div id="qrcode"></div>
+
+    <pre id="log"></pre>
+</body>
+</html>
