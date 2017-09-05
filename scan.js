@@ -12,11 +12,13 @@ function formatDate(date) {
     let seconds = date.getSeconds();
     let millis = date.getMilliseconds();
 
+    month++;
+    day = day < 10 ? '0' + day : day;
     minutes = minutes < 10 ? '0' + minutes : minutes;
     seconds = seconds < 10 ? '0' + seconds : seconds;
-    day = day < 10 ? '0' + day : day;
+    millis = millis < 10 ? '00' + millis : millis < 100 ? '0' + millis : millis;
 
-    return year + "-" + month + 1 + "-" + day + " " + hours + ':' + minutes + ':' + seconds + "." + millis;
+    return year + "-" + month + "-" + day + " " + hours + ':' + minutes + ':' + seconds + "." + millis;
 }
 
 function log(str) {
