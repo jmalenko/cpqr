@@ -1,4 +1,4 @@
-cpqr tranfers files between two offline computers.
+cpqr transfers files between two offline computers.
 
 It works as follows:
 1. on the source computer, show the sequence of QR codes that encode the file content (use show.html)

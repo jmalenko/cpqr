@@ -139,7 +139,7 @@ Format of one frame
 Variable-length quantity
 ========================
 
-Encoding that envodes a value with a tripple:
+Encoding that encodes a value with a triple:
 1. length of "length of value" }must be one character in this implementation)
 2. length of value
 3. value
@@ -148,7 +148,7 @@ Encoding that envodes a value with a tripple:
 QR Codes
 ========
 
-The QR code can cointain maximum of 177 by 177 blocks (squares).
+The QR code can contain maximum of 177 by 177 blocks (squares).
 
 QR codes have three parameters: Datatype, size (number of 'pixels') and error correction level. How many information can
 be stored there also depends on these parameters.
@@ -201,7 +201,7 @@ function openFile(event) {
         //    Example: data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
         // alert(dataURL);
 
-        // For Intennet Explorer
+        // For Internet Explorer
         // pos = dataURL.indexOf(",");
         // b64 = dataURL.substring(pos + 1);
         //alert(b64);
@@ -291,7 +291,7 @@ function onPlay() {
     log("Start");
 
     // Show the QR code
-    el = document.getElementById("qrcode");
+    const el = document.getElementById("qrcode");
     el.style.visibility = "visible";
 
     showFrame();
@@ -311,7 +311,7 @@ function onEnd() {
     // qrcode.clear();
 
     // Hide the QR code
-    el = document.getElementById("qrcode");
+    const el = document.getElementById("qrcode");
     el.style.visibility = "hidden";
 }
 
@@ -348,7 +348,7 @@ function onMissingFramesChange(event) {
         let missingFramesWithDuplicates = missingFrames.concat(missingFramesNew);
         // Remove duplicates
         missingFrames = missingFramesWithDuplicates.filter(function (item, pos, a) {
-            return a.indexOf(item) == pos;
+            return a.indexOf(item) === pos;
         });
     }
 }

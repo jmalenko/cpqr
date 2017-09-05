@@ -172,7 +172,7 @@ function getContent() {
 
     if (0 < missing.length) {
         log("Missing frames " + missing);
-        throw Exception("Missing frames " + missing);
+        throw new Exception("Missing frames " + missing);
     }
 
     return content;
@@ -186,14 +186,14 @@ function decodeContent() {
     [length, versionStr, from] = decodeWithLength(content, from);
     let version = Number(versionStr);
     if (version !== 1)
-        throw Exception("Unsupported version " + version);
+        throw new Exception("Unsupported version " + version);
 
     [length, fileName, from] = decodeWithLength(content, from);
 
     [length, data, from] = decodeWithLength(content, from);
 
     if (length !== data.length)
-        throw Exception("Not all data");
+        throw new Exception("Not all data");
 
     return [fileName, data];
 }
@@ -210,7 +210,7 @@ function getContentInfo() {
     [length, versionStr, from] = decodeWithLength(content, from);
     let version = Number(versionStr);
     if (version !== 1)
-        throw Exception("Unsupported version " + version);
+        throw new Exception("Unsupported version " + version);
 
     [length, fileName, from] = decodeWithLength(content, from);
 
@@ -218,7 +218,7 @@ function getContentInfo() {
 
     // End of copy of decodeContent()
 
-    const capacityForDataInOneFrame = contentRead[0].length - 3; // We know that the first frame has farame number: 1 1 0
+    const capacityForDataInOneFrame = contentRead[0].length - 3; // We know that the first frame has frame number: 1 1 0
     const numberOfFrames = Math.ceil(length / capacityForDataInOneFrame) + 1;
 
     return [fileName, numberOfFrames];
@@ -306,6 +306,6 @@ function init() {
     // scanSimulated();
 
     // Hack: flip video vertically
-    video = document.getElementById("preview");
+    const video = document.getElementById("preview");
     video.style.cssText = "transform: scale(1, 1);";
 }
