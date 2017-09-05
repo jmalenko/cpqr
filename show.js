@@ -134,6 +134,15 @@ Format of one frame
   2. Content	    Text	            1 4 Text
 
 
+Variable-length quantity
+========================
+
+Encoding that envodes a value with a tripple:
+1. length of "length of value" }must be one character in this implementation)
+2. length of value
+3. value
+
+
 QR Codes
 ========
 
