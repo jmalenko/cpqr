@@ -274,10 +274,8 @@ function show(fileName, data) {
 
     log("File name = " + fileName);
     log("Data = " + data);
-    // log("Data as bytes = " + toByteArray(data))
     log("Content = " + getContent());
     log("Speed = " + speed + " ms");
-    // log("Content as bytes = " + toByteArray(getContent()))
 
     log("Frames = " + getNumberOfFrames());
     for (let frame = 0; frame < frames; frame++) {
