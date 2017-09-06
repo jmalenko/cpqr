@@ -169,8 +169,14 @@ const speed = 1; // duration between frames, in milliseconds. Note that time for
 var fileName;
 var data;
 
-var frame = -1; // From 0. The frames from 0 to frames have been shown.
-var missingFrames = []; // Contains the frames to show as soon as possible. The frames with index frame.. will be shown afterwards.
+var frame; // From 0. The frames from 0 to frames have been shown.
+var missingFrames; // Contains the frames to show as soon as possible. The frames with index frame.. will be shown afterwards.
+
+const STATE_NOT_STARTED = 1;
+const STATE_PLAYING = 2;
+const STATE_FINISHED = 3;
+
+var state = STATE_NOT_STARTED;
 
 var qrcode;
 
@@ -292,6 +298,11 @@ function onPlay() {
     const el = document.getElementById("qrcode");
     el.style.visibility = "visible";
 
+    // Initialize
+    frame = -1;
+    missingFrames = [];
+    state = STATE_PLAYING;
+
     showFrame();
 }
 
@@ -303,7 +314,11 @@ function onShowFrame(frame) {
 }
 
 function onEnd() {
-    log("Finished");
+    if (state !== STATE_FINISHED) {
+        log("Finished");
+    }
+
+    state = STATE_FINISHED;
 
     // TODO Hide the QR code - the following should work (and the hiding/showing of element should be removed)
     // qrcode.clear();
@@ -316,7 +331,6 @@ function onEnd() {
 function showFrame() {
     let f;
     if (0 < missingFrames.length) {
-        // log("Missing frames are " + missingFrames);
         f = missingFrames.shift();
     } else {
         frame++;
@@ -348,5 +362,18 @@ function onMissingFramesChange(event) {
         missingFrames = missingFramesWithDuplicates.filter(function (item, pos, a) {
             return a.indexOf(item) === pos;
         });
+        // Remove frames after the maximum frame
+        missingFrames = missingFramesWithDuplicates.filter(function (item, pos, a) {
+            return item < getNumberOfFrames();
+        });
+
+        if (0 < missingFrames.length && state !== STATE_PLAYING)
+            if (state === STATE_FINISHED) {
+                // Show the QR code
+                const el = document.getElementById("qrcode");
+                el.style.visibility = "visible";
+            }
+
+        showFrame();
     }
 }
