@@ -357,12 +357,47 @@ function nextFrame() {
     setTimeout(nextFrame, duration);
 }
 
+/*
+Example of value: 2,3.4 5 7-10 15-12 -1 a
+                               ^      ^ ^
+                               |      | |
+                               |      | Ignored
+                               |      Range starting from 0
+                               Ignored
+ */
 function onMissingFramesChange(event) {
     if (event.keyCode === 13) {
         const el = document.getElementById("missing");
 
         const missingStr = el.value;
-        const missingFramesNew = missingStr.split(/[,\. ]+/);
+        const missingFramesNew1 = missingStr.split(/[,\. ]+/);
+
+        // Replace ranges: "10-13" -> 10,11,12,13
+        let missingFramesNew = []
+        missingFramesNew1.forEach(function (item) {
+                const range = item.split(/-/);
+                switch (range.length) {
+                    case 1:
+                        missingFramesNew.push(item);
+                        break;
+                    case 2:
+                        const from = Number(range[0]);
+                        const to = Number(range[1]);
+                        if (to < from) break;
+                        for (let i = from; i <= to; i++) {
+                            missingFramesNew.push(i);
+                        }
+                        break;
+                    default:
+                    // nothing
+                }
+            }
+        );
+
+        if (typeof missingFrames === "undefined") {
+            log("Cannot add to missing as no file has been shown.");
+            return;
+        }
 
         log("Add to missing: " + missingFramesNew);
         // Add to missing frames to show
