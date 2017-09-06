@@ -373,7 +373,7 @@ function onMissingFramesChange(event) {
         const missingFramesNew1 = missingStr.split(/[,\. ]+/);
 
         // Replace ranges: "10-13" -> 10,11,12,13
-        let missingFramesNew = []
+        let missingFramesNew = [];
         missingFramesNew1.forEach(function (item) {
                 const range = item.split(/-/);
                 switch (range.length) {
