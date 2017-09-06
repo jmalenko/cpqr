@@ -160,14 +160,14 @@ Alphanumeric Max. 4,296 characters
 Binary/byte Max. 2,953 characters (8-bit bytes)
 */
 
-const capacityTotal = 300; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
-const capacityForDataInOneFrame = capacityTotal - 5; // -1 for length of length, -4 for length up to 7089
+const CAPACITY_TOTAL = 300; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
+const capacityForDataInOneFrame = CAPACITY_TOTAL - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
 
-const version = 1;
+const VERSION = 1;
 
-const DURATION_TARGET = 500; // duration between frames, in milliseconds.
-var duration = DURATION_TARGET; // effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
-var dateNextFeamePrev; // Date of previous run of nextFrame()
+const DURATION_TARGET = 500; // Duration between frames, in milliseconds.
+var duration = DURATION_TARGET; // Effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
+var dateNextFrame; // Date of previous run of nextFrame()
 
 var fileName;
 var data;
@@ -202,19 +202,17 @@ function openFile(event) {
     reader.fileName = input.value;
     reader.onload = function () {
         const dataURL = reader.result;
-        // In reader.readAsText() was called:
+        // If reader.readAsText() was called:
         //    String (probably in UTF-8)
 
         // If reader.readAsDataURL() was called:
         //    Base64 encoded
         //    Example: data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
-        // alert(dataURL);
 
-        // For Internet Explorer
+        // alert(dataURL);
         // pos = dataURL.indexOf(",");
         // b64 = dataURL.substring(pos + 1);
-        //alert(b64);
-        //alert(atob(b64));
+        // alert(atob(b64));
 
         show(reader.fileName, dataURL)
     };
@@ -248,7 +246,7 @@ function encodeWithLength(obj) {
 function getContent() {
     let content = "";
 
-    content += encodeWithLength(version);
+    content += encodeWithLength(VERSION);
     content += encodeWithLength(fileName);
     content += encodeWithLength(data);
 
@@ -333,9 +331,9 @@ function onEnd() {
 
 function nextFrame() {
     const dateNextFameCurrent = new Date();
-    const durationLast = dateNextFameCurrent - dateNextFeamePrev;
+    const durationLast = dateNextFameCurrent - dateNextFrame;
     const delta = durationLast - DURATION_TARGET;
-    dateNextFeamePrev = dateNextFameCurrent;
+    dateNextFrame = dateNextFameCurrent;
     if (!isNaN(delta)) duration -= delta / 10;
 
     let f;
