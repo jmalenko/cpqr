@@ -165,7 +165,9 @@ const capacityForDataInOneFrame = capacityTotal - 5; // -1 for length of length,
 
 const version = 1;
 
-const speed = 100; // duration between frames, in milliseconds. Note that time for generating the QR code is not included in this value
+const DURATION_TARGET = 500; // duration between frames, in milliseconds.
+var duration = DURATION_TARGET; // effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
+var dateNextFeamePrev; // Date of previous run of nextFrame()
 
 var fileName;
 var data;
@@ -330,6 +332,12 @@ function onEnd() {
 }
 
 function nextFrame() {
+    const dateNextFameCurrent = new Date();
+    const durationLast = dateNextFameCurrent - dateNextFeamePrev;
+    const delta = durationLast - DURATION_TARGET;
+    dateNextFeamePrev = dateNextFameCurrent;
+    if (!isNaN(delta)) duration -= delta / 10;
+
     let f;
     if (0 < missingFrames.length) {
         f = missingFrames.shift();
@@ -346,7 +354,7 @@ function nextFrame() {
 
     onShowFrame(f);
 
-    setTimeout(nextFrame, speed);
+    setTimeout(nextFrame, duration);
 }
 
 function onMissingFramesChange(event) {
