@@ -24,7 +24,8 @@ function formatDate(date) {
 function log(str) {
     const date = new Date();
     const el = document.getElementById("log");
-    el.innerHTML = "[" + formatDate(date) + "] " + str + "\n" + el.innerHTML;
+    const logData = "[" + formatDate(date) + "] " + str + "\n" + el.innerHTML;
+    el.innerHTML = logData.substr(0, 1e5);
 }
 
 /*
@@ -164,7 +165,7 @@ const capacityForDataInOneFrame = capacityTotal - 5; // -1 for length of length,
 
 const version = 1;
 
-const speed = 1; // duration between frames, in milliseconds. Note that time for generating the QR code is not included in this value
+const speed = 100; // duration between frames, in milliseconds. Note that time for generating the QR code is not included in this value
 
 var fileName;
 var data;
@@ -234,9 +235,6 @@ function encodeWithLength(obj) {
         length = getNumberLength(obj);
     else
         throw Error("Unsupported type " + typeof obj);
-    // const length =
-    //     typeof obj === "string" ? obj.length :
-    //     typeof obj === "number" ? getNumberLength(obj) : throw Error("Unsupported type");
 
     const lengthOfLength = getNumberLength(length);
     if (9 < lengthOfLength)
@@ -267,26 +265,28 @@ function getFrameContent(index) {
 
     let content = "";
 
-    // content += encodeNumberWithLength(index);
     content += encodeWithLength(index);
     content += contentFrame;
 
     return content;
 }
 
-function show(fileName, data) {
-    this.fileName = fileName;
-    this.data = data;
+function show(fileName_, data_) {
+    fileName = fileName_;
+    data = data_;
 
     log("File name = " + fileName);
-    log("Data = " + data);
-    log("Content = " + getContent());
-    log("Speed = " + speed + " ms");
+    log("Data length = " + data.length);
 
     log("Frames = " + getNumberOfFrames());
+    /*
+    // Note: makes the browser slow for large data (as the log grows, the browser get slower)
+    log("Data = " + data);
+    log("Content = " + getContent());
     for (let frame = 0; frame < frames; frame++) {
         log("Frame " + frame + ": " + getFrameContent(frame));
     }
+    */
 
     onPlay();
 }
@@ -303,13 +303,14 @@ function onPlay() {
     missingFrames = [];
     state = STATE_PLAYING;
 
-    showFrame();
+    nextFrame();
 }
 
 function onShowFrame(frame) {
-    log("Frame " + frame + ": " + getFrameContent(frame));
+    let frameContent = getFrameContent(frame);
 
-    const frameContent = getFrameContent(frame);
+    log("Frame " + frame /*+ ": " + frameContent*/);
+
     qrcode.makeCode(frameContent);
 }
 
@@ -328,7 +329,7 @@ function onEnd() {
     el.style.visibility = "hidden";
 }
 
-function showFrame() {
+function nextFrame() {
     let f;
     if (0 < missingFrames.length) {
         f = missingFrames.shift();
@@ -345,7 +346,7 @@ function showFrame() {
 
     onShowFrame(f);
 
-    setTimeout(showFrame, speed);
+    setTimeout(nextFrame, speed);
 }
 
 function onMissingFramesChange(event) {
@@ -374,6 +375,6 @@ function onMissingFramesChange(event) {
                 el.style.visibility = "visible";
             }
 
-        showFrame();
+        nextFrame();
     }
 }

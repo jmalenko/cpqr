@@ -24,7 +24,8 @@ function formatDate(date) {
 function log(str) {
     const date = new Date();
     const el = document.getElementById("log");
-    el.innerHTML = "[" + formatDate(date) + "] " + str + "\n" + el.innerHTML;
+    const logData = "[" + formatDate(date) + "] " + str + "\n" + el.innerHTML;
+    el.innerHTML = logData.substr(0, 1e5);
 }
 
 
