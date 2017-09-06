@@ -372,7 +372,7 @@ function onMissingFramesChange(event) {
             return a.indexOf(item) === pos;
         });
         // Remove frames after the maximum frame
-        missingFrames = missingFramesWithDuplicates.filter(function (item, pos, a) {
+        missingFrames = missingFramesWithDuplicates.filter(function (item) {
             return item < getNumberOfFrames();
         });
 
