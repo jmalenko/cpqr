@@ -66,7 +66,7 @@ function stringOfLength(length) {
         const lengthN = getNumberLength(i);
         str += new Array(10 - lengthN + 1).join('.');
     }
-    return str.substring(0, length);
+    return str.substr(0, length);
 }
 
 function tests() {
@@ -211,7 +211,7 @@ function openFile(event) {
 
         // alert(dataURL);
         // pos = dataURL.indexOf(",");
-        // b64 = dataURL.substring(pos + 1);
+        // b64 = dataURL.substr(pos + 1);
         // alert(atob(b64));
 
         show(reader.fileName, dataURL)
@@ -260,8 +260,7 @@ function getNumberOfFrames() {
 function getFrameContent(index) {
     const data = getContent();
     const contentFrom = index * capacityForDataInOneFrame;
-    const contentTo = contentFrom + capacityForDataInOneFrame;
-    const contentFrame = data.substring(contentFrom, contentTo);
+    const contentFrame = data.substr(contentFrom, capacityForDataInOneFrame);
 
     let content = "";
 

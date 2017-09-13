@@ -139,13 +139,13 @@ function download(strData, strFileName, strMimeType) {
 let contentRead = [];
 
 function decodeWithLength(str, from) {
-    const lengthOfLengthStr = str.substring(from, from + 1);
+    const lengthOfLengthStr = str.substr(from, 1);
     const lengthOfLength = Number(lengthOfLengthStr);
 
-    const lengthStr = str.substring(from + 1, from + 1 + lengthOfLength);
+    const lengthStr = str.substr(from + 1, lengthOfLength);
     const length = Number(lengthStr);
 
-    const data = str.substring(from + 1 + lengthOfLength, from + 1 + lengthOfLength + length);
+    const data = str.substr(from + 1 + lengthOfLength, length);
 
     const next = from + 1 + lengthOfLength + length;
 
@@ -154,7 +154,7 @@ function decodeWithLength(str, from) {
 
 function decodeFrameContent(content) {
     let [, indexStr, from] = decodeWithLength(content, 0);
-    const contentFrame = content.substring(from);
+    const contentFrame = content.substr(from);
 
     const index = Number(indexStr);
     return [index, contentFrame];
@@ -249,10 +249,10 @@ function onScan(content) {
             log("Data = " + dataURL);
 
             const posSlash = fileName.lastIndexOf("\\");
-            const fileNameLast = fileName.substring(posSlash + 1);
+            const fileNameLast = fileName.substr(posSlash + 1);
 
             const posComma = dataURL.indexOf(",");
-            const b64 = dataURL.substring(posComma + 1);
+            const b64 = dataURL.substr(posComma + 1);
             const fileContent = atob(b64);
 
             log("Downloading as " + fileNameLast);
