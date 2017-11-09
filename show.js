@@ -210,11 +210,6 @@ function openFile(event) {
         //    Base64 encoded
         //    Example: data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
 
-        // alert(dataURL);
-        // pos = dataURL.indexOf(",");
-        // b64 = dataURL.substr(pos + 1);
-        // alert(atob(b64));
-
         show(reader.fileName, dataURL)
     };
     reader.onerror = function () {
