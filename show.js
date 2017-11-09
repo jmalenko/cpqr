@@ -166,7 +166,7 @@ const capacityForDataInOneFrame = CAPACITY_TOTAL - 5; // Explanation of -5: -1 f
 const VERSION = 1;
 
 const DURATION_TARGET = 500; // Duration between frames, in milliseconds.
-var duration = DURATION_TARGET; // Effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
+var duration; // Effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
 var dateNextFrame; // Date of previous run of nextFrame()
 
 var fileName;
@@ -301,6 +301,7 @@ function onPlay() {
     frame = -1;
     missingFrames = [];
     state = STATE_PLAYING;
+    duration = DURATION_TARGET;
 
     nextFrame();
 }
@@ -319,6 +320,7 @@ function onEnd() {
     }
 
     state = STATE_FINISHED;
+    dateNextFrame = undefined;
 
     // TODO Hide the QR code - the following should work (and the hiding/showing of element should be removed)
     // qrcode.clear();
