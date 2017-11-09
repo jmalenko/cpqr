@@ -172,8 +172,9 @@ var dateNextFrame; // Date of previous run of nextFrame()
 var fileName;
 var data;
 
-var frame; // From 0. The frames from 0 to frames have been shown.
+var frame; // From 0. The frames from 0 to frame-1 have been shown.
 var missingFrames; // Contains the frames to show as soon as possible. The frames with index frame.. will be shown afterwards.
+var missingFramePart; // Part number to be shown
 
 const STATE_NOT_STARTED = 1;
 const STATE_PLAYING = 2;
@@ -257,17 +258,35 @@ function getNumberOfFrames() {
     return Math.ceil(getContent().length / capacityForDataInOneFrame);
 }
 
-function getFrameContent(index) {
+function getFrameContent(index, part) {
     const data = getContent();
     const contentFrom = index * capacityForDataInOneFrame;
     const contentFrame = data.substr(contentFrom, capacityForDataInOneFrame);
 
     let content = "";
 
-    content += encodeWithLength(index);
-    content += contentFrame;
+    if (part === undefined) {
+        content += encodeWithLength(index);
+        content += contentFrame;
+    } else {
+        const contentFramePart = getPart(contentFrame, part);
+
+        content += encodeWithLength(index + "." + part);
+        content += contentFramePart;
+    }
 
     return content;
+}
+
+function getPart(str, part) {
+    // TODO Support part longer than one digit
+
+    const posHalf = str.length / 2;
+    if (part === 0) {
+        return str.substr(0, posHalf);
+    } else {
+        return str.substr(posHalf);
+    }
 }
 
 function show(fileName_, data_) {
@@ -300,16 +319,21 @@ function onPlay() {
     // Initialize
     frame = -1;
     missingFrames = [];
+    missingFramePart = 0;
     state = STATE_PLAYING;
     duration = DURATION_TARGET;
 
     nextFrame();
 }
 
-function onShowFrame(frame) {
-    let frameContent = getFrameContent(frame);
+function onShowFrame(frame, part) {
+    let frameContent = getFrameContent(frame, part);
 
-    log("Frame " + frame /*+ ": " + frameContent*/);
+    if (part === undefined) {
+        log("Frame " + frame + ": " + frameContent);
+    } else {
+        log("Frame " + frame + "." + part + ": " + frameContent);
+    }
 
     qrcode.makeCode(frameContent);
 }
@@ -337,9 +361,15 @@ function nextFrame() {
     dateNextFrame = dateNextFameCurrent;
     if (!isNaN(delta)) duration -= delta / 10;
 
-    let f;
     if (0 < missingFrames.length) {
-        f = missingFrames.shift();
+        const f = missingFrames[0];
+        if (missingFramePart == 1) {
+            missingFrames.shift();
+        }
+
+        onShowFrame(f, missingFramePart);
+
+        missingFramePart = 1 - missingFramePart;
     } else {
         frame++;
 
@@ -348,10 +378,8 @@ function nextFrame() {
             return;
         }
 
-        f = frame;
+        onShowFrame(frame);
     }
-
-    onShowFrame(f);
 
     setTimeout(nextFrame, duration);
 }

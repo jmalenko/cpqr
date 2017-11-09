@@ -28,6 +28,16 @@ function log(str) {
     el.innerHTML = logData.substr(0, 1e5);
 }
 
+/*
+    Common but used in this script only
+    ===================================
+ */
+
+var getStackTrace = function () {
+    let obj = {};
+    Error.captureStackTrace(obj, getStackTrace);
+    return obj.stack;
+};
 
 /*
     Tests & Simulation
@@ -35,16 +45,34 @@ function log(str) {
  */
 
 const testFrames = [
+    // Prepared with CAPACITY_TOTAL = 50
+
+    // Send 3 frames
     '110111217C:\\fakepath\\a.txt279data:text/plain;bas',
     '111e64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFv',
+    '112sO9w6HDrcOpDQo=',
+
+    // Send frame 1 in 2 parts
+    '110111217C:\\fakepath\\b.txt279data:text/plain;bas',
+    '131.0e64,SmVkbmEsDQpEdsSbLg',
+    '131.10KVMWZaQ0KxJvFocSNxZnFv',
+    '112sO9w6HDrcOpDQo=',
+
+    // Send frame 1 part 2 in two 2 subparts
+    '110111217C:\\fakepath\\c.txt279data:text/plain;bas',
+    '131.0e64,SmVkbmEsDQpEdsSbLg',
+    '141.100KVMWZaQ0Kx',
+    '141.110JvFocSNxZnFv',
     '112sO9w6HDrcOpDQo='
 ];
 
 let frameSimulated = 0;
 
 function scanSimulated() {
-    if (frameSimulated >= testFrames.length)
+    if (frameSimulated >= testFrames.length) {
+        log("Simulated scans finished");
         return;
+    }
 
     onScan(testFrames[frameSimulated]);
     // Send the first frame as last
@@ -136,7 +164,16 @@ function download(strData, strFileName, strMimeType) {
     ============
  */
 
-let contentRead = [];
+let contentRead = []; // contentRead[frameIndex] contains the content of frame frameIndex
+let contentReadPart = []; // contentReadPart[frameIndex][partIndex] contains the content of part partIndex of frame frameIndex
+/*
+PartIndex is a sequence of 0s and 1s where 0 denotes "the left part" and 1 denote "the right part".
+Mathematically: PartIndex is an encoding of a subinterval of the 0-1 interval, in binary encoding.
+For example
+- If we got frame content (stored in contentRead), then fine. Othwerwise we construct it from parts.
+- A frame can be constructed from parts 0 and 1 (left and right part of the frame).
+- But in case the right part is missing, the trame can be constructed from parts 0 and 10 and 11 (combination of parts 10 and 11 gives part 1).
+ */
 
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.substr(from, 1);
@@ -153,22 +190,48 @@ function decodeWithLength(str, from) {
 }
 
 function decodeFrameContent(content) {
-    let [, indexStr, from] = decodeWithLength(content, 0);
+    let [, frameStr, from] = decodeWithLength(content, 0);
     const contentFrame = content.substr(from);
 
-    const index = Number(indexStr);
-    return [index, contentFrame];
+    return [frameStr, contentFrame];
+}
+
+function getFrameFromParts(frame, prefix) {
+    if (prefix === undefined) prefix = 0;
+    if (1e5 < prefix) throw new Error("Cannot construct frame " + frame + " from parts");
+
+    let res = "";
+
+    for (let i = 0; i <= 1; i++) {
+        const part = 10 * prefix + i;
+        // If part not received
+        if (contentReadPart[frame][part] === undefined) {
+            // Construct the part from subparts
+            res += getFrameFromParts(frame, part);
+        } else {
+            res += contentReadPart[frame][part];
+        }
+    }
+
+    return res;
 }
 
 function getContent() {
     let content = "";
     let missing = [];
 
-    for (let i = 0; i < contentRead.length; i++) {
-        if (typeof contentRead[i] === "undefined") {
-            missing.push(i);
+    upperBound = Math.max(contentRead.length, contentReadPart.length);
+
+    for (let i = 0; i < upperBound; i++) {
+        if (contentRead[i] === undefined) {
+            try {
+                content += getFrameFromParts(i);
+            } catch (e) {
+                missing.push(i);
+            }
+        } else {
+            content += contentRead[i];
         }
-        content += contentRead[i];
     }
 
     if (0 < missing.length) {
@@ -231,11 +294,26 @@ function onScan(content) {
 
     try {
         // Save frame
-        let [index, contentFrame] = decodeFrameContent(content);
-        log("Read frame index " + index + "; " + contentFrame);
-        contentRead[index] = contentFrame;
+        let [frameStr, contentFrame] = decodeFrameContent(content);
+        log("Read frame index " + frameStr + " with content " + contentFrame);
 
-        if (index === 0) {
+        let frame;
+        const posDot = frameStr.indexOf(".");
+
+        // Save frame
+        if (posDot === -1) {
+            frame = Number(frameStr);
+            contentRead[frame] = contentFrame;
+        } else {
+            frame = Number(frameStr.substr(0, posDot));
+            const part = Number(frameStr.substr(posDot + 1));
+
+            if (contentReadPart[frame] === undefined)
+                contentReadPart[frame] = [];
+            contentReadPart[frame][part] = contentFrame;
+        }
+
+        if (frame === 0) {
             let [fileName, numberOfFrames] = getContentInfo();
             log("File name = " + fileName);
             log("Frames = " + numberOfFrames);
@@ -264,8 +342,10 @@ function onScan(content) {
             // Nothing - the dataURL is not complete yet
         }
     } catch (e) {
-        log("Error processing frame: " + content);
-        log(e);
+        log("Error processing frame" + "\n" +
+            "Content: " + content + "\n" +
+            "Error: " + e.toString() + "\n" +
+            "Stack trace: " + getStackTrace());
     }
 }
 
