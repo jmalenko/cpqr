@@ -185,7 +185,7 @@ var state = STATE_NOT_STARTED;
 var qrcode;
 
 function init() {
-    const scale = 4.5;
+    const scale = 4;
     qrcode = new QRCode("qrcode", {
         width: scale * 177,
         height: scale * 177,
