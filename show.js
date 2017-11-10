@@ -28,6 +28,33 @@ function log(str) {
     el.innerHTML = logData.substr(0, 1e5);
 }
 
+/**
+ * Calculate a 32 bit FNV-1a hash
+ * Found here: https://gist.github.com/vaiorabbit/5657561
+ * Ref.: http://isthe.com/chongo/tech/comp/fnv/
+ *
+ * @param {string} str the input value
+ * @param {boolean} [asString=false] set to true to return the hash value as
+ *     8-digit hex string instead of an integer
+ * @param {integer} [seed] optionally pass the hash of the previous chunk
+ * @returns {integer | string}
+ */
+function hashFnv32a(str, asString, seed) {
+    /*jshint bitwise:false */
+    var i, l,
+        hval = (seed === undefined) ? 0x811c9dc5 : seed;
+
+    for (i = 0, l = str.length; i < l; i++) {
+        hval ^= str.charCodeAt(i);
+        hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
+    }
+    if (asString) {
+        // Convert to 8 digit hex string
+        return ("0000000" + (hval >>> 0).toString(16)).substr(-8);
+    }
+    return hval >>> 0;
+}
+
 /*
     Tests
     =====
@@ -125,8 +152,11 @@ Format of Content
      Field		    Example field								                        Example with Variable-length quantity
   ------------------------------------------------------------------------------------------------------------------------------------------------------------
   1. Version		1									                                1  1 1
-  2. File name		in.txt									                            1  6 in.txt
+  2. Hash           4065018274                                                          2 10 4065018274
+  3. File name		in.txt									                            1  6 in.txt
   4. Data		    data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh		2 63 data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
+
+Field "2. Hash" contains the 32 bit FNV-1a hash of the concatenation of the remaining fields.
 
 Format of one frame
 ===================
@@ -160,7 +190,7 @@ Alphanumeric Max. 4,296 characters
 Binary/byte Max. 2,953 characters (8-bit bytes)
 */
 
-const CAPACITY_TOTAL = 300; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
+const CAPACITY_TOTAL = 50; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
 const capacityForDataInOneFrame = CAPACITY_TOTAL - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
 
 const VERSION = 1;
@@ -243,6 +273,8 @@ function getContent() {
     let content = "";
 
     content += encodeWithLength(VERSION);
+    const hash = hashFnv32a(fileName + data, false);
+    content += encodeWithLength(hash);
     content += encodeWithLength(fileName);
     content += encodeWithLength(data);
 

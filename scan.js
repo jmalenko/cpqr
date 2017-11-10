@@ -28,6 +28,33 @@ function log(str) {
     el.innerHTML = logData.substr(0, 1e5);
 }
 
+/**
+ * Calculate a 32 bit FNV-1a hash
+ * Found here: https://gist.github.com/vaiorabbit/5657561
+ * Ref.: http://isthe.com/chongo/tech/comp/fnv/
+ *
+ * @param {string} str the input value
+ * @param {boolean} [asString=false] set to true to return the hash value as
+ *     8-digit hex string instead of an integer
+ * @param {integer} [seed] optionally pass the hash of the previous chunk
+ * @returns {integer | string}
+ */
+function hashFnv32a(str, asString, seed) {
+    /*jshint bitwise:false */
+    var i, l,
+        hval = (seed === undefined) ? 0x811c9dc5 : seed;
+
+    for (i = 0, l = str.length; i < l; i++) {
+        hval ^= str.charCodeAt(i);
+        hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
+    }
+    if (asString) {
+        // Convert to 8 digit hex string
+        return ("0000000" + (hval >>> 0).toString(16)).substr(-8);
+    }
+    return hval >>> 0;
+}
+
 /*
     Common but used in this script only
     ===================================
@@ -47,45 +74,65 @@ var getStackTrace = function () {
 const testFrames = [
     // Prepared with CAPACITY_TOTAL = 50
 
-    // Send 3 frames
-    '110111217C:\\fakepath\\a.txt279data:text/plain;bas',
-    '111e64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFv',
-    '112sO9w6HDrcOpDQo=',
+    [ // Send 3 frames
+        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
+        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K',
+        '112xJvFocSNxZnFvsO9w6HDrcOpDQo='],
 
-    // Send 2nd frame (with index 1) at the end
-    '110111217C:\\fakepath\\b.txt279data:text/plain;bas',
-    '112sO9w6HDrcOpDQo=',
-    '111e64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFv',
+    [ // Send frame 1 at the end
+        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
+        '112xJvFocSNxZnFvsO9w6HDrcOpDQo=',
+        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K'],
 
-    // Send frame 1 in 2 parts
-    '110111217C:\\fakepath\\c.txt279data:text/plain;bas',
-    '131.0e64,SmVkbmEsDQpEdsSbLg',
-    '131.10KVMWZaQ0KxJvFocSNxZnFv',
-    '112sO9w6HDrcOpDQo=',
+    [ // Send frame 0 at the end
+        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K',
+        '112xJvFocSNxZnFvsO9w6HDrcOpDQo=',
+        '1101112104065018274217C:\\fakepath\\a.txt279data:t'],
 
-    // Send frame 1 part 2 in two 2 subparts
-    '110111217C:\\fakepath\\d.txt279data:text/plain;bas',
-    '131.0e64,SmVkbmEsDQpEdsSbLg',
-    '141.100KVMWZaQ0Kx',
-    '141.110JvFocSNxZnFv',
-    '112sO9w6HDrcOpDQo='
+    [ // Send frame 1 in 2 parts
+        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
+        '131.0ext/plain;base64,SmVkb',
+        '131.1mEsDQpEdsSbLg0KVMWZaQ0K',
+        '112xJvFocSNxZnFvsO9w6HDrcOpDQo='],
+
+    [ // Send frame 1 part 2 in two 2 subparts
+        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
+        '131.0ext/plain;base64,SmVkb',
+        '141.10mEsDQpEdsSbL',
+        '141.11g0KVMWZaQ0K',
+        '112xJvFocSNxZnFvsO9w6HDrcOpDQo='],
+
+    [ // Send 3 frames, but change last character in frame 1, resend the correct frame 1 at the end
+        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
+        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0_',
+        '112xJvFocSNxZnFvsO9w6HDrcOpDQo=',
+        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K']
 ];
 
+let fileSimulated = 0;
 let frameSimulated = 0;
 
 function scanSimulated() {
-    if (frameSimulated >= testFrames.length) {
+    if (fileSimulated >= testFrames.length) {
         log("Simulated scans finished");
+        updateInfo();
         return;
     }
 
-    onScan(testFrames[frameSimulated]);
-    // Send the first frame as last
-    // if (frameSimulated == 0) onScan(testFrames[1]);
-    // if (frameSimulated == 1) onScan(testFrames[2]);
-    // if (frameSimulated == 2) onScan(testFrames[0]);
+    onScan(testFrames[fileSimulated][frameSimulated]);
 
-    frameSimulated++;
+    if (frameSimulated + 1 == testFrames[fileSimulated].length) {
+        // Move to next file
+        fileSimulated++;
+        frameSimulated = 0;
+
+        // Cleanup data
+        contentRead = [];
+        contentReadPart = [];
+        hashSaved = "";
+    } else {
+        frameSimulated++;
+    }
     setTimeout(scanSimulated, 1000);
 }
 
@@ -197,7 +244,7 @@ For example
 - But in case the right part is missing, the trame can be constructed from parts 0 and 10 and 11 (combination of parts 10 and 11 gives part 1).
  */
 
-let saved = false; // Whether the file was saved
+let hashSaved; // hash of the last saved file (specifiaclly the received hash (of fileName + data)
 
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.substr(from, 1);
@@ -268,12 +315,14 @@ function getContent() {
 function decodeContent() {
     const content = getContent();
     let length, from = 0;
-    let versionStr, fileName, data;
+    let versionStr, hash, fileName, data;
 
     [length, versionStr, from] = decodeWithLength(content, from);
     let version = Number(versionStr);
     if (version !== 1)
         throw new Exception("Unsupported version " + version);
+
+    [length, hash, from] = decodeWithLength(content, from);
 
     [length, fileName, from] = decodeWithLength(content, from);
 
@@ -282,22 +331,28 @@ function decodeContent() {
     if (length !== data.length)
         throw new Exception("Not all data");
 
-    return [fileName, data];
+    // Verify hash
+    const hashCalculated = hashFnv32a(fileName + data, false);
+    if (hash != hashCalculated)
+        throw new Exception("Incorrect hash");
+
+    return [hash, fileName, data];
 }
 
 function getContentInfo() {
-    // Copy of decodeContent() that uses only the first frame
-
     // TODO Assumption: data start in the first (with counted from 0) frame
 
+    // Copy of decodeContent() that uses only the first frame
     const content = contentRead[0];
     let length, from = 0;
-    let versionStr, fileName, data;
+    let versionStr, hash, fileName, data;
 
     [length, versionStr, from] = decodeWithLength(content, from);
     let version = Number(versionStr);
     if (version !== 1)
         throw new Exception("Unsupported version " + version);
+
+    [length, hash, from] = decodeWithLength(content, from);
 
     [length, fileName, from] = decodeWithLength(content, from);
 
@@ -308,7 +363,7 @@ function getContentInfo() {
     const capacityForDataInOneFrame = contentRead[0].length;
     const numberOfFrames = Math.ceil(from / capacityForDataInOneFrame); // Keep this consistent with calcultation in show.js
 
-    return [fileName, numberOfFrames];
+    return [hash, fileName, numberOfFrames];
 }
 
 function onScan(content) {
@@ -339,28 +394,31 @@ function onScan(content) {
         }
 
         if (frame === 0) {
-            let [fileName, numberOfFrames] = getContentInfo();
+            let [hash, fileName, numberOfFrames] = getContentInfo();
             log("File name = " + fileName);
             log("Frames = " + numberOfFrames);
         }
 
         // If all frames then save
         try {
-            let [fileName, dataURL] = decodeContent();
-            log("Got all frames");
-            log("File name = " + fileName);
-            log("Data = " + dataURL);
+            let [hash, fileName, dataURL] = decodeContent();
 
-            const fileNameLast = getFileNameLast(fileName);
+            if (hash !== hashSaved) {
+                log("Got all frames");
+                log("File name = " + fileName);
+                log("Data = " + dataURL);
 
-            const posComma = dataURL.indexOf(",");
-            const b64 = dataURL.substr(posComma + 1);
-            const fileContent = atob(b64);
+                const fileNameLast = getFileNameLast(fileName);
 
-            log("Downloading as " + fileNameLast);
-            download(fileContent, fileNameLast, 'text/plain');
+                const posComma = dataURL.indexOf(",");
+                const b64 = dataURL.substr(posComma + 1);
+                const fileContent = atob(b64);
 
-            saved = true;
+                log("Downloading as " + fileNameLast);
+                download(fileContent, fileNameLast, 'text/plain');
+
+                hashSaved = hash;
+            }
         } catch (e) {
             if (e instanceof MissingFrameException) {
                 // The dataURL is not complete yet
@@ -390,11 +448,11 @@ function updateInfo(missing) {
     const upperBound = Math.max(contentRead.length, contentReadPart.length);
     infoStr += upperBound;
     try {
-        let [fileName, numberOfFrames] = getContentInfo();
+        let [hash, fileName, numberOfFrames] = getContentInfo();
         const fileNameLast = getFileNameLast(fileName);
 
         let infoStr2 = " / " + numberOfFrames;
-        if (saved) {
+        if (hash == hashSaved) {
             infoStr2 += " Saved";
         }
         infoStr2 += "<br/>";
