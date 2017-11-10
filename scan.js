@@ -33,6 +33,11 @@ function log(str) {
     ===================================
  */
 
+function info(str) {
+    const el = document.getElementById("info");
+    el.innerHTML = str;
+}
+
 var getStackTrace = function () {
     let obj = {};
     Error.captureStackTrace(obj, getStackTrace);
@@ -52,14 +57,19 @@ const testFrames = [
     '111e64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFv',
     '112sO9w6HDrcOpDQo=',
 
-    // Send frame 1 in 2 parts
+    // Send 2nd frame (with index 1) at the end
     '110111217C:\\fakepath\\b.txt279data:text/plain;bas',
+    '112sO9w6HDrcOpDQo=',
+    '111e64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFv',
+
+    // Send frame 1 in 2 parts
+    '110111217C:\\fakepath\\c.txt279data:text/plain;bas',
     '131.0e64,SmVkbmEsDQpEdsSbLg',
     '131.10KVMWZaQ0KxJvFocSNxZnFv',
     '112sO9w6HDrcOpDQo=',
 
     // Send frame 1 part 2 in two 2 subparts
-    '110111217C:\\fakepath\\c.txt279data:text/plain;bas',
+    '110111217C:\\fakepath\\d.txt279data:text/plain;bas',
     '131.0e64,SmVkbmEsDQpEdsSbLg',
     '141.100KVMWZaQ0Kx',
     '141.110JvFocSNxZnFv',
@@ -158,6 +168,23 @@ function download(strData, strFileName, strMimeType) {
     return true;
 }
 
+/*
+    Exceptions
+    ==========
+ */
+
+function MissingFrameException(missing) {
+    this.missing = missing;
+    // Use V8's native method if available, otherwise fallback
+    if ("captureStackTrace" in Error)
+        Error.captureStackTrace(this, MissingFrameException);
+    else
+        this.stack = (new Error()).stack;
+}
+
+MissingFrameException.prototype = Object.create(Error.prototype);
+MissingFrameException.prototype.name = "MissingFrameException";
+MissingFrameException.prototype.constructor = MissingFrameException;
 
 /*
     Main content
@@ -174,6 +201,8 @@ For example
 - A frame can be constructed from parts 0 and 1 (left and right part of the frame).
 - But in case the right part is missing, the trame can be constructed from parts 0 and 10 and 11 (combination of parts 10 and 11 gives part 1).
  */
+
+let saved = false; // Whether the file was saved
 
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.substr(from, 1);
@@ -235,8 +264,7 @@ function getContent() {
     }
 
     if (0 < missing.length) {
-        log("Missing frames " + missing);
-        throw new Exception("Missing frames " + missing);
+        throw new MissingFrameException(missing);
     }
 
     return content;
@@ -292,6 +320,8 @@ function onScan(content) {
     console.log("READ: " + content);
     // log("READ: " + content);
 
+    let missing;
+
     try {
         // Save frame
         let [frameStr, contentFrame] = decodeFrameContent(content);
@@ -336,10 +366,13 @@ function onScan(content) {
             log("Downloading as " + fileNameLast);
             download(fileContent, fileNameLast, 'text/plain');
 
-            // Cleanup
-            contentRead = [];
+            saved = true;
         } catch (e) {
-            // Nothing - the dataURL is not complete yet
+            if (e instanceof MissingFrameException) {
+                // The dataURL is not complete yet
+                log("Missing frames " + e.missing);
+                missing = e.missing;
+            }
         }
     } catch (e) {
         log("Error processing frame" + "\n" +
@@ -347,6 +380,30 @@ function onScan(content) {
             "Error: " + e.toString() + "\n" +
             "Stack trace: " + getStackTrace());
     }
+
+    // Update info
+    let infoStr = "";
+    upperBound = Math.max(contentRead.length, contentReadPart.length);
+    infoStr += upperBound;
+    try {
+        let [fileName, numberOfFrames] = getContentInfo();
+        infoStr += " / " + numberOfFrames;
+        infoStr += "<br/>";
+        infoStr += fileName;
+    } catch (e) {
+        infoStr = " / ?<br/>?";
+    }
+    if (saved) {
+        infoStr += "<br/>";
+        infoStr += "Saved";
+
+    }
+    if (missing !== undefined) {
+        infoStr += "<br/>";
+        infoStr += "Missing: " + missing;
+
+    }
+    info(infoStr);
 }
 
 function init() {

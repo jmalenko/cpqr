@@ -1,0 +1,15 @@
+#preview {
+    float: left;
+    width: 48%;
+    margin-right: 2%;
+}
+
+#info {
+    font-size: 500%;
+    float: left;
+    width: 50%;
+}
+
+.clearfix {
+    clear: both;
+}
