@@ -190,12 +190,12 @@ Alphanumeric Max. 4,296 characters
 Binary/byte Max. 2,953 characters (8-bit bytes)
 */
 
-const CAPACITY_TOTAL = 300; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
-const capacityForDataInOneFrame = CAPACITY_TOTAL - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
+var CAPACITY_TOTAL = 300; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
+var capacityForDataInOneFrame = CAPACITY_TOTAL - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
 
 const VERSION = 1;
 
-const DURATION_TARGET = 500; // Duration between frames, in milliseconds.
+var DURATION_TARGET = 500; // Duration between frames, in milliseconds.
 var duration; // Effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
 var dateNextFrame; // Date of previous run of nextFrame()
 
@@ -231,6 +231,21 @@ function init() {
         correctLevel: QRCode.CorrectLevel.L
     });
 
+    // Set parameters from URL
+    let url = new URL(window.location.href);
+
+    let durationParam = url.searchParams.get("duration");
+    if (durationParam !== null) {
+        DURATION_TARGET = durationParam;
+    }
+
+    let capacityParam = url.searchParams.get("capacity");
+    if (capacityParam !== null) {
+        CAPACITY_TOTAL = capacityParam;
+        capacityForDataInOneFrame = CAPACITY_TOTAL - 5;
+    }
+
+    // Run tests
     tests();
 }
 
