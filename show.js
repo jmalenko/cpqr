@@ -245,6 +245,13 @@ function init() {
         capacityForDataInOneFrame = CAPACITY_TOTAL - 5;
     }
 
+    // Hide when run from file
+    let startParam = url.searchParams.get("start");
+    if (url.protocol === "file:" && startParam === null) {
+        const el = document.getElementsByTagName("body")[0];
+        el.style.visibility = "hidden";
+    }
+
     // Run tests
     tests();
 }
