@@ -33,11 +33,6 @@ function log(str) {
     ===================================
  */
 
-function info(str) {
-    const el = document.getElementById("info");
-    el.innerHTML = str;
-}
-
 var getStackTrace = function () {
     let obj = {};
     Error.captureStackTrace(obj, getStackTrace);
@@ -249,7 +244,7 @@ function getContent() {
     let content = "";
     let missing = [];
 
-    upperBound = Math.max(contentRead.length, contentReadPart.length);
+    const upperBound = Math.max(contentRead.length, contentReadPart.length);
 
     for (let i = 0; i < upperBound; i++) {
         if (contentRead[i] === undefined) {
@@ -356,8 +351,7 @@ function onScan(content) {
             log("File name = " + fileName);
             log("Data = " + dataURL);
 
-            const posSlash = fileName.lastIndexOf("\\");
-            const fileNameLast = fileName.substr(posSlash + 1);
+            const fileNameLast = getFileNameLast(fileName);
 
             const posComma = dataURL.indexOf(",");
             const b64 = dataURL.substr(posComma + 1);
@@ -381,29 +375,42 @@ function onScan(content) {
             "Stack trace: " + getStackTrace());
     }
 
+    updateInfo(missing);
+}
+
+function getFileNameLast(fileName) {
+    const posSlash = fileName.lastIndexOf("\\");
+    return fileName.substr(posSlash + 1);
+
+}
+
+function updateInfo(missing) {
     // Update info
     let infoStr = "";
-    upperBound = Math.max(contentRead.length, contentReadPart.length);
+    const upperBound = Math.max(contentRead.length, contentReadPart.length);
     infoStr += upperBound;
     try {
         let [fileName, numberOfFrames] = getContentInfo();
-        infoStr += " / " + numberOfFrames;
-        infoStr += "<br/>";
-        infoStr += fileName;
-    } catch (e) {
-        infoStr = " / ?<br/>?";
-    }
-    if (saved) {
-        infoStr += "<br/>";
-        infoStr += "Saved";
+        const fileNameLast = getFileNamelast(fileName);
 
+        let infoStr2 = " / " + numberOfFrames;
+        if (saved) {
+            infoStr2 += " Saved";
+        }
+        infoStr2 += "<br/>";
+        infoStr2 += fileNameLast;
+
+        infoStr += infoStr2;
+    } catch (e) {
+        infoStr += " / ?<br/>?";
     }
     if (missing !== undefined) {
         infoStr += "<br/>";
         infoStr += "Missing: " + missing;
-
     }
-    info(infoStr);
+
+    const el = document.getElementById("info");
+    el.innerHTML = infoStr;
 }
 
 function init() {
