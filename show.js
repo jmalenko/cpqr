@@ -250,7 +250,7 @@ function getContent() {
 }
 
 function getNumberOfFrames() {
-    return Math.ceil(getContent().length / capacityForDataInOneFrame);
+    return Math.ceil(getContent().length / capacityForDataInOneFrame); // Keep this consistent with calcultation in scan.js
 }
 
 function getFrameContent(index, part) {

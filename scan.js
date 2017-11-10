@@ -305,8 +305,8 @@ function getContentInfo() {
 
     // End of copy of decodeContent()
 
-    const capacityForDataInOneFrame = contentRead[0].length - 3; // We know that the first frame has frame number: 1 1 0
-    const numberOfFrames = Math.ceil(length / capacityForDataInOneFrame);
+    const capacityForDataInOneFrame = contentRead[0].length;
+    const numberOfFrames = Math.ceil(from / capacityForDataInOneFrame); // Keep this consistent with calcultation in show.js
 
     return [fileName, numberOfFrames];
 }
