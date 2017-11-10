@@ -391,7 +391,7 @@ function updateInfo(missing) {
     infoStr += upperBound;
     try {
         let [fileName, numberOfFrames] = getContentInfo();
-        const fileNameLast = getFileNamelast(fileName);
+        const fileNameLast = getFileNameLast(fileName);
 
         let infoStr2 = " / " + numberOfFrames;
         if (saved) {
