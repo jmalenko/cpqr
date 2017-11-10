@@ -206,6 +206,13 @@ var frame; // From 0. The frames from 0 to frame-1 have been shown.
 var missingFrames; // Contains the frames to show as soon as possible. The frames with index frame.. will be shown afterwards.
 var missingFramePart; // Part number to be shown
 
+var round; // In each round, whole content is sent.
+/*
+ Round 1: standard, frame by frame
+ Round 2: each block of 10 frames is sent in reverse order, e.g. 10-1, 20-11, ...
+ Round 3: instead of sending a frame, two parts representing the frame are sent
+ */
+
 const STATE_NOT_STARTED = 1;
 const STATE_PLAYING = 2;
 const STATE_FINISHED = 3;
@@ -344,6 +351,7 @@ function onPlay() {
     el.style.visibility = "visible";
 
     // Initialize
+    round = 1;
     frame = -1;
     missingFrames = [];
     missingFramePart = 0;
@@ -398,14 +406,65 @@ function nextFrame() {
 
         missingFramePart = 1 - missingFramePart;
     } else {
-        frame++;
+        switch (round) {
+            case 1:
+                if (frame + 1 == getNumberOfFrames()) {
+                    round++;
+                    frame = -1;
+                    log("=== Round " + round + " ===");
+                } else {
+                    frame++;
+                    onShowFrame(frame);
+                    break;
+                }
 
-        if (frame >= getNumberOfFrames()) {
-            onEnd();
-            return;
+            case 2:
+                if (frame + 1 == getNumberOfFrames()) {
+                    round++;
+                    frame = -1;
+                    missingFramePart = 0;
+                    log("=== Round " + round + " ===");
+                } else {
+                    frame++;
+
+                    // Convert frame -> frame2
+                    //         0        9
+                    //         1        8
+                    //         ...
+                    //         9        0
+
+                    const dec = ~~(frame / 10); // result is integer
+                    const digit = frame % 10;
+                    const D = frame < Math.floor(getNumberOfFrames() / 10) * 10 ? 10 : getNumberOfFrames() - Math.floor(getNumberOfFrames() / 10) * 10;
+                    let frame2 = 10 * dec + (D - digit) - 1;
+
+                    onShowFrame(frame2);
+
+                    break;
+                }
+
+            case 3:
+                if (frame + 1 == getNumberOfFrames() && missingFramePart == 0) {
+                    round++;
+                    frame = -1;
+                    log("=== Round " + round + " ===");
+                } else {
+                    if (missingFramePart == 0)
+                        frame++;
+
+                    onShowFrame(frame, missingFramePart);
+                    missingFramePart = 1 - missingFramePart;
+
+                    break;
+                }
+
+            case 4:
+                onEnd();
+                return;
+
+            default:
+                throw Error("Unsupported round " + round);
         }
-
-        onShowFrame(frame);
     }
 
     setTimeout(nextFrame, duration);
