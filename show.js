@@ -501,10 +501,10 @@ Example of value: 2,3.4 5 7-10 15-12 -1 a
                                Ignored
  */
 function onMissingFramesChange(event) {
-    if (event.keyCode === 13) {
-        const el = document.getElementById("missing");
+    const el = document.getElementById("missing");
+    const missingStr = el.value;
 
-        const missingStr = el.value;
+    if (event.keyCode === 13) { // Enter
         const missingFramesNew1 = missingStr.split(/[,\. ]+/);
 
         // Replace ranges: "10-13" -> 10,11,12,13
@@ -546,13 +546,18 @@ function onMissingFramesChange(event) {
             return item < getNumberOfFrames();
         });
 
-        if (0 < missingFrames.length && state !== STATE_PLAYING)
+        if (0 < missingFrames.length && state !== STATE_PLAYING) {
             if (state === STATE_FINISHED) {
                 // Show the QR code
                 const el = document.getElementById("qrcode");
                 el.style.visibility = "visible";
             }
 
-        nextFrame();
+            nextFrame();
+        }
+    } else if (event.keyCode === 47) { // Slash
+        missingStrNew = missingStr.replace(/^[0-9-]*[,\. ]?/, "");
+        el.value = missingStrNew;
+        event.returnValue = false; // block key
     }
 }
