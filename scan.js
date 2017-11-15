@@ -439,7 +439,6 @@ function onScan(content) {
 function getFileNameLast(fileName) {
     const posSlash = fileName.lastIndexOf("\\");
     return fileName.substr(posSlash + 1);
-
 }
 
 function updateInfo(missing) {
