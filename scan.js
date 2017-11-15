@@ -505,7 +505,7 @@ function init() {
 
     tests();
 
-    scanSimulated();
+    // scanSimulated();
 
     // Hack: flip video vertically
     const video = document.getElementById("preview");
