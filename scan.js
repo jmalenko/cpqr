@@ -463,7 +463,7 @@ function updateInfo(missing) {
     }
     if (missing !== undefined) {
         infoStr += "<br/>";
-        infoStr += "Missing: " + missing;
+        infoStr += missing.length + " missing: " + missing;
     }
 
     const el = document.getElementById("info");
