@@ -318,8 +318,7 @@ function getContent() {
     return content;
 }
 
-function decodeContent() {
-    const content = getContent();
+function decodeContentWithoutChecks(content) {
     let length, from = 0;
     let versionStr, hash, fileName, data;
 
@@ -333,6 +332,13 @@ function decodeContent() {
     [length, fileName, from] = decodeWithLength(content, from);
 
     [length, data, from] = decodeWithLength(content, from);
+
+    return [version, hash, fileName, data, length, from];
+}
+
+function decodeContent() {
+    const content = getContent();
+    let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
     if (length !== data.length)
         throw new Exception("Not all data");
@@ -347,25 +353,8 @@ function decodeContent() {
 
 function getContentInfo() {
     // TODO Assumption: data start in the first (with counted from 0) frame
-
     const content = contentRead[0] || getFrameFromParts(0);
-
-    // Copy of decodeContent()
-    let length, from = 0;
-    let versionStr, hash, fileName, data;
-
-    [length, versionStr, from] = decodeWithLength(content, from);
-    let version = Number(versionStr);
-    if (version !== 1)
-        throw new Exception("Unsupported version " + version);
-
-    [length, hash, from] = decodeWithLength(content, from);
-
-    [length, fileName, from] = decodeWithLength(content, from);
-
-    [length, data, from] = decodeWithLength(content, from);
-
-    // End of copy of decodeContent()
+    let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
     const capacityForDataInOneFrame = content.length;
     const numberOfFrames = Math.ceil(from / capacityForDataInOneFrame); // Keep this consistent with calcultation in show.js
