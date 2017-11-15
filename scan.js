@@ -106,7 +106,13 @@ const testFrames = [
         '1101112104065018274217C:\\fakepath\\a.txt279data:t',
         '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0_',
         '112xJvFocSNxZnFvsO9w6HDrcOpDQo=',
-        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K']
+        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K'],
+
+    [ // Send 3 frames, frame 0 is sent in parts
+        '130.01112104065018274217C:\\f',
+        '130.1akepath\\a.txt279data:t',
+        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K',
+        '112xJvFocSNxZnFvsO9w6HDrcOpDQo=']
 ];
 
 let fileSimulated = 0;
@@ -342,8 +348,9 @@ function decodeContent() {
 function getContentInfo() {
     // TODO Assumption: data start in the first (with counted from 0) frame
 
-    // Copy of decodeContent() that uses only the first frame
-    const content = contentRead[0];
+    const content = contentRead[0] || getFrameFromParts(0);
+
+    // Copy of decodeContent()
     let length, from = 0;
     let versionStr, hash, fileName, data;
 
@@ -360,7 +367,7 @@ function getContentInfo() {
 
     // End of copy of decodeContent()
 
-    const capacityForDataInOneFrame = contentRead[0].length;
+    const capacityForDataInOneFrame = content.length;
     const numberOfFrames = Math.ceil(from / capacityForDataInOneFrame); // Keep this consistent with calcultation in show.js
 
     return [hash, fileName, numberOfFrames];
@@ -394,9 +401,13 @@ function onScan(content) {
         }
 
         if (frame === 0) {
-            let [hash, fileName, numberOfFrames] = getContentInfo();
-            log("File name = " + fileName);
-            log("Frames = " + numberOfFrames);
+            try {
+                let [hash, fileName, numberOfFrames] = getContentInfo();
+                log("File name = " + fileName);
+                log("Frames = " + numberOfFrames);
+            } catch (e) {
+                log("Cannot get info from frame 0");
+            }
         }
 
         // If all frames then save
@@ -506,7 +517,7 @@ function init() {
 
     tests();
 
-    // scanSimulated();
+    scanSimulated();
 
     // Hack: flip video vertically
     const video = document.getElementById("preview");
