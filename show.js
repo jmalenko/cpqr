@@ -455,7 +455,7 @@ function nextFrame() {
                     //         ...
                     //         9        0
 
-                    const dec = ~~(frame / 10); // result is integer
+                    const dec = ~~(frame / 10); // modulo, result is integer
                     const digit = frame % 10;
                     const D = frame < Math.floor(getNumberOfFrames() / 10) * 10 ? 10 : getNumberOfFrames() - Math.floor(getNumberOfFrames() / 10) * 10;
                     let frame2 = 10 * dec + (D - digit) - 1;
