@@ -132,8 +132,23 @@ function tests() {
     assertEqual("encodeWithLength 10", encodeWithLength(stringOfLength(10)), "2100.........");
     assertEqual("encodeWithLength 11", encodeWithLength(stringOfLength(11)), "2110.........1");
 
+    assertEqual("part2string 0 1", part2string(0, 1), "0");
+    assertEqual("part2string 1 1", part2string(1, 1), "1");
 
-    // assertEqual("Number of frames 0", getNumberOfFrames(stringOfLength(0)), 1);
+    assertEqual("part2string 0 2", part2string(0, 2), "00");
+    assertEqual("part2string 1 2", part2string(1, 2), "01");
+    assertEqual("part2string 2 2", part2string(2, 2), "10");
+    assertEqual("part2string 3 2", part2string(3, 2), "11");
+
+    assertEqual("getPart 0", getPart("012345678", "0"), "0123");
+    assertEqual("getPart 1", getPart("012345678", "1"), "45678");
+
+    assertEqual("getPart 00", getPart("012345678", "00"), "01");
+    assertEqual("getPart 01", getPart("012345678", "01"), "23");
+    assertEqual("getPart 10", getPart("012345678", "10"), "45");
+    assertEqual("getPart 11", getPart("012345678", "11"), "678");
+
+    // assertEqual("Number of frames 0", getNumberOfFrames(stringOfLength(0)), 1); // Note: depends on CAPACITY_TOTAL
     // assertEqual("Number of frames 1", getNumberOfFrames(stringOfLength(1)), 1);
     //
     // assertEqual("Number of frames 170", getNumberOfFrames(stringOfLength(170)), 1);
@@ -190,7 +205,7 @@ Alphanumeric Max. 4,296 characters
 Binary/byte Max. 2,953 characters (8-bit bytes)
 */
 
-var CAPACITY_TOTAL = 300; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
+var CAPACITY_TOTAL = 50; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
 var capacityForDataInOneFrame = CAPACITY_TOTAL - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
 
 const VERSION = 1;
@@ -203,14 +218,14 @@ var fileName;
 var data;
 
 var frame; // From 0. The frames from 0 to frame-1 have been shown.
+var part; // From 0 to round^2-1.
 var missingFrames; // Contains the frames to show as soon as possible. The frames with index frame.. will be shown afterwards.
 var missingFramePart; // Part number to be shown
 
 var round; // In each round, whole content is sent.
 /*
  Round 1: standard, frame by frame
- Round 2: each block of 10 frames is sent in reverse order, e.g. 10-1, 20-11, ...
- Round 3: instead of sending a frame, two parts representing the frame are sent
+ Round 2-6: instead of sending a frame, parts representing the frame are sent, te round determines the level
  */
 
 const STATE_NOT_STARTED = 1;
@@ -335,14 +350,26 @@ function getFrameContent(index, part) {
 }
 
 function getPart(str, part) {
-    // TODO Support part longer than one digit
-
-    const posHalf = str.length / 2;
-    if (part === 0) {
-        return str.substr(0, posHalf);
-    } else {
-        return str.substr(posHalf);
+    while (0 < part.length) {
+        const posHalf = str.length / 2;
+        const char = part[0];
+        if (char === "0") {
+            str = str.substr(0, posHalf);
+        } else {
+            str = str.substr(posHalf);
+        }
+        part = part.substr(1)
     }
+    return str;
+}
+
+function part2string(part, length) {
+    let partStr = "";
+    for (let i = 0; i < length; i++) {
+        partStr = (part % 2) + partStr;
+        part >>= 1;
+    }
+    return partStr;
 }
 
 function show(fileName_, data_) {
@@ -373,7 +400,7 @@ function onPlay() {
     el.style.visibility = "visible";
 
     // Initialize
-    round = 1;
+    round = 0;
     frame = -1;
     missingFrames = [];
     missingFramePart = 0;
@@ -418,7 +445,7 @@ function nextFrame() {
     dateNextFrame = dateNextFameCurrent;
     if (!isNaN(delta)) duration -= delta / 10;
 
-    if (0 < missingFrames.length) {
+    if (0 < missingFrames.length) { // Show missing if there are any
         const f = missingFrames[0];
         if (missingFramePart == 1) {
             missingFrames.shift();
@@ -427,66 +454,47 @@ function nextFrame() {
         onShowFrame(f, missingFramePart);
 
         missingFramePart = 1 - missingFramePart;
-    } else {
-        switch (round) {
-            case 1:
-                if (frame + 1 == getNumberOfFrames()) {
-                    round++;
-                    frame = -1;
-                    log("=== Round " + round + " ===");
-                } else {
-                    frame++;
-                    onShowFrame(frame);
-                    break;
-                }
+    } else { // Show next frame & part
+        let partMax = 2 ** round;
 
-            case 2:
-                if (frame + 1 == getNumberOfFrames()) {
-                    round++;
-                    frame = -1;
-                    missingFramePart = 0;
-                    log("=== Round " + round + " ===");
-                } else {
-                    frame++;
-
-                    // Convert frame -> frame2
-                    //         0        9
-                    //         1        8
-                    //         ...
-                    //         9        0
-
-                    const dec = ~~(frame / 10); // modulo, result is integer
-                    const digit = frame % 10;
-                    const D = frame < Math.floor(getNumberOfFrames() / 10) * 10 ? 10 : getNumberOfFrames() - Math.floor(getNumberOfFrames() / 10) * 10;
-                    let frame2 = 10 * dec + (D - digit) - 1;
-
-                    onShowFrame(frame2);
-
-                    break;
-                }
-
-            case 3:
-                if (frame + 1 == getNumberOfFrames() && missingFramePart == 0) {
-                    round++;
-                    frame = -1;
-                    log("=== Round " + round + " ===");
-                } else {
-                    if (missingFramePart == 0)
-                        frame++;
-
-                    onShowFrame(frame, missingFramePart);
-                    missingFramePart = 1 - missingFramePart;
-
-                    break;
-                }
-
-            case 4:
-                onEnd();
-                return;
-
-            default:
-                throw Error("Unsupported round " + round);
+        if ((round === 0 && frame + 1 === getNumberOfFrames()) ||
+            (round > 0 && frame + 1 === getNumberOfFrames() && part + 1 === partMax)) {
+            round++;
+            log("=== Round " + round + " ===");
+            frame = -1;
+            partMax = 2 ** round;
+            part = partMax - 1;
         }
+
+        if (round === 0) {
+            frame++;
+            onShowFrame(frame);
+        } else if (round === 6) {
+            onEnd();
+        } else {
+            if (part + 1 === partMax) {
+                frame++;
+                part = 0;
+            } else {
+                part++;
+            }
+
+            let partStr = part2string(part, round);
+
+            onShowFrame(frame, partStr);
+        }
+
+        //  Each block of 10 frames is sent in reverse order, e.g. 10-1, 20-11, ...
+        // Convert frame -> frame2
+        //         0        9
+        //         1        8
+        //         ...
+        //         9        0
+        // const dec = ~~(frame / 10); // modulo, result is integer
+        // const digit = frame % 10;
+        // const D = frame < Math.floor(getNumberOfFrames() / 10) * 10 ? 10 : getNumberOfFrames() - Math.floor(getNumberOfFrames() / 10) * 10;
+        // let frame2 = 10 * dec + (D - digit) - 1;
+        // onShowFrame(frame2);
     }
 
     setTimeout(nextFrame, duration);

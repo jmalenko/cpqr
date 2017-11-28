@@ -112,7 +112,55 @@ const testFrames = [
         '130.01112104065018274217C:\\f',
         '130.1akepath\\a.txt279data:t',
         '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K',
-        '112xJvFocSNxZnFvsO9w6HDrcOpDQo=']
+        '112xJvFocSNxZnFvsO9w6HDrcOpDQo='],
+
+    [ // Send 3 frames, only parts of length 1
+        '130.01112104065018274217C:\\',
+        '130.1fakepath\\a.txt279data:t',
+        '131.0ext/plain;base64,SmVkb',
+        '131.1mEsDQpEdsSbLg0KVMWZaQ0K',
+        '132.0xJvFocSNxZnFvs',
+        '132.1O9w6HDrcOpDQo='],
+
+    [ // Send 3 frames, only parts of length 2
+        '140.0011121040650',
+        '140.0118274217C:\\',
+        '140.10fakepath\\a.',
+        '140.11txt279data:t',
+        '141.00ext/plain;b',
+        '141.01ase64,SmVkb',
+        '141.10mEsDQpEdsSb',
+        '141.11Lg0KVMWZaQ0K',
+        '142.00xJvFocS',
+        '142.01NxZnFvs',
+        '142.10O9w6HDr',
+        '142.11cOpDQo='],
+
+    [ // Send 3 frames, only parts of length 3
+        '150.00011121',
+        '150.001040650',
+        '150.01018274',
+        '150.011217C:\\',
+        '150.100fakep',
+        '150.101ath\\a.',
+        '150.110txt279',
+        '150.111data:t',
+        '151.000ext/p',
+        '151.001lain;b',
+        '151.010ase64',
+        '151.011,SmVkb',
+        '151.100mEsDQ',
+        '151.101pEdsSb',
+        '151.110Lg0KVM',
+        '151.111WZaQ0K',
+        '152.000xJv',
+        '152.001FocS',
+        '152.010NxZ',
+        '152.011nFvs',
+        '152.100O9w',
+        '152.1016HDr',
+        '152.110cOp',
+        '152.111DQo=']
 ];
 
 let fileSimulated = 0;
@@ -274,13 +322,13 @@ function decodeFrameContent(content) {
 }
 
 function getFrameFromParts(frame, prefix) {
-    if (prefix === undefined) prefix = 0;
-    if (1e5 < prefix) throw new Error("Cannot construct frame " + frame + " from parts");
+    if (prefix === undefined) prefix = "";
+    if (5 < prefix.length) throw new Error("Cannot construct frame " + frame + " from parts");
 
     let res = "";
 
     for (let i = 0; i <= 1; i++) {
-        const part = 10 * prefix + i;
+        const part = prefix + i;
         // If part not received
         if (contentReadPart[frame][part] === undefined) {
             // Construct the part from subparts
@@ -382,7 +430,7 @@ function onScan(content) {
             contentRead[frame] = contentFrame;
         } else {
             frame = Number(frameStr.substr(0, posDot));
-            const part = Number(frameStr.substr(posDot + 1));
+            const part = frameStr.substr(posDot + 1);
 
             if (contentReadPart[frame] === undefined)
                 contentReadPart[frame] = [];
