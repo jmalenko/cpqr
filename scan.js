@@ -175,7 +175,7 @@ function scanSimulated() {
 
     onScan(testFrames[fileSimulated][frameSimulated]);
 
-    if (frameSimulated + 1 == testFrames[fileSimulated].length) {
+    if (frameSimulated + 1 === testFrames[fileSimulated].length) {
         // Move to next file
         fileSimulated++;
         frameSimulated = 0;
@@ -500,7 +500,7 @@ function updateInfo(missing) {
 
         let percent = Math.round(upperBound / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
         let infoStr2 = " / " + numberOfFrames + " ... " + percent + "%";
-        if (hash == hashSaved) {
+        if (hash === hashSaved) {
             infoStr2 += " Saved";
         }
         infoStr2 += "<br/>";

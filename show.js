@@ -447,7 +447,7 @@ function nextFrame() {
 
     if (0 < missingFrames.length) { // Show missing if there are any
         const f = missingFrames[0];
-        if (missingFramePart == 1) {
+        if (missingFramePart === 1) {
             missingFrames.shift();
         }
 
