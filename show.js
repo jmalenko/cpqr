@@ -60,6 +60,12 @@ function hashFnv32a(str, asString, seed) {
     =====
  */
 
+function showSimulated() {
+    const fileName = "C:\\fakepath\\a.txt";
+    const data = "data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=";
+    show(fileName, data);
+}
+
 function assertEqual(testName, a, b) {
     if (typeof a !== typeof b) {
         log("Test " + testName + " error: Have different types: got " + typeof a + " but expected " + typeof b);
@@ -269,6 +275,8 @@ function init() {
 
     // Run tests
     tests();
+
+    // showSimulated();
 }
 
 function openFile(event) {
