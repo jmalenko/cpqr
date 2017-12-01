@@ -535,6 +535,7 @@ function init() {
                 let url = new URL(window.location.href);
                 let c = url.searchParams.get("c");
                 if (c !== null) {
+                    log("Using camera " + c);
                     camera = cameras[c];
                 } else {
                     if (cameras.length > 1)
