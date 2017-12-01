@@ -498,7 +498,8 @@ function updateInfo(missing) {
         let [hash, fileName, numberOfFrames] = getContentInfo();
         const fileNameLast = getFileNameLast(fileName);
 
-        let infoStr2 = " / " + numberOfFrames;
+        let percent = Math.round(upperBound / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
+        let infoStr2 = " / " + numberOfFrames + " ... " + percent + "%";
         if (hash == hashSaved) {
             infoStr2 += " Saved";
         }
@@ -507,7 +508,7 @@ function updateInfo(missing) {
 
         infoStr += infoStr2;
     } catch (e) {
-        infoStr += " / ?<br/>?";
+        infoStr += " / ? ... ?%<br/>?";
     }
     if (missing !== undefined) {
         infoStr += "<br/>";
@@ -553,7 +554,7 @@ function init() {
 
     tests();
 
-    // scanSimulated();
+    scanSimulated();
 
     // Hack: flip video vertically
     const video = document.getElementById("preview");
