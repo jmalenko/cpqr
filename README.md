@@ -2,9 +2,17 @@
 
 cpqr transfers files between two computers.
 
-This is a proof o concept of a transfer of data between two [air gaped](https://en.wikipedia.org/wiki/Air_gap_(networking)) computers. Typically, the source computer
+This is a proof o concept of a transfer of data between two [air gapped](https://en.wikipedia.org/wiki/Air_gap_(networking)) computers. Typically, the source computer
 
 ## How it works
+
+0. You have to clone the repository and put it on the source and target computers.
+
+   `git clone https://github.com/jmalenko/cpqr.git` 
+
+   Alternative 1: You can download the repository as [ZIP](https://github.com/jmalenko/cpqr/archive/master.zip) archive. Unzip is usually available on computers without git.
+   
+   Alternative 2: I'm aware the best beginning would be to anchor the links directly to the Git Hub URL. However, that was not possible (and I was unable to make it work with [http://htmlpreview.github.io/](http://htmlpreview.github.io/))   
 
 1. On the target computer, scan the sequence of QR codes and write the decoded content to a file.
  
