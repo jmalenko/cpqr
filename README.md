@@ -8,11 +8,11 @@ This is a proof o concept of a transfer of data between two [air gapped](https:/
 
 1. Setup the target device, which will use the camera to scan the sequence of QR codes.
  
-   Use [scan.html](scan.html) on a smart phone with camera. Point the camera at the screen of source computer and wait. Once the file is transfered, it will be saved.
+   Use [scan.html](https://jmalenko.github.io/cpqr/scan.html) on a smart phone with camera. Point the camera at the screen of source computer and wait. Once the file is transfered, it will be saved.
 
 2. On the source computer, which initially contains a file, show the sequence of QR codes that encode the file content.
 
-   Use [show.html](show.html), open a file to be transferred.
+   Use [show.html](https://jmalenko.github.io/cpqr/show.html), open a file to be transferred.
 
 
 ## How it works (old version)
