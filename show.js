@@ -94,12 +94,26 @@ function assertEqual(testName, a, b) {
  */
 function stringOfLength(length) {
     let str = "";
-    for (let i = 0; i <= length; i += 10) {
+    for (let i = 0; i < length; i += 10) {
         str += i.toString();
         const lengthN = getNumberLength(i);
         str += new Array(10 - lengthN + 1).join('.');
     }
     return str.substr(0, length);
+}
+
+/**
+ * Produces a random string of length.
+ * @param Length of the returned string.
+ * @returns String
+ */
+function randomStringOfLength(length) {
+    let str = "";
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for (let i = 0; i < length; i++)
+        str += possible.charAt(Math.floor(Math.random() * possible.length));
+    return str;
 }
 
 function tests() {
@@ -112,6 +126,16 @@ function tests() {
     assertEqual("String 11", stringOfLength(11), "0.........1");
     assertEqual("String 12", stringOfLength(12), "0.........10");
     assertEqual("String 13", stringOfLength(13), "0.........10.");
+
+    assertEqual("Random string 0", randomStringOfLength(0).length, 0);
+    assertEqual("Random string 1", randomStringOfLength(1).length, 1);
+    assertEqual("Random string 2", randomStringOfLength(2).length, 2);
+    assertEqual("Random string 9", randomStringOfLength(9).length, 9);
+
+    assertEqual("Random string 10", randomStringOfLength(10).length, 10);
+    assertEqual("Random string 11", randomStringOfLength(11).length, 11);
+    assertEqual("Random string 12", randomStringOfLength(12).length, 12);
+    assertEqual("Random string 13", randomStringOfLength(13).length, 13);
 
     for (let i = 0; i < 11000; i += 47) {
         assertEqual("stringOfLength " + i, stringOfLength(i).length, i);
@@ -167,10 +191,86 @@ function tests() {
 }
 
 /*
+    Measure
+    =======
+ */
+
+const MEASURE_DURATION_MIN = 30;
+const MEASURE_DURATION_MAX = 210;
+const MEASURE_DURATION_STEP = Math.round((MEASURE_DURATION_MAX - MEASURE_DURATION_MIN) / 6);
+
+const MEASURE_CAPACITY_MIN = 200;
+const MEASURE_CAPACITY_MAX = 320;
+const MEASURE_CAPACITY_STEP = Math.round((MEASURE_CAPACITY_MAX - MEASURE_CAPACITY_MIN) / 6);
+
+const MEASURE_FRAME_MAX = 10;
+
+var durationMeasure;
+var capacityMeasure;
+var frameMeasure;
+
+function showMeasure() {
+    durationMeasure = MEASURE_DURATION_MIN;
+    capacityMeasure = MEASURE_CAPACITY_MIN;
+    frameMeasure = 0;
+
+    duration = durationMeasure;
+
+    nextFrameMeasure();
+}
+
+function nextFrameMeasure() {
+    // Adjust duration
+    const dateNextFameCurrent = new Date();
+    const durationLast = dateNextFameCurrent - dateNextFrame;
+    const delta = durationLast - durationMeasure;
+    dateNextFrame = dateNextFameCurrent;
+    if (!isNaN(delta)) duration -= delta / 10;
+
+    // Show frame
+    const head = "Duration " + durationMeasure + ", capacity " + capacityMeasure + ", frame " + frameMeasure + " of " + MEASURE_FRAME_MAX;
+    log(head);
+
+    const head2 = head + ", padding ";
+    const padding = randomStringOfLength(capacityMeasure - head2.length);
+    const str = head2 + padding;
+    qrcode.makeCode(str);
+
+    // Shift parameters
+    frameMeasure++;
+    if (MEASURE_FRAME_MAX <= frameMeasure) {
+        capacityMeasure += MEASURE_CAPACITY_STEP;
+        frameMeasure = 0;
+    }
+    if (MEASURE_CAPACITY_MAX < capacityMeasure) {
+        durationMeasure += MEASURE_DURATION_STEP;
+        duration += MEASURE_DURATION_STEP;
+        dateNextFrame += MEASURE_DURATION_STEP;
+        capacityMeasure = MEASURE_CAPACITY_MIN;
+    }
+    if (MEASURE_DURATION_MAX < durationMeasure) {
+        durationMeasure = MEASURE_DURATION_MIN;
+        dateNextFrame = undefined;
+
+        // TODO Hide the QR code - the following should work (and the hiding/showing of element should be removed)
+        // qrcode.clear();
+        // Hide the QR code
+        const el = document.getElementById("qrcode");
+        el.style.visibility = "hidden";
+
+        log("Measuring finished");
+        return; // Measuring finished
+    }
+
+    // Schedule next
+    setTimeout(nextFrameMeasure, duration);
+}
+
+/*
 Format of Content
 =================
 
-     Field		    Example field								                        Example with Variable-length quantity
+     Field		    Example value								                        Example value with Variable-length quantity
   ------------------------------------------------------------------------------------------------------------------------------------------------------------
   1. Version		1									                                1  1 1
   2. Hash           4065018274                                                          2 10 4065018274
@@ -182,7 +282,7 @@ Field "2. Hash" contains the 32 bit FNV-1a hash of the concatenation of the rema
 Format of one frame
 ===================
 
-     Field		    Example field       Example with Variable-length quantity
+     Field		    Example value       Example value with Variable-length quantity
   -----------------------------------------------------------------------------------------------------------------------------------
   1. Frame number	1					1 1 1
   2. Content	    Text	            1 4 Text
@@ -275,6 +375,11 @@ function init() {
 
     // Run tests
     tests();
+
+    let measureParam = url.searchParams.get("measure");
+    if (measureParam !== null) {
+        showMeasure();
+    }
 
     // showSimulated();
 }
@@ -447,6 +552,7 @@ function onEnd() {
 }
 
 function nextFrame() {
+    // Adjust duration
     const dateNextFameCurrent = new Date();
     const durationLast = dateNextFameCurrent - dateNextFrame;
     const delta = durationLast - DURATION_TARGET;
@@ -454,12 +560,13 @@ function nextFrame() {
     if (!isNaN(delta)) duration -= delta / 10;
 
     if (0 < missingFrames.length) { // Show missing if there are any
+        // TODO Show missing in rounds
         const f = missingFrames[0];
         if (missingFramePart === 1) {
             missingFrames.shift();
         }
 
-        onShowFrame(f, missingFramePart);
+        onShowFrame(f, missingFramePart.toString());
 
         missingFramePart = 1 - missingFramePart;
     } else { // Show next frame & part
@@ -492,7 +599,7 @@ function nextFrame() {
             onShowFrame(frame, partStr);
         }
 
-        //  Each block of 10 frames is sent in reverse order, e.g. 10-1, 20-11, ...
+        // Each block of 10 frames is sent in reverse order, e.g. 10-1, 20-11, ...
         // Convert frame -> frame2
         //         0        9
         //         1        8
