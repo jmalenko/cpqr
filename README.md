@@ -2,7 +2,7 @@
 
 cpqr transfers files between two computers.
 
-This is a proof o concept of a transfer of data between two [air gapped](https://en.wikipedia.org/wiki/Air_gap_(networking)) computers. Typically, the source computer is a computer with secret information that is displayed on the display as a sequence of QR codes and the target computer is a mobile device that records the qr codes, decodes them and saves the file once itc complete.
+This is a proof o concept of a method to transfer of data between two [air gapped](https://en.wikipedia.org/wiki/Air_gap_(networking)) computers. Typically, the source computer is a computer with a file that is displayed on the display as a sequence of QR codes and the target computer is a mobile device that records the sequence of QR codes, decodes it and saves the file once its complete.
 
 ## Try it
 
