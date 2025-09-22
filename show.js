@@ -270,22 +270,22 @@ function nextFrameMeasure() {
 Format of Content
 =================
 
-     Field		    Example value								                        Example value with Variable-length quantity
-  ------------------------------------------------------------------------------------------------------------------------------------------------------------
-  1. Version		1									                                1  1 1
-  2. Hash           4065018274                                                          2 10 4065018274
-  3. File name		in.txt									                            1  6 in.txt
-  4. Data		    data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh		2 63 data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
+     Field		    Example value                                                      Example value with Variable-length quantity
+  --------------------------------------------------------------------------------------------------------------------------------------------------------
+  1. Version      1                                                                  1 1 1
+  2. Hash         4065018274                                                         2 10 4065018274
+  3. File name    in.txt                                                             1 6 in.txt
+  4. Data         data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh    2 63 data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
 
 Field "2. Hash" contains the 32 bit FNV-1a hash of the concatenation of the remaining fields.
 
 Format of one frame
 ===================
 
-     Field		    Example value       Example value with Variable-length quantity
+     Field		       Example value    Example value with Variable-length quantity
   -----------------------------------------------------------------------------------------------------------------------------------
-  1. Frame number	1					1 1 1
-  2. Content	    Text	            1 4 Text
+  1. Frame number	   1                1 1 1
+  2. Content         Text             1 4 Text
 
 
 Variable-length quantity
