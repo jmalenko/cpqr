@@ -8,6 +8,7 @@ The following image summarizes the data flow starting with 1. a file existing on
 
 ![Architecture diagram](https://github.com/jmalenko/cpqr/raw/master/architecture.png "Architecture diagram")
 
+
 ## Try it
 
 1. Setup the target device, which will use the camera to scan the sequence of QR codes.
@@ -17,6 +18,7 @@ The following image summarizes the data flow starting with 1. a file existing on
 2. On the source computer, which initially contains a file, show the sequence of QR codes that encode the file content.
 
    Use [show.html](https://jmalenko.github.io/cpqr/show.html), open a file to be transferred.
+
 
 ## Further development
 
@@ -33,7 +35,6 @@ The following image summarizes the data flow starting with 1. a file existing on
 5. On target, estimate the transfer duration.
 
 
-
 ## Licence
 
 This software is distributed under the BSD license.
@@ -41,8 +42,7 @@ This software is distributed under the BSD license.
 
 ## Used Libraries
 
-- QRCode.js
-	https://github.com/davidshimjs/qrcodejs/
+- [QRCode.js](https://github.com/davidshimjs/qrcodejs) for generating the QR code.
 
 - [jsQR](https://github.com/cozmo/jsQR) for reading the QR code.
 	
