@@ -694,42 +694,13 @@ function updateInfo(missing) {
     el.innerHTML = infoStr;
 }
 
+// TODO Choose camera, selector
+// TODO Fix layout
+// TODO Show speed of scanning [fps]
+
 function init() {
-    let scanner = new Instascan.Scanner({video: document.getElementById('preview')});
-
-    scanner.addListener('scan', onScan);
-    Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                log("Found " + cameras.length + " cameras.");
-                for (let i = 0; i < cameras.length; i++) {
-                    log("Camera " + i + ": " + cameras[i].name);
-                }
-
-                let camera;
-
-                let url = new URL(window.location.href);
-                let c = url.searchParams.get("c");
-                if (c !== null) {
-                    log("Using camera " + c);
-                    camera = cameras[c];
-                } else {
-                    if (cameras.length > 1)
-                        log("Using the last camera. You can override this by adding parameter c to URL, example: ?c=0");
-
-                    camera = cameras[cameras.length - 1];
-                }
-                scanner.start(camera);
-            }
-            else {
-                log('No cameras found.');
-            }
-        }
-    ).catch(function (e) {
-        log(e);
-    });
-
-    // Hack: flip video vertically
-    const video = document.getElementById("preview");
+    // TODO Fix: flip video vertically
+    const video = document.getElementById("video");
     video.style.cssText = "transform: scale(1, 1);";
 
     // Run tests

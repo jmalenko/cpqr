@@ -41,8 +41,8 @@ This software is distributed under the BSD license.
 
 ## Used Libraries
 
-QRCode.js
+- QRCode.js
 	https://github.com/davidshimjs/qrcodejs/
 
-Instascan
-	https://github.com/schmich/instascan
+- [jsQR](https://github.com/cozmo/jsQR) for reading the QR code.
+	
