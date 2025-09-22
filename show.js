@@ -311,7 +311,7 @@ Alphanumeric Max. 4,296 characters
 Binary/byte Max. 2,953 characters (8-bit bytes)
 */
 
-var CAPACITY_TOTAL = 50; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
+var CAPACITY_TOTAL = 1200; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
 var capacityForDataInOneFrame = CAPACITY_TOTAL - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
 
 const VERSION = 1;
@@ -343,13 +343,13 @@ var state = STATE_NOT_STARTED;
 var qrcode;
 
 function init() {
-    const scale = 4;
+    const scale = 4; // Scale to fit the browser with toolbars in FullHD
     qrcode = new QRCode("qrcode", {
-        width: scale * 177,
+        width: scale * 177, // The QR code has max 177 blocks (in one dimension)
         height: scale * 177,
         colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.L
+        correctLevel: QRCode.CorrectLevel.L // Lowest error correction
     });
 
     // Set parameters from URL
