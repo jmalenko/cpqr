@@ -745,7 +745,13 @@ function init() {
 
             canvasElement.height = video.videoHeight;
             canvasElement.width = video.videoWidth;
-            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+
+            // Flip video horizontally
+            canvas.save();
+            canvas.scale(-1, 1);
+            canvas.drawImage(video, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
+            canvas.restore();
+
             var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
             var code = jsQR(imageData.data, imageData.width, imageData.height, {
                 inversionAttempts: "dontInvert",
@@ -766,10 +772,6 @@ function init() {
         }
         requestAnimationFrame(tick);
     }
-
-    // TODO Fix: flip video vertically
-    // const video = document.getElementById("video");
-    // video.style.cssText = "transform: scale(1, 1);";
 
     // Run tests
     tests();
