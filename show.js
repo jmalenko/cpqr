@@ -567,9 +567,9 @@ function nextFrame() {
     if (isNaN(delta)) { // on the first frame, when dateNextFrame was undefined
         duration = DURATION_TARGET
     } else if (0 < delta) {
-        duration -= delta / 10;
-    } else {
         duration = 0;
+    } else {
+        duration -= delta / 10;
     }
     log("Timeout duration set to " + duration + " ms so the duration target (time between frames) is " + DURATION_TARGET + " ms");
 
@@ -719,5 +719,7 @@ function onDurationChange(event) {
         duration = DURATION_TARGET;
     }
 }
+
+// TODO Show - Duration is negative. Test.
 
 window.addEventListener('DOMContentLoaded', init);
