@@ -59,16 +59,17 @@ body {
         min-height: 100vh;
         max-height: 100vh;
     }
-    #status-section, #log-section {
-        flex: 1 1 0;
+    #status-section {
+        flex: 0 0 20%;
         min-width: 0;
         min-height: 0;
-    }
-    #status-section {
         flex-direction: column;
         gap: 1em;
     }
     #log-section {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 0;
         overflow-y: auto;
     }
 }
