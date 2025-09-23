@@ -564,7 +564,13 @@ function nextFrame() {
     const durationLast = dateNextFameCurrent - dateNextFrame;
     const delta = durationLast - DURATION_TARGET;
     dateNextFrame = dateNextFameCurrent;
-    if (!isNaN(delta)) duration -= delta / 10;
+    if (isNaN(delta)) { // on the first frame, when dateNextFrame was undefined
+        duration = DURATION_TARGET
+    } else if (0 < delta) {
+        duration -= delta / 10;
+    } else {
+        duration = 0;
+    }
     log("Timeout duration set to " + duration + " ms so the duration target (time between frames) is " + DURATION_TARGET + " ms");
 
     if (0 < missingFrames.length) { // Show missing if there are any
