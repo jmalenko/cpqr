@@ -693,12 +693,12 @@ function updateInfo(missing) {
     el.innerHTML = infoStr;
 }
 
-// TODO Choose camera, selector
-
 function init() {
     let lastFrameTime = null;
     let scanSpeedMs = 0;
     let scanFps = 0;
+
+    let currentStream = null;
 
     var video = document.createElement("video");
     var canvasElement = document.getElementById("canvas");
@@ -708,6 +708,46 @@ function init() {
     var outputMessage = document.getElementById("outputMessage");
     var outputData = document.getElementById("outputData");
 
+    navigator.mediaDevices.enumerateDevices().then(gotDevices);
+
+    const cameraSelect = document.getElementById('cameraSelect');
+    cameraSelect.onchange = function () {
+        startStream(cameraSelect.value);
+    };
+
+    // Start with default camera
+    startStream();
+
+    function gotDevices(deviceInfos) {
+        const cameraSelect = document.getElementById('cameraSelect');
+        cameraSelect.innerHTML = '';
+        for (let i = 0; i < deviceInfos.length; ++i) {
+            const deviceInfo = deviceInfos[i];
+            if (deviceInfo.kind === 'videoinput') {
+                const option = document.createElement('option');
+                option.value = deviceInfo.deviceId;
+                option.text = deviceInfo.label || `Camera ${cameraSelect.length + 1}`;
+                cameraSelect.appendChild(option);
+            }
+        }
+    }
+
+    function startStream(deviceId) {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        const constraints = {
+            video: deviceId ? {deviceId: {exact: deviceId}} : {facingMode: "environment"}
+        };
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+            video.setAttribute("playsinline", true);
+            video.play();
+            requestAnimationFrame(tick);
+        });
+    }
+
     function drawLine(begin, end, color) {
         canvas.beginPath();
         canvas.moveTo(begin.x, begin.y);
@@ -716,14 +756,6 @@ function init() {
         canvas.strokeStyle = color;
         canvas.stroke();
     }
-
-    // Use facingMode: environment to attemt to get the front camera on phones
-    navigator.mediaDevices.getUserMedia({video: {facingMode: "environment"}}).then(function (stream) {
-        video.srcObject = stream;
-        video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
-        video.play();
-        requestAnimationFrame(tick);
-    });
 
     function tick() {
         // Calculate scan speed
