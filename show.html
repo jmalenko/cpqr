@@ -8,8 +8,7 @@
     <script src="lib/qrcode.min.js"></script>
     <script src="show.js"></script>
 </head>
-    <!-- TODO Modify parameters on the page - capacity, speed (must be slower than scan FPS) -->
-    <!-- TODO Better entering of missing frames - Submit by enter, support N+9  format, support N-M format -->
+<!-- TODO Better entering of missing frames - Submit by enter, support N+9  format, support N-M format -->
 
 <body onload="init()">
 <div id="main-layout">
@@ -20,7 +19,10 @@
         <div id="controls-section">
             <input id="filename" type="file" onchange="openFile(event)">
             Show again:
-            <input id="missing" onkeypress="onMissingFramesChange(event)" title="You can use most natural separators and ranges. Example: 2,3.4 5.7-9. Press / to delete a number from beginning.">
+            <input id="missing" onkeypress="onMissingFramesChange(event)"
+                   title="You can use most natural separators and ranges. Example: 2,3.4 5.7-9. Press / to delete a number from beginning.">
+            Duration (ms):
+            <input id="duration" type="number" min="1"onchange="onDurationChange(event)">
         </div>
         <div id="log-section">
             <pre id="log"></pre>

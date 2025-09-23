@@ -81,8 +81,7 @@ function assertEqual(testName, a, b) {
                 log("Test " + testName + " error: Not equal at index " + i + ": got " + a[i] + " but expected " + b[i]);
                 return
             }
-    }
-    else if (a !== b) {
+    } else if (a !== b) {
         log("Test " + testName + " error: Not equal: got " + a + " but expected " + b)
     }
 }
@@ -372,6 +371,9 @@ function init() {
         const el = document.getElementsByTagName("body")[0];
         el.style.visibility = "hidden";
     }
+
+    const durationInput = document.getElementById('duration');
+    durationInput.value = DURATION_TARGET;
 
     // Run tests
     tests();
@@ -682,5 +684,15 @@ function onMissingFramesChange(event) {
         missingStrNew = missingStr.replace(/^[0-9-]*[,\. ]?/, "");
         el.value = missingStrNew;
         event.returnValue = false; // block key
+    }
+}
+
+function onDurationChange(event) {
+    const value = Number(event.target.value);
+    if (!isNaN(value) && value > 0) {
+        processingTime = DURATION_TARGET - duration;
+        DURATION_TARGET = value;
+        duration = value - processingTime;
+        log("Duration set to " + value + " ms");
     }
 }
