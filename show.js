@@ -269,7 +269,7 @@ function nextFrameMeasure() {
 Format of Content
 =================
 
-     Field		    Example value                                                      Example value with Variable-length quantity
+     Field        Example value                                                      Example value with Variable-length quantity
   --------------------------------------------------------------------------------------------------------------------------------------------------------
   1. Version      1                                                                  1 1 1
   2. Hash         4065018274                                                         2 10 4065018274
@@ -281,7 +281,7 @@ Field "2. Hash" contains the 32 bit FNV-1a hash of the concatenation of the rema
 Format of one frame
 ===================
 
-     Field		       Example value    Example value with Variable-length quantity
+     Field           Example value    Example value with Variable-length quantity
   -----------------------------------------------------------------------------------------------------------------------------------
   1. Frame number	   1                1 1 1
   2. Content         Text             1 4 Text
@@ -534,7 +534,11 @@ function onShowFrame(frame, part) {
         log("Frame " + frame + "." + part + ": " + frameContent);
     }
 
+    const time1 = new Date();
     qrcode.makeCode(frameContent);
+    const time2 = new Date();
+    const durationCodegeneration = time2 - time1;
+    log("Code generation took " + durationCodegeneration + " ms");
 }
 
 function onEnd() {
@@ -560,6 +564,7 @@ function nextFrame() {
     const delta = durationLast - DURATION_TARGET;
     dateNextFrame = dateNextFameCurrent;
     if (!isNaN(delta)) duration -= delta / 10;
+    log("Timeout duration set to " + duration + " ms so the duration target (time between frames) is " + DURATION_TARGET + " ms");
 
     if (0 < missingFrames.length) { // Show missing if there are any
         // TODO Show missing in rounds
@@ -703,10 +708,8 @@ function onMissingFramesChange(event) {
 function onDurationChange(event) {
     const value = Number(event.target.value);
     if (!isNaN(value) && value > 0) {
-        processingTime = DURATION_TARGET - duration;
         DURATION_TARGET = value;
-        duration = value - processingTime;
-        log("Duration set to " + value + " ms");
+        duration = DURATION_TARGET;
     }
 }
 
