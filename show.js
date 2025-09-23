@@ -709,3 +709,5 @@ function onDurationChange(event) {
         log("Duration set to " + value + " ms");
     }
 }
+
+window.addEventListener('DOMContentLoaded', init);
