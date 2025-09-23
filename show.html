@@ -8,16 +8,24 @@
     <script src="lib/qrcode.min.js"></script>
     <script src="show.js"></script>
 </head>
-<body onload="init()">
-    <!-- TODO Fix layout - QR code must be always visible -->
     <!-- TODO Modify parameters on the page - capacity, speed (must be slower than scan FPS) -->
     <!-- TODO Better entering of missing frames - Submit by enter, support N+9  format, support N-M format -->
 
-    <input id="filename" type="file" onchange="openFile(event)">
-    Show again: <input id="missing" onkeypress="onMissingFramesChange(event)" title="You can use most natural separators and ranges. Example: 2,3.4 5.7-9. Press / to delete a number from beginning.">
-    <br>
-    <div id="qrcode"></div>
-
-    <pre id="log"></pre>
+<body onload="init()">
+<div id="main-layout">
+    <div id="qrcode-section">
+        <div id="qrcode"></div>
+    </div>
+    <div id="right-section">
+        <div id="controls-section">
+            <input id="filename" type="file" onchange="openFile(event)">
+            Show again:
+            <input id="missing" onkeypress="onMissingFramesChange(event)" title="You can use most natural separators and ranges. Example: 2,3.4 5.7-9. Press / to delete a number from beginning.">
+        </div>
+        <div id="log-section">
+            <pre id="log"></pre>
+        </div>
+    </div>
+</div>
 </body>
 </html>
