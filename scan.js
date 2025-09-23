@@ -602,6 +602,9 @@ function onScan(content) {
         // Save frame
         if (posDot === -1) {
             frame = Number(frameStr);
+            if (contentRead[frame] != null) {
+                log("Frame " + frame + " was already encountered in the past");
+            }
             contentRead[frame] = contentFrame;
         } else {
             frame = Number(frameStr.substr(0, posDot));
@@ -609,6 +612,9 @@ function onScan(content) {
 
             if (contentReadPart[frame] === undefined)
                 contentReadPart[frame] = [];
+            if (contentReadPart[frame][part] != null) {
+                log("Frame " + frame + "." + part + " was already encountered in the past");
+            }
             contentReadPart[frame][part] = contentFrame;
         }
         frameNumber = frame;
