@@ -342,7 +342,8 @@ var state = STATE_NOT_STARTED;
 var qrcode;
 
 function init() {
-    const scale = 4; // Scale to fit the browser with toolbars in FullHD
+    // TODO Scale to fit the screen. Currently ot's optimized for FullHD. But we need to support this on mobiles as well.
+    const scale = 3; // Scale to fit the browser with toolbars in FullHD
     qrcode = new QRCode("qrcode", {
         width: scale * 177, // The QR code has max 177 blocks (in one dimension)
         height: scale * 177,
@@ -365,6 +366,7 @@ function init() {
         capacityForDataInOneFrame = CAPACITY_TOTAL - 5;
     }
 
+    // TODO This doesn't work
     // Hide when run from file
     let startParam = url.searchParams.get("start");
     if (url.protocol === "file:" && startParam === null) {
