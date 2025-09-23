@@ -695,7 +695,6 @@ function updateInfo(missing) {
 }
 
 // TODO Choose camera, selector
-// TODO Fix layout
 // TODO Show speed of scanning [fps]
 
 function init() {

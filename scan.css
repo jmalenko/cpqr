@@ -1,15 +1,74 @@
-#preview {
-    float: left;
-    width: 48%;
-    margin-right: 2%;
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
-#info {
-    font-size: 500%;
-    float: left;
-    width: 50%;
+body {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
 }
 
-.clearfix {
-    clear: both;
+#main-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+}
+
+#canvas-section {
+    flex: 0 0 40vh;
+    min-height: 40vh;
+    max-height: 40vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#status-section {
+    flex: 0 0 auto;
+    padding: 1em;
+    background: #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+
+#log-section {
+    flex: 1 1 0;
+    overflow-y: auto;
+    background: #ddd;
+    padding: 1em;
+}
+
+#canvas {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+
+@media (orientation: landscape) {
+    #main-layout {
+        flex-direction: row;
+    }
+    #canvas-section {
+        flex: 0 0 40vw;
+        min-width: 40vw;
+        max-width: 40vw;
+        min-height: 100vh;
+        max-height: 100vh;
+    }
+    #status-section, #log-section {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 0;
+    }
+    #status-section {
+        flex-direction: column;
+        gap: 1em;
+    }
+    #log-section {
+        overflow-y: auto;
+    }
 }

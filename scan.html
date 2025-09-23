@@ -7,17 +7,23 @@
     <script type="text/javascript" src="scan.js"></script>
 </head>
 <body>
-    <div id="loadingMessage">🎥 Unable to access video stream (please make sure you have a webcam enabled)</div>
-    <canvas id="canvas" hidden></canvas>
-    <div id="output" hidden>
-        <div id="outputMessage">No QR code detected.</div>
-        <div hidden><b>Data:</b> <span id="outputData"></span></div>
+<div id="main-layout">
+    <div id="canvas-section">
+        <canvas id="canvas"></canvas>
     </div>
-
-    <div id="info"></div>
-
-    <div class="clearfix"></div>
-
-    <pre id="log"></pre>
+    <div style="flex: 1; display: flex; flex-direction: column;">
+        <div id="status-section">
+            <div id="loadingMessage">🎥 Unable to access video stream (please make sure you have a webcam enabled)</div>
+            <div id="output" hidden>
+                <div id="outputMessage">No QR code detected.</div>
+                <div hidden><b>Data:</b> <span id="outputData"></span></div>
+            </div>
+            <div id="info"></div>
+        </div>
+        <div id="log-section">
+            <pre id="log"></pre>
+        </div>
+    </div>
+</div>
 </body>
 </html>
