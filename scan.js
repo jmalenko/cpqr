@@ -708,6 +708,8 @@ function init() {
     var outputMessage = document.getElementById("outputMessage");
     var outputData = document.getElementById("outputData");
 
+    var flipVideo;
+
     navigator.mediaDevices.enumerateDevices().then(gotDevices);
 
     const cameraSelect = document.getElementById('cameraSelect');
@@ -744,6 +746,10 @@ function init() {
             video.srcObject = stream;
             video.setAttribute("playsinline", true);
             video.play();
+
+            flipVideo = (constraints.video.facingMode === "user");
+            log("flipVideo=" + flipVideo);
+
             requestAnimationFrame(tick);
         });
     }
@@ -779,11 +785,14 @@ function init() {
             canvasElement.width = video.videoWidth;
 
             // Flip video horizontally
-            canvas.save();
-            canvas.scale(-1, 1);
-            canvas.drawImage(video, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
-            canvas.restore();
-
+            if (!flipVideo) {
+                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+            } else {
+                canvas.save();
+                canvas.scale(-1, 1);
+                canvas.drawImage(video, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
+                canvas.restore();
+            }
             var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
             var code = jsQR(imageData.data, imageData.width, imageData.height, {
                 inversionAttempts: "dontInvert",
