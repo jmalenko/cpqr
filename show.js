@@ -630,27 +630,40 @@ function onMissingFramesChange(event) {
     const missingStr = el.value;
 
     if (event.keyCode === 13) { // Enter
-        const missingFramesNew1 = missingStr.split(/[,\. ]+/);
+        const missingFramesNewGroups = missingStr.split(/[,\. ]+/);
 
-        // Replace ranges: "10-13" -> 10,11,12,13
+        // Replace ranges
         let missingFramesNew = [];
-        missingFramesNew1.forEach(function (item) {
-                const range = item.split(/-/);
-                switch (range.length) {
-                    case 1:
-                        missingFramesNew.push(item);
-                        break;
-                    case 2:
-                        const from = Number(range[0]);
-                        const to = Number(range[1]);
-                        if (to < from) break;
-                        for (let i = from; i <= to; i++) {
-                            missingFramesNew.push(i);
-                        }
-                        break;
-                    default:
-                    // nothing
+        missingFramesNewGroups.forEach(function (item) {
+                // N-M format
+                // Example: 10-13 -> 10,11,12,13
+                let range = item.split(/-/);
+                if (range.length == 2) {
+                    const from = Number(range[0]);
+                    const to = Number(range[1]);
+                    if (to < from) return;
+                    for (let i = from; i <= to; i++) {
+                        missingFramesNew.push(i);
+                    }
+                    return;
                 }
+
+                // N+M format
+                // Example: 10+3 -> 10,11,12,13
+                range = item.split(/\+/);
+                if (range.length == 2) {
+                    const from = Number(range[0]);
+                    const add = Number(range[1]);
+                    const to = from + add;
+                    if (to < from) return;
+                    for (let i = from; i <= to; i++) {
+                        missingFramesNew.push(i);
+                    }
+                    return;
+                }
+
+                // Single number
+                missingFramesNew.push(item);
             }
         );
 
