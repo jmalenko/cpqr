@@ -588,6 +588,7 @@ function onScan(content) {
         return;
     }
 
+    let frameNumber = null;
     let missing;
 
     try {
@@ -610,6 +611,7 @@ function onScan(content) {
                 contentReadPart[frame] = [];
             contentReadPart[frame][part] = contentFrame;
         }
+        frameNumber = frame;
 
         if (frame === 0) {
             try {
@@ -656,7 +658,7 @@ function onScan(content) {
     }
 
     updateInfo(missing);
-    return frame;
+    return frameNumber;
 }
 
 function getFileNameLast(fileName) {
@@ -807,9 +809,11 @@ function init() {
                 drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
 
                 outputMessage.hidden = true;
+                outputMessage.hidden = true;
                 outputData.parentElement.hidden = false;
+                // TODO Hotfix: show only frame number, not full data
                 // outputData.innerText = code.data;
-                outputData.innerText = "Frame " + frameNumber;
+                // outputData.innerText = "Frame " + (frameNumber != null ? frameNumber : "?");
             } else {
                 outputMessage.hidden = false;
                 outputData.parentElement.hidden = true;
