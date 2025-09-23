@@ -76,3 +76,33 @@ body {
         max-width: 100vw;
     }
 }
+
+/* Controls positioning */
+
+.controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+}
+
+.duration-group {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+}
+
+.show-again-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-top: 1em;
+}
+
+#duration {
+    width: 5em;
+}
+
+#missing {
+    flex: 1;
+}

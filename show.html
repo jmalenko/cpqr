@@ -15,12 +15,19 @@
     </div>
     <div id="right-section">
         <div id="controls-section">
-            <input id="filename" type="file" onchange="openFile(event)">
-            Show again:
-            <input id="missing" onkeypress="onMissingFramesChange(event)"
-                   title="You can use most natural separators and ranges. Example: 2,3.4 5.7-9.11+4. Press / to delete a number from beginning.">
-            Duration (ms):
-            <input id="duration" type="number" min="1"onchange="onDurationChange(event)">
+            <div class="controls-row">
+                <input id="filename" type="file" onchange="openFile(event)">
+                <div class="duration-group">
+                    <span>Duration</span>
+                    <input id="duration" type="number" min="1" onchange="onDurationChange(event)">
+                    <span>ms</span>
+                </div>
+            </div>
+            <div class="show-again-row">
+                <span>Show again:</span>
+                <input id="missing" onkeypress="onMissingFramesChange(event)"
+                       title="You can use most natural separators and ranges. Example: 2,3.4 5.7-9.11+4. Press / to delete a number from beginning.">
+            </div>
         </div>
         <div id="log-section">
             <pre id="log"></pre>
