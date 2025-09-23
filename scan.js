@@ -588,6 +588,7 @@ function onScan(content) {
         return;
     }
 
+    let frameNumber;
     let missing;
 
     try {
@@ -610,6 +611,7 @@ function onScan(content) {
                 contentReadPart[frame] = [];
             contentReadPart[frame][part] = contentFrame;
         }
+        frameNumber = frame;
 
         if (frame === 0) {
             try {
@@ -656,7 +658,7 @@ function onScan(content) {
     }
 
     updateInfo(missing);
-    return frame;
+    return frameNumber;
 }
 
 function getFileNameLast(fileName) {
