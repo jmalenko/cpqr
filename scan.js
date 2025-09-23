@@ -702,6 +702,8 @@ function updateInfo(missing) {
     el.innerHTML = infoStr;
 }
 
+// TODO Test - it seems that the scanner stops around frame 1000
+// TODO Refactor init()
 function init() {
     let lastFrameTime = null;
     let scanSpeedMs = 0;
