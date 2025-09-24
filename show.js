@@ -316,7 +316,7 @@ const VERSION = 1;
 var DURATION_TARGET = 500; // Duration between frames, in milliseconds.
 var duration; // Effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
 var dateNextFrame; // Date of previous run of nextFrame()
-
+var durationQrCodeGeneration; // Time it took to generate the QR code, in milliseconds. This is used only for debugging purposes.
 var fileName;
 var data;
 
@@ -536,11 +536,10 @@ function onShowFrame(frame, part) {
 
     // TODO Fix crash when the file name contains a non-ASCII character
 
-    // const time1 = new Date();
+    const time1 = new Date();
     qrcode.makeCode(frameContent);
-    // const time2 = new Date();
-    // const durationCodegeneration = time2 - time1;
-    // log("Code generation took " + durationCodegeneration + " ms");
+    const time2 = new Date();
+    durationQrCodeGeneration = time2 - time1;
 
     updateInfo();
 }
@@ -563,7 +562,7 @@ function nextFrame() {
     let dateNextFrameCurrent = new Date();
     let durationActual = dateNextFrameCurrent - dateNextFrame;
     let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
-    // log("Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, delta=" + delta + " ms, duration=" + duration + " ms");
+    // log("Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, delta=" + delta + " ms, duration=" + duration + " ms, QR code generation took " + durationQrCodeGeneration + " ms.");
     if (0 < delta && duration <= 0) {
         log("The system is slow and is not meeting the target duration. Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms.");
     }
