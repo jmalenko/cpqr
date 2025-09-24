@@ -676,7 +676,6 @@ function getFileNameLast(fileName) {
 }
 
 function updateInfo(missing) {
-    // Update info
     let infoStr = "";
     const upperBound = Math.max(contentRead.length, contentReadPart.length);
     try {
@@ -704,12 +703,8 @@ function updateInfo(missing) {
     el.innerHTML = infoStr;
 }
 
-// TODO Test - it seems that the scanner stops around frame 1000
-// TODO Refactor init()
-function init() {
+function initStream() {
     let lastFrameTime = null;
-    let scanSpeedMs = 0;
-    let scanFps = 0;
 
     let currentStream = null;
 
@@ -780,11 +775,10 @@ function init() {
         // Calculate scan speed
         let now = Date.now();
         if (lastFrameTime !== null) {
-            scanSpeedMs = now - lastFrameTime;
-            scanFps = (1000 / scanSpeedMs).toFixed(1);
+            let scanSpeedMs = now - lastFrameTime;
+            let scanFps = (1000 / scanSpeedMs).toFixed(1);
             let showSpeedMs = Math.ceil(scanSpeedMs * 2.1 / 10) * 10; // Round to higher 10 ms
-            document.getElementById("scanSpeed").innerText =
-                "Scan speed: " + scanSpeedMs.toFixed(1) + " ms (" + scanFps + " fps). Sender can be set to duration " + showSpeedMs + " ms.";
+            document.getElementById("scanSpeed").innerText = "Scan speed: " + scanSpeedMs.toFixed(1) + " ms (" + scanFps + " fps). Sender can be set to duration " + showSpeedMs + " ms.";
         }
         lastFrameTime = now;
 
@@ -797,6 +791,7 @@ function init() {
             canvasElement.height = video.videoHeight;
             canvasElement.width = video.videoWidth;
 
+            // TODO Flip video horizontally only on user facing camera
             // Flip video horizontally
             if (!flipVideo) {
                 canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
@@ -829,9 +824,19 @@ function init() {
         }
         requestAnimationFrame(tick);
     }
+}
 
+// TODO Test - it seems that the scanner stops around frame 1000
+
+// TODO Scan - improve status layout - camera label next to camera selection, scan speed next to percentage, handle 2 stream infos
+
+// TODO Scan - Fix: On my mobile, only one camera out of two is shown. Also show camera name.
+
+function init() {
     // Run tests
     tests();
+
+    initStream();
 
     // scanSimulated();
 
