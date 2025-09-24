@@ -251,8 +251,6 @@ function nextFrameMeasure() {
         durationMeasure = MEASURE_DURATION_MIN;
         dateNextFrame = undefined;
 
-        // TODO Hide the QR code - the following should work (and the hiding/showing of element should be removed)
-        // qrcode.clear();
         // Hide the QR code
         const el = document.getElementById("qrcode");
         el.style.visibility = "hidden";
@@ -550,9 +548,6 @@ function onEnd() {
 
     state = STATE_FINISHED;
     dateNextFrame = undefined;
-
-    // TODO Hide the QR code - the following should work (and the hiding/showing of element should be removed)
-    // qrcode.clear();
 
     // Hide the QR code
     const el = document.getElementById("qrcode");
