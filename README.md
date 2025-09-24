@@ -11,9 +11,9 @@ The following image summarizes the data flow starting with 1. a file existing on
 
 ## Try it
 
-1. Setup the target device, which will use the camera to scan the sequence of QR codes.
+1. Set up the target device, which will use the camera to scan the sequence of QR codes.
  
-   Use [scan.html](https://jmalenko.github.io/cpqr/scan.html) on a smart phone with camera. Point the camera at the screen of source computer and wait. Once the file is transferred, it will be saved.
+   Use [scan.html](https://jmalenko.github.io/cpqr/scan.html) on a smartphone with camera. Point the camera at the screen of source computer and wait. Once the file is transferred, it will be saved.
 
 2. On the source computer, which initially contains a file, show the sequence of QR codes that encode the file content.
 

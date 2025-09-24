@@ -87,7 +87,7 @@ function assertEqual(testName, a, b) {
 }
 
 /**
- * Produces a string that can nicely ne used in testing as it encodes the position in the string.
+ * Produces a string that can nicely be used in testing as it encodes the position in the string.
  * @param length
  * @returns {string}
  */
@@ -103,7 +103,7 @@ function stringOfLength(length) {
 
 /**
  * Produces a random string of length.
- * @param Length of the returned string.
+ * @param length of the returned string.
  * @returns String
  */
 function randomStringOfLength(length) {
@@ -283,7 +283,7 @@ Format of one frame
 
      Field           Example value    Example value with Variable-length quantity
   -----------------------------------------------------------------------------------------------------------------------------------
-  1. Frame number	   1                1 1 1
+  1. Frame number    1                1 1 1
   2. Content         Text             1 4 Text
 
 
@@ -291,7 +291,7 @@ Variable-length quantity
 ========================
 
 Encoding that encodes a value with a triple:
-1. length of "length of value" }must be one character in this implementation)
+1. length of "length of value" (must be one character in this implementation)
 2. length of value
 3. value
 
@@ -301,7 +301,7 @@ QR Codes
 
 The QR code can contain maximum of 177 by 177 blocks (squares).
 
-QR codes have three parameters: Datatype, size (number of 'pixels') and error correction level. How many information can
+QR codes have three parameters: Datatype, size (number of 'pixels') and error correction level. How much information can
 be stored there also depends on these parameters.
 
 The maximum size and the lowest error correction give the following values:
@@ -324,7 +324,7 @@ var data;
 
 var frame; // From 0. The frames from 0 to frame-1 have been shown.
 var part; // From 0 to round^2-1.
-var missingFrames; // Contains the frames to show as soon as possible. The frames with index frame.. will be shown afterwards.
+var missingFrames; // Contains the frames to show as soon as possible. The frame at index _frame_ will be shown afterward.
 var missingFramePart; // Part number to be shown
 
 var round; // In each round, whole content is sent.
@@ -642,7 +642,7 @@ function onMissingFramesChange(event) {
     const missingStr = el.value;
 
     if (event.keyCode === 13) { // Enter
-        const missingFramesNewGroups = missingStr.split(/[,\. ]+/);
+        const missingFramesNewGroups = missingStr.split(/[,. ]+/);
 
         // Replace ranges
         let missingFramesNew = [];
@@ -650,7 +650,7 @@ function onMissingFramesChange(event) {
                 // N-M format
                 // Example: 10-13 -> 10,11,12,13
                 let range = item.split(/-/);
-                if (range.length == 2) {
+                if (range.length === 2) {
                     const from = Number(range[0]);
                     const to = Number(range[1]);
                     if (to < from) return;
@@ -663,7 +663,7 @@ function onMissingFramesChange(event) {
                 // N+M format
                 // Example: 10+3 -> 10,11,12,13
                 range = item.split(/\+/);
-                if (range.length == 2) {
+                if (range.length === 2) {
                     const from = Number(range[0]);
                     const add = Number(range[1]);
                     const to = from + add;
@@ -706,7 +706,7 @@ function onMissingFramesChange(event) {
             nextFrame();
         }
     } else if (event.keyCode === 47) { // Slash
-        missingStrNew = missingStr.replace(/^[0-9-]*[,\. ]?/, "");
+        let missingStrNew = missingStr.replace(/^[0-9-]*[,. ]?/, "");
         el.value = missingStrNew;
         event.returnValue = false; // block key
     }

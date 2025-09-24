@@ -255,11 +255,11 @@ function scanMeasure(content) {
 
     measures[duration_][capacity_].push(frame_);
 
-    printMeasurematrix();
-    printMeasurematrixTroughput();
+    printMeasureMatrix();
+    printMeasureMatrixTroughput();
 }
 
-function printMeasurematrix() {
+function printMeasureMatrix() {
     // Get the list of durations
     let durations = Object.keys(measures);
 
@@ -309,7 +309,7 @@ function printMeasurematrix() {
     log(res);
 }
 
-function printMeasurematrixTroughput() {
+function printMeasureMatrixTroughput() {
     // Get the list of durations
     let durations = Object.keys(measures);
 
@@ -562,7 +562,7 @@ function decodeContent() {
 
     // Verify hash
     const hashCalculated = hashFnv32a(fileName + data, false);
-    if (hash != hashCalculated)
+    if (hash !== hashCalculated)
         throw new Exception("Incorrect hash");
 
     return [hash, fileName, data];
@@ -574,7 +574,7 @@ function getContentInfo() {
     let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
     const capacityForDataInOneFrame = content.length;
-    const numberOfFrames = Math.ceil(from / capacityForDataInOneFrame); // Keep this consistent with calcultation in show.js
+    const numberOfFrames = Math.ceil(from / capacityForDataInOneFrame); // Keep this consistent with calculation in show.js
 
     return [hash, fileName, numberOfFrames];
 }
@@ -755,7 +755,7 @@ function init() {
         navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
             currentStream = stream;
             video.srcObject = stream;
-            video.setAttribute("playsinline", true);
+            video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
             video.play();
 
             flipVideo = (constraints.video.facingMode === "user");
@@ -780,7 +780,7 @@ function init() {
         if (lastFrameTime !== null) {
             scanSpeedMs = now - lastFrameTime;
             scanFps = (1000 / scanSpeedMs).toFixed(1);
-            showSpeedMs = Math.ceil(scanSpeedMs * 2.1 / 10) * 10; // Round to higher 10 ms
+            let showSpeedMs = Math.ceil(scanSpeedMs * 2.1 / 10) * 10; // Round to higher 10 ms
             document.getElementById("scanSpeed").innerText =
                 "Scan speed: " + scanSpeedMs.toFixed(1) + " ms (" + scanFps + " fps). Sender can be set to duration " + showSpeedMs + " ms.";
         }
