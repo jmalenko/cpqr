@@ -692,11 +692,17 @@ function updateInfo(missing) {
 
         infoStr += infoStr2;
     } catch (e) {
-        infoStr += upperBound + " / ? ... ?%<br/>?";
+        infoStr += "?% ..." + upperBound + " / ?";
     }
+
+    const elMissingList = document.getElementById("missingList");
     if (missing !== undefined) {
-        infoStr += "<br/>";
-        infoStr += missing.length + " missing: " + missing;
+        infoStr += ". Missing " + missing.length + ":";
+
+        elMissingList.innerHTML = missing;
+        elMissingList.hidden = false;
+    } else {
+        elMissingList.hidden = true;
     }
 
     const el = document.getElementById("info");

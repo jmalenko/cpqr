@@ -57,6 +57,14 @@ body {
     box-sizing: border-box;
 }
 
+#missingList {
+    font-size: xxx-large;
+}
+
+#missingList {
+    color: #f00;
+}
+
 @media (orientation: landscape) {
     #main-layout {
         flex-direction: row;
