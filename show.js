@@ -377,6 +377,8 @@ function init() {
     const durationInput = document.getElementById('duration');
     durationInput.value = DURATION_TARGET;
 
+    onDurationChangeValue(DURATION_TARGET)
+
     // Run tests
     tests();
 
@@ -736,9 +738,19 @@ function onMissingFramesChange(event) {
 function onDurationChange(event) {
     const value = Number(event.target.value);
     if (!isNaN(value) && value > 0) {
-        DURATION_TARGET = value;
-        duration = DURATION_TARGET;
+        onDurationChangeValue(value)
     }
+}
+
+function onDurationChangeValue(value) {
+    DURATION_TARGET = value;
+    duration = DURATION_TARGET;
+
+    const speedBytesPerSecond = capacityForDataInOneFrame * (1000 / DURATION_TARGET);
+    const speedMegaBytesPerHour = speedBytesPerSecond * 3600 / 1e6;
+    infoStr = " ... " + speedBytesPerSecond.toFixed(1) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h";
+    const el = document.getElementById("speed");
+    el.innerHTML = infoStr;
 }
 
 function updateInfo() {
@@ -751,13 +763,6 @@ function updateInfo() {
         const timeLeft = Math.round((numberOfFrames - frame) * DURATION_TARGET / 1000);
         const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000));
         infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + ". "
-
-        // getContent().length / capacityForDataInOneFrame
-
-        // TODO Move speed next to duration.
-        const speedBytesPerSecond = capacityForDataInOneFrame * (1000 / DURATION_TARGET);
-        const speedMegaBytesPerHour = speedBytesPerSecond * 3600 / 1e6;
-        infoStr += "Speed  " + speedBytesPerSecond.toFixed(1) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h.";
     } else {
         infoStr += "Round " + round + ", frame " + frame + "." + part;
     }
