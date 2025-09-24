@@ -13,6 +13,7 @@ function formatDate(date) {
     let millis = date.getMilliseconds();
 
     month++;
+    month = month < 10 ? '0' + month : month;
     day = day < 10 ? '0' + day : day;
     minutes = minutes < 10 ? '0' + minutes : minutes;
     seconds = seconds < 10 ? '0' + seconds : seconds;
@@ -24,8 +25,10 @@ function formatDate(date) {
 function log(str) {
     const date = new Date();
     const el = document.getElementById("log");
-    const logData = "[" + formatDate(date) + "] " + str + "\n" + el.innerHTML;
-    el.innerHTML = logData.substr(0, 1e5);
+    const logLine = "[" + formatDate(date) + "] " + str;
+    const lines = (el.innerHTML ? el.innerHTML.split('\n') : []);
+    lines.unshift(logLine);
+    el.innerHTML = lines.slice(0, 100).join('\n');
 }
 
 /**
