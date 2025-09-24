@@ -746,7 +746,13 @@ function updateInfo() {
 
         const timeLeft = Math.round((numberOfFrames - frame) * DURATION_TARGET / 1000);
         const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000));
-        infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + "."
+        infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + ". "
+
+        // getContent().length / capacityForDataInOneFrame
+
+        const speedBytesPerSecond = capacityForDataInOneFrame * (1000 / DURATION_TARGET);
+        const speedMegaBytesPerHour = speedBytesPerSecond * 3600 / 1e6;
+        infoStr += "Speed  " + speedBytesPerSecond.toFixed(1) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h.";
     } else {
         infoStr += "Round " + round + ", frame " + frame + "." + part;
     }
