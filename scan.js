@@ -812,6 +812,8 @@ function initStream() {
             canvasElement.height = video.videoHeight;
             canvasElement.width = video.videoWidth;
 
+            // TODO After cameras are detected, select the back facing camera
+
             // TODO Flip video horizontally only on user facing camera
             // Flip video horizontally
             if (!flipVideo) {
