@@ -341,8 +341,7 @@ var state = STATE_NOT_STARTED;
 var qrcode;
 
 function init() {
-    // TODO Scale to fit the screen. Currently ot's optimized for FullHD. But we need to support this on mobiles as well.
-    const scale = 4; // Scale to fit the browser with toolbars in FullHD
+    const scale = 10; // Scale factor to make the QR code large. On screen, this will be scaled to available area.
     qrcode = new QRCode("qrcode", {
         width: scale * 177, // The QR code has max 177 blocks (in one dimension)
         height: scale * 177,
