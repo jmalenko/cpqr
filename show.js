@@ -720,6 +720,8 @@ function onDurationChange(event) {
     }
 }
 
-// TODO Show - Duration is negative. Test.
+// TODO Duration is negative. Test.
+// TODO Fix layout - Duration is out of the window to the right (when log lines are long)
+// TODO Show estimations - Duration of sending, number of frames, time of end
 
 window.addEventListener('DOMContentLoaded', init);
