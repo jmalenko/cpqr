@@ -738,7 +738,9 @@ function initStream() {
         const cameraSelect = document.getElementById('cameraSelect');
         cameraSelect.innerHTML = '';
         for (const deviceInfo of deviceInfos) {
+            log("Got device: kind=" + deviceInfo.kind + ", deviceId=" + deviceInfo.deviceId + ", label=" + deviceInfo.label)
             if (deviceInfo.kind === 'videoinput') {
+                log("It's a camera");
                 const option = document.createElement('option');
                 option.value = deviceInfo.deviceId;
                 option.text = deviceInfo.label || `Camera ${cameraSelect.length + 1}`;
@@ -746,36 +748,24 @@ function initStream() {
             }
         }
     }
-        // function gotDevices(deviceInfos) {
-        //     window.deviceInfos = deviceInfos; // make available to console
-        //     console.log('Available input and output devices:', deviceInfos);
-        //     for (const deviceInfo of deviceInfos) {
-        //         const option = document.createElement('option');
-        //         option.value = deviceInfo.deviceId;
-        //         if (deviceInfo.kind === 'audioinput') {
-        //             option.text = deviceInfo.label || `Microphone ${audioSelect.length + 1}`;
-        //             audioSelect.appendChild(option);
-        //         } else if (deviceInfo.kind === 'videoinput') {
-        //             option.text = deviceInfo.label || `Camera ${videoSelect.length + 1}`;
-        //             videoSelect.appendChild(option);
-        //         }
-        //     }
-        // }
 
     function startStream(deviceId) {
+        log("Starting stream");
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
         }
         const constraints = {
             video: deviceId ? {deviceId: {exact: deviceId}} : {undefined}
         };
+        log("Using constraints: " + JSON.stringify(constraints));
         navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
             currentStream = stream;
             video.srcObject = stream;
             video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
             video.play();
 
-            flipVideo = (constraints.video.facingMode === "user");
+            // flipVideo = (constraints.video.facingMode === "user");
+            flipVideo = false;
             log("flipVideo=" + flipVideo);
 
             requestAnimationFrame(tick);
