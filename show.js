@@ -586,7 +586,8 @@ function nextFrame() {
     // Store time for next frame
     dateNextFrame = dateNextFrameCurrent;
 
-    if (0 < missingFrames.length) { // Show missing if there are any
+    // Show missing if there are any
+    if (0 < missingFrames.length) {
         // TODO Show missing in rounds
         const f = missingFrames[0];
         if (missingFramePart === 1) {
