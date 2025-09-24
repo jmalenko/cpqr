@@ -329,9 +329,10 @@ var missingFramePart; // Part number to be shown
 
 var round; // In each round, whole content is sent.
 /*
- Round 1: standard, frame by frame
- Round 2-6: instead of sending a frame, parts representing the frame are sent, te round determines the level
+ Round 0: standard, frame by frame
+ Round 1-LAST_ROUND: instead of sending a frame, parts representing the frame are sent, te round determines the level
  */
+const LAST_ROUND = 2;
 
 const STATE_NOT_STARTED = 1;
 const STATE_PLAYING = 2;
@@ -598,8 +599,9 @@ function nextFrame() {
         if (round === 0) {
             frame++;
             onShowFrame(frame);
-        } else if (round === 6) {
+        } else if (round-1 === LAST_ROUND) {
             onEnd();
+            return;
         } else {
             if (part + 1 === partMax) {
                 frame++;
