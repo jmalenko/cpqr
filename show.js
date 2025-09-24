@@ -538,7 +538,7 @@ function onShowFrame(frame, part) {
     qrcode.makeCode(frameContent);
     const time2 = new Date();
     const durationCodegeneration = time2 - time1;
-    log("Code generation took " + durationCodegeneration + " ms");
+    // log("Code generation took " + durationCodegeneration + " ms");
 }
 
 function onEnd() {
@@ -556,18 +556,35 @@ function onEnd() {
 
 function nextFrame() {
     // Adjust duration
-    const dateNextFameCurrent = new Date();
-    const durationLast = dateNextFameCurrent - dateNextFrame;
-    const delta = durationLast - DURATION_TARGET;
-    dateNextFrame = dateNextFameCurrent;
+    let dateNextFrameCurrent = new Date();
+    let durationActual = dateNextFrameCurrent - dateNextFrame;
+    let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
+    // log("Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, delta=" + delta + " ms, duration=" + duration + " ms");
+    if (0 < delta && duration <= 0) {
+        log("The system is slow and is not meeting the target duration. Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms.");
+    }
     if (isNaN(delta)) { // on the first frame, when dateNextFrame was undefined
         duration = DURATION_TARGET
-    } else if (0 < delta) {
-        duration = 0;
     } else {
-        duration -= delta / 10;
+        duration -= delta / 2;
     }
-    log("Timeout duration set to " + duration + " ms so the duration target (time between frames) is " + DURATION_TARGET + " ms");
+    if (duration < 0)
+        duration = 0;
+    // log("Setting duration=" + duration + " ms");
+
+    // If the system is faster than DURATION_TARGET, then actively wait
+    if (delta < -1) { // Ignore small negative values. The system can be faster by 1 ms.
+        log("The system is too fast. Actively waiting for the target duration to end.");
+        do {
+            dateNextFrameCurrent = new Date();
+            durationActual = dateNextFrameCurrent - dateNextFrame;
+            delta = durationActual - DURATION_TARGET;
+            // log("Active waiting: duration actual=" + durationActual + " ms, delta=" + delta + " ms");
+        } while (delta < 0);
+        // log("Active waiting done.");
+    }
+    // Store time for next frame
+    dateNextFrame = dateNextFrameCurrent;
 
     if (0 < missingFrames.length) { // Show missing if there are any
         // TODO Show missing in rounds
@@ -717,7 +734,6 @@ function onDurationChange(event) {
     }
 }
 
-// TODO Duration is negative. Test.
 // TODO Fix layout - Duration is out of the window to the right (when log lines are long)
 // TODO Show estimations - Duration of sending, number of frames, time of end
 
