@@ -464,7 +464,7 @@ Mathematically: PartIndex is an encoding of a subinterval of the 0-1 interval, i
 For example
 - If we got frame content (stored in contentRead), then fine. Othwerwise, we construct it from parts.
 - A frame can be constructed from parts 0 and 1 (left and right part of the frame).
-- But in case the right part is missing, the trame can be constructed from parts 0 and 10 and 11 (combination of parts 10 and 11 gives part 1).
+- But in case the right part is missing, the frame can be constructed from parts 0 and 10 and 11 (combination of parts 10 and 11 gives part 1).
  */
 
 let hashSaved; // hash of the last saved file (specifiaclly the received hash (of fileName + data)
