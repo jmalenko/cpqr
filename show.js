@@ -618,7 +618,7 @@ function nextFrame() {
         if (round === 0) {
             frame++;
             onShowFrame(frame);
-        } else if (round-1 === LAST_ROUND) {
+        } else if (round - 1 === LAST_ROUND) {
             onEnd();
             return;
         } else {
