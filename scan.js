@@ -712,6 +712,8 @@ function updateInfo(missing) {
 function initStream() {
     let lastFrameTime = null;
 
+    const cameraSelect = document.getElementById('cameraSelect');
+
     let currentStream = null;
 
     var video = document.createElement("video");
@@ -724,18 +726,26 @@ function initStream() {
 
     var flipVideo;
 
-    navigator.mediaDevices.enumerateDevices().then(gotDevices);
+    cameraSelect.onchange = getStream
 
-    const cameraSelect = document.getElementById('cameraSelect');
+    // navigator.mediaDevices.enumerateDevices().then(gotDevices);
+    //
+
     cameraSelect.onchange = function () {
-        startStream(cameraSelect.value);
+        getStream(cameraSelect.value);
     };
 
     // Start with default camera
-    startStream();
+    getStream().then(getDevices).then(gotDevices);
+
+    // Try to get devices again after 1 second - some browsers need time to ask permission for camera
+    // setTimeout(getDevices, 1000);
+
+    function getDevices() {
+        return navigator.mediaDevices.enumerateDevices();
+    }
 
     function gotDevices(deviceInfos) {
-        const cameraSelect = document.getElementById('cameraSelect');
         cameraSelect.innerHTML = '';
         for (const deviceInfo of deviceInfos) {
             log("Got device: kind=" + deviceInfo.kind + ", deviceId=" + deviceInfo.deviceId + ", label=" + deviceInfo.label)
@@ -749,8 +759,8 @@ function initStream() {
         }
     }
 
-    function startStream(deviceId) {
-        log("Starting stream");
+    function getStream(deviceId) {
+        log("Getting stream with deviceId=" + deviceId);
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
         }
@@ -758,18 +768,27 @@ function initStream() {
             video: deviceId ? {deviceId: {exact: deviceId}} : {undefined}
         };
         log("Using constraints: " + JSON.stringify(constraints));
-        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
-            currentStream = stream;
-            video.srcObject = stream;
-            video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
-            video.play();
+        return navigator.mediaDevices.getUserMedia(constraints).then(gotStream).catch(handleError);
+    }
 
-            // flipVideo = (constraints.video.facingMode === "user");
-            flipVideo = false;
-            log("flipVideo=" + flipVideo);
+    function gotStream(stream) {
+        currentStream = stream;
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+        video.play();
 
-            requestAnimationFrame(tick);
-        });
+        cameraSelect.selectedIndex = [...cameraSelect.options]
+            .findIndex(option => option.text === stream.getVideoTracks()[0].label);
+
+        // flipVideo = (constraints.video.facingMode === "user");
+        flipVideo = false;
+        log("flipVideo=" + flipVideo);
+
+        requestAnimationFrame(tick);
+    }
+
+    function handleError(error) {
+        console.error('Error: ', error);
     }
 
     function drawLine(begin, end, color) {
