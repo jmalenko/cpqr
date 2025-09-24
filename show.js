@@ -748,7 +748,7 @@ function onDurationChangeValue(value) {
 
     const speedBytesPerSecond = capacityForDataInOneFrame * (1000 / DURATION_TARGET);
     const speedMegaBytesPerHour = speedBytesPerSecond * 3600 / 1e6;
-    infoStr = " ... " + speedBytesPerSecond.toFixed(1) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h";
+    infoStr = " ... " + speedBytesPerSecond.toFixed(0) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h";
     const el = document.getElementById("speed");
     el.innerHTML = infoStr;
 }
