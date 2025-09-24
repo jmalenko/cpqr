@@ -534,10 +534,10 @@ function onShowFrame(frame, part) {
         log("Frame " + frame + "." + part + ": " + frameContent);
     }
 
-    const time1 = new Date();
+    // const time1 = new Date();
     qrcode.makeCode(frameContent);
-    const time2 = new Date();
-    const durationCodegeneration = time2 - time1;
+    // const time2 = new Date();
+    // const durationCodegeneration = time2 - time1;
     // log("Code generation took " + durationCodegeneration + " ms");
 }
 
