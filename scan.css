@@ -29,6 +29,12 @@ body {
     height: 100%;
 }
 
+#right-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 #status-section {
     flex: 0 0 auto;
     padding: 1em;
@@ -69,6 +75,7 @@ body {
     #main-layout {
         flex-direction: row;
     }
+
     #canvas-section {
         flex: 0 0 40vw;
         min-width: 40vw;
@@ -76,6 +83,13 @@ body {
         min-height: 100vh;
         max-height: 100vh;
     }
+
+    #right-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
     #status-section {
         flex: 0 0 20%;
         min-width: 0;
@@ -83,6 +97,7 @@ body {
         flex-direction: column;
         gap: 1em;
     }
+
     #log-section {
         flex: 1 1 0;
         min-width: 0;
