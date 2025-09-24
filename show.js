@@ -533,11 +533,10 @@ function onShowFrame(frame, part) {
     let frameContent = getFrameContent(frame, part);
 
     if (part === undefined) {
-        log("Frame " + frame);
+        log("Frame " + frame + ": " + frameContent);
     } else {
-        log("Frame " + frame + "." + part);
+        log("Frame " + frame + "." + part + ": " + frameContent);
     }
-    // log("Frame content: " + frameContent);
 
     // TODO Fix crash when the file name contains a non-ASCII character
 
