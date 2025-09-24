@@ -462,7 +462,7 @@ let contentReadPart = []; // contentReadPart[frameIndex][partIndex] contains the
 PartIndex is a sequence of 0s and 1s where 0 denotes "the left part" and 1 denote "the right part".
 Mathematically: PartIndex is an encoding of a subinterval of the 0-1 interval, in binary encoding.
 For example
-- If we got frame content (stored in contentRead), then fine. Othwerwise we construct it from parts.
+- If we got frame content (stored in contentRead), then fine. Othwerwise, we construct it from parts.
 - A frame can be constructed from parts 0 and 1 (left and right part of the frame).
 - But in case the right part is missing, the trame can be constructed from parts 0 and 10 and 11 (combination of parts 10 and 11 gives part 1).
  */
