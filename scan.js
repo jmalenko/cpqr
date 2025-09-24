@@ -709,6 +709,9 @@ function updateInfo(missing) {
     el.innerHTML = infoStr;
 }
 
+// Inspired by
+// https://simpl.info/getusermedia/sources/ - getting the selector with cameras
+// https://cozmo.github.io/jsQR/ - getting the video stream and processing video frame by frame
 function initStream() {
     let lastFrameTime = null;
 
