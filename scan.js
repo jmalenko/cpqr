@@ -740,9 +740,8 @@ function initStream() {
     function gotDevices(deviceInfos) {
         cameraSelect.innerHTML = '';
         for (const deviceInfo of deviceInfos) {
-            log("Got device: kind=" + deviceInfo.kind + ", deviceId=" + deviceInfo.deviceId + ", label=" + deviceInfo.label)
+            // log("Got device: kind=" + deviceInfo.kind + ", deviceId=" + deviceInfo.deviceId + ", label=" + deviceInfo.label)
             if (deviceInfo.kind === 'videoinput') {
-                log("It's a camera");
                 const option = document.createElement('option');
                 option.value = deviceInfo.deviceId;
                 option.text = deviceInfo.label || `Camera ${cameraSelect.length + 1}`;
