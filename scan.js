@@ -676,13 +676,12 @@ function updateInfo(missing) {
     // Update info
     let infoStr = "";
     const upperBound = Math.max(contentRead.length, contentReadPart.length);
-    infoStr += upperBound;
     try {
         let [hash, fileName, numberOfFrames] = getContentInfo();
         const fileNameLast = getFileNameLast(fileName);
 
         let percent = Math.round(upperBound / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
-        let infoStr2 = " / " + numberOfFrames + " ... " + percent + "%";
+        let infoStr2 = percent + "% ... " + upperBound + " / " + numberOfFrames;
         if (hash === hashSaved) {
             infoStr2 += " Saved";
         }
@@ -691,7 +690,7 @@ function updateInfo(missing) {
 
         infoStr += infoStr2;
     } catch (e) {
-        infoStr += " / ? ... ?%<br/>?";
+        infoStr += upperBound + " / ? ... ?%<br/>?";
     }
     if (missing !== undefined) {
         infoStr += "<br/>";

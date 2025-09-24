@@ -534,6 +534,8 @@ function onShowFrame(frame, part) {
     }
     // log("Frame content: " + frameContent);
 
+    // TODO Fix crash when the file name contains a non-ASCII character
+
     // const time1 = new Date();
     qrcode.makeCode(frameContent);
     // const time2 = new Date();
@@ -742,7 +744,7 @@ function updateInfo() {
     if (round === 0) {
         const numberOfFrames = getNumberOfFrames();
         const ratio = frame / numberOfFrames * 100;
-        infoStr += "Done " + ratio.toFixed(2) + "%, frame " + frame + " / " + numberOfFrames + ". ";
+        infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
 
         const timeLeft = Math.round((numberOfFrames - frame) * DURATION_TARGET / 1000);
         const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000));
