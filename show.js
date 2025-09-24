@@ -528,10 +528,11 @@ function onShowFrame(frame, part) {
     let frameContent = getFrameContent(frame, part);
 
     if (part === undefined) {
-        log("Frame " + frame + ": " + frameContent);
+        log("Frame " + frame);
     } else {
-        log("Frame " + frame + "." + part + ": " + frameContent);
+        log("Frame " + frame + "." + part);
     }
+    // log("Frame content: " + frameContent);
 
     // const time1 = new Date();
     qrcode.makeCode(frameContent);
