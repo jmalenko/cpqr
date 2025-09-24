@@ -731,8 +731,7 @@ function initStream() {
     function gotDevices(deviceInfos) {
         const cameraSelect = document.getElementById('cameraSelect');
         cameraSelect.innerHTML = '';
-        for (let i = 0; i < deviceInfos.length; ++i) {
-            const deviceInfo = deviceInfos[i];
+        for (const deviceInfo of deviceInfos) {
             if (deviceInfo.kind === 'videoinput') {
                 const option = document.createElement('option');
                 option.value = deviceInfo.deviceId;
@@ -741,13 +740,28 @@ function initStream() {
             }
         }
     }
+        // function gotDevices(deviceInfos) {
+        //     window.deviceInfos = deviceInfos; // make available to console
+        //     console.log('Available input and output devices:', deviceInfos);
+        //     for (const deviceInfo of deviceInfos) {
+        //         const option = document.createElement('option');
+        //         option.value = deviceInfo.deviceId;
+        //         if (deviceInfo.kind === 'audioinput') {
+        //             option.text = deviceInfo.label || `Microphone ${audioSelect.length + 1}`;
+        //             audioSelect.appendChild(option);
+        //         } else if (deviceInfo.kind === 'videoinput') {
+        //             option.text = deviceInfo.label || `Camera ${videoSelect.length + 1}`;
+        //             videoSelect.appendChild(option);
+        //         }
+        //     }
+        // }
 
     function startStream(deviceId) {
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
         }
         const constraints = {
-            video: deviceId ? {deviceId: {exact: deviceId}} : {facingMode: "environment"}
+            video: deviceId ? {deviceId: {exact: deviceId}} : {undefined}
         };
         navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
             currentStream = stream;
@@ -829,8 +843,6 @@ function initStream() {
 // TODO Test - it seems that the scanner stops around frame 1000
 
 // TODO Scan - improve status layout - camera label next to camera selection, scan speed next to percentage, handle 2 stream infos
-
-// TODO Scan - Fix: On my mobile, only one camera out of two is shown. Also show camera name.
 
 function init() {
     // Run tests
