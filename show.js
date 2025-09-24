@@ -539,6 +539,7 @@ function onShowFrame(frame, part) {
     }
 
     // TODO Fix crash when the file name contains a non-ASCII character
+    // TODO Add Capacity to page
 
     const time1 = new Date();
     qrcode.makeCode(frameContent);
