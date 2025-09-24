@@ -467,7 +467,7 @@ For example
 - But in case the right part is missing, the frame can be constructed from parts 0 and 10 and 11 (combination of parts 10 and 11 gives part 1).
  */
 
-let hashSaved; // hash of the last saved file (specifiaclly the received hash (of fileName + data)
+let hashSaved; // hash of the last saved file (specifically the received hash (of fileName + data)
 
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.substr(from, 1);
