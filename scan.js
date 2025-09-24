@@ -712,6 +712,8 @@ function updateInfo(missing) {
 function initStream() {
     let lastFrameTime = null;
 
+    const cameraSelect = document.getElementById('cameraSelect');
+
     let currentStream = null;
 
     var video = document.createElement("video");
@@ -724,18 +726,18 @@ function initStream() {
 
     var flipVideo;
 
-    navigator.mediaDevices.enumerateDevices().then(gotDevices);
-
-    const cameraSelect = document.getElementById('cameraSelect');
     cameraSelect.onchange = function () {
-        startStream(cameraSelect.value);
+        getStream(cameraSelect.value);
     };
 
-    // Start with default camera
-    startStream();
+    // Start with default camera. Only then we can get all the devices.
+    getStream().then(getDevices).then(gotDevices);
+
+    function getDevices() {
+        return navigator.mediaDevices.enumerateDevices();
+    }
 
     function gotDevices(deviceInfos) {
-        const cameraSelect = document.getElementById('cameraSelect');
         cameraSelect.innerHTML = '';
         for (const deviceInfo of deviceInfos) {
             log("Got device: kind=" + deviceInfo.kind + ", deviceId=" + deviceInfo.deviceId + ", label=" + deviceInfo.label)
@@ -749,27 +751,34 @@ function initStream() {
         }
     }
 
-    function startStream(deviceId) {
-        log("Starting stream");
+    function getStream(deviceId) {
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
         }
         const constraints = {
             video: deviceId ? {deviceId: {exact: deviceId}} : {undefined}
         };
-        log("Using constraints: " + JSON.stringify(constraints));
-        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
-            currentStream = stream;
-            video.srcObject = stream;
-            video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
-            video.play();
+        return navigator.mediaDevices.getUserMedia(constraints).then(gotStream).catch(handleError);
+    }
 
-            // flipVideo = (constraints.video.facingMode === "user");
-            flipVideo = false;
-            log("flipVideo=" + flipVideo);
+    function gotStream(stream) {
+        currentStream = stream;
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+        video.play();
 
-            requestAnimationFrame(tick);
-        });
+        cameraSelect.selectedIndex = [...cameraSelect.options]
+            .findIndex(option => option.text === stream.getVideoTracks()[0].label);
+
+        flipVideo = false;
+        log("flipVideo=" + flipVideo);
+
+        requestAnimationFrame(tick);
+    }
+
+    function handleError(error) {
+        console.error('Error: ', error);
+        log("Error getting camera: " + error)
     }
 
     function drawLine(begin, end, color) {
