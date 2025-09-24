@@ -761,6 +761,4 @@ function formatDuration(seconds) {
     return `${h}h ${m}m ${s}s`;
 }
 
-// TODO Fix layout - Duration is out of the window to the right (when log lines are long)
-
 window.addEventListener('DOMContentLoaded', init);
