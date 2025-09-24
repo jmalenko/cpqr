@@ -15,7 +15,7 @@
     </div>
     <div id="right-section">
         <div id="controls-section">
-            <div class="controls-row">
+            <div class="controls-row-1">
                 <input id="filename" type="file" onchange="openFile(event)">
                 <div class="duration-group">
                     <label for="duration">Duration</label>
@@ -23,7 +23,10 @@
                     <span>ms</span>
                 </div>
             </div>
-            <div class="show-again-row">
+            <div class="controls-row-next">
+                <div id="info">Statistics</div>
+            </div>
+            <div class="controls-row-next">
                 <label for="missing">Show again:</label>
                 <input id="missing" onkeypress="onMissingFramesChange(event)"
                        title="You can use most natural separators and ranges. Example: 2,3.4 5.7-9.11+4. Press / to delete a number from beginning.">

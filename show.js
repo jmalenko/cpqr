@@ -441,7 +441,7 @@ function getContent() {
 }
 
 function getNumberOfFrames() {
-    return Math.ceil(getContent().length / capacityForDataInOneFrame); // Keep this consistent with calcultation in scan.js
+    return Math.ceil(getContent().length / capacityForDataInOneFrame); // Keep this consistent with calculation in scan.js
 }
 
 function getFrameContent(index, part) {
@@ -539,6 +539,8 @@ function onShowFrame(frame, part) {
     // const time2 = new Date();
     // const durationCodegeneration = time2 - time1;
     // log("Code generation took " + durationCodegeneration + " ms");
+
+    updateInfo();
 }
 
 function onEnd() {
@@ -735,7 +737,31 @@ function onDurationChange(event) {
     }
 }
 
+function updateInfo() {
+    let infoStr = "";
+    if (round === 0) {
+        const numberOfFrames = getNumberOfFrames();
+        const ratio = frame / numberOfFrames * 100;
+        infoStr += "Done " + ratio.toFixed(2) + "%, frame " + frame + " / " + numberOfFrames + ". ";
+
+        const timeLeft = Math.round((numberOfFrames - frame) * DURATION_TARGET / 1000);
+        const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000));
+        infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + "."
+    } else {
+        infoStr += "Round " + round + ", frame " + frame + "." + part;
+    }
+
+    const el = document.getElementById("info");
+    el.innerHTML = infoStr;
+}
+
+function formatDuration(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return `${h}h ${m}m ${s}s`;
+}
+
 // TODO Fix layout - Duration is out of the window to the right (when log lines are long)
-// TODO Show estimations - Duration of sending, number of frames, time of end
 
 window.addEventListener('DOMContentLoaded', init);

@@ -70,7 +70,7 @@ body {
 
 /* Controls positioning */
 
-.controls-row {
+.controls-row-1 {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -83,7 +83,7 @@ body {
     gap: 0.3em;
 }
 
-.show-again-row {
+.controls-row-next {
     display: flex;
     align-items: center;
     gap: 0.5em;
