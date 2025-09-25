@@ -438,7 +438,8 @@ function getContent() {
     content += encodeWithLength(VERSION);
     const hash = hashFnv32a(fileName + data, false);
     content += encodeWithLength(hash);
-    content += encodeWithLength(fileName);
+    const fileNameEncoded = encodeURIComponent(fileName);
+    content += encodeWithLength(fileNameEncoded); // filename may contain any unicode characters. We have to encode it to ASCII for QR code.
     content += encodeWithLength(data);
 
     return content;
@@ -538,7 +539,6 @@ function onShowFrame(frame, part) {
         log("Frame " + frame + "." + part + ": " + frameContent);
     }
 
-    // TODO Fix crash when the file name contains a non-ASCII character
     // TODO Add Capacity to page
 
     const time1 = new Date();

@@ -549,7 +549,8 @@ function decodeContentWithoutChecks(content) {
 
     [length, hash, from] = decodeWithLength(content, from);
 
-    [length, fileName, from] = decodeWithLength(content, from);
+    [length, fileNameEncoded, from] = decodeWithLength(content, from);
+    let filename = decodeURIComponent(fileNameEncoded);
 
     [length, data, from] = decodeWithLength(content, from);
 
