@@ -733,8 +733,7 @@ function onMissingFramesChange(event) {
             nextFrame();
         }
     } else if (event.keyCode === 47) { // Slash
-        let missingStrNew = missingStr.replace(/^[0-9-]*[,. ]?/, "");
-        el.value = missingStrNew;
+        el.value = missingStr.replace(/^[0-9-]*[,. ]?/, "");
         event.returnValue = false; // block key
     }
 }
@@ -752,7 +751,7 @@ function onDurationChangeValue(value) {
 
     const speedBytesPerSecond = capacityForDataInOneFrame * (1000 / DURATION_TARGET);
     const speedMegaBytesPerHour = speedBytesPerSecond * 3600 / 1e6;
-    infoStr = " ... " + speedBytesPerSecond.toFixed(0) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h";
+    let infoStr = " ... " + speedBytesPerSecond.toFixed(0) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h";
     const el = document.getElementById("speed");
     el.innerHTML = infoStr;
 }
