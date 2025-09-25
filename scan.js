@@ -790,6 +790,7 @@ function initStream() {
     function selectBackCamera() {
         for (let i = 0; i < cameraSelect.options.length; i++) {
             if (cameraSelect.options[i].text.toLowerCase().includes("back")) {
+                log("Selecting back camera: " + cameraSelect.options[i].text)
                 cameraSelect.selectedIndex = i;
                 cameraSelect.onchange();
                 break;
