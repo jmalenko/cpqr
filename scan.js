@@ -474,6 +474,8 @@ For example
 
 let hashSaved; // hash of the last saved file (specifically the received hash (of fileName + data)
 
+let headerDecoded = false; // true if the header (typically in frame 0, but can continue in following frames) was decoded successfully
+
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.substr(from, 1);
     const lengthOfLength = Number(lengthOfLengthStr);
@@ -575,7 +577,6 @@ function decodeContent() {
 }
 
 function getContentInfo() {
-    // TODO Assumption: data start in the first (with counted from 0) frame
     const content = contentRead[0] || getFrameFromParts(0);
     let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
@@ -625,13 +626,17 @@ function onScan(content) {
         }
         frameNumber = frame;
 
-        if (frame === 0) {
+        if (! headerDecoded) {
             try {
                 let [hash, fileName, numberOfFrames] = getContentInfo();
                 log("File name = " + fileName);
                 log("Frames = " + numberOfFrames);
+                headerDecoded = true;
+                if (0 < frame) {
+                    log("Header decoded");
+                }
             } catch (e) {
-                log("Cannot get info from frame 0");
+                log("Cannot decode header");
             }
         }
 

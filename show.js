@@ -281,6 +281,8 @@ Format of Content
 
 Field "2. Hash" contains the 32 bit FNV-1a hash of the concatenation of the remaining fields.
 
+Header is defined as fields 1-3.
+
 Format of one frame
 ===================
 
