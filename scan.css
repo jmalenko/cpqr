@@ -71,6 +71,26 @@ body {
     color: #f00;
 }
 
+.controls-row-1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+}
+
+.controls-row-next {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-top: 1em;
+}
+
+.camera-group {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+}
+
 @media (orientation: landscape) {
     #main-layout {
         flex-direction: row;

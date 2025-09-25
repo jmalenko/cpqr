@@ -691,12 +691,13 @@ function updateInfo(missing) {
         let [hash, fileName, numberOfFrames] = getContentInfo();
         const fileNameLast = getFileNameLast(fileName);
 
-        let percent = Math.round(upperBound / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
-        let infoStr2 = percent + "% ... " + upperBound + " / " + numberOfFrames;
+        let infoStr2 = "";
         if (hash === hashSaved) {
-            infoStr2 += " <span style='color: #008000'>Saved</span>";
+            infoStr2 += "<span style='color: #008000'>Saved</span> ";
+        } else {
+            let percent = Math.round(upperBound / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
+            infoStr2 = percent + "% ... " + upperBound + " / " + numberOfFrames+ ". ";
         }
-        infoStr2 += "<br/>";
         infoStr2 += fileNameLast;
 
         infoStr += infoStr2;
@@ -731,10 +732,7 @@ function initStream() {
     var video = document.createElement("video");
     var canvasElement = document.getElementById("canvas");
     var canvas = canvasElement.getContext("2d");
-    var loadingMessage = document.getElementById("loadingMessage");
-    var outputContainer = document.getElementById("output");
-    var outputMessage = document.getElementById("outputMessage");
-    var outputData = document.getElementById("outputData");
+    var status = document.getElementById("status");
 
     var flipVideo;
 
@@ -831,12 +829,9 @@ function initStream() {
         }
         lastFrameTime = now;
 
-        loadingMessage.innerText = "⌛ Loading video..."
+        status.innerText = "Loading video..."
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            loadingMessage.hidden = true;
             canvasElement.hidden = false;
-            outputContainer.hidden = false;
-
             canvasElement.height = video.videoHeight;
             canvasElement.width = video.videoWidth;
 
@@ -861,13 +856,9 @@ function initStream() {
                 drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
                 drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
 
-                outputMessage.hidden = true;
-                outputData.parentElement.hidden = false;
-                // outputData.innerText = code.data;
-                outputData.innerText = "Frame " + frameNumber;
+                status.innerText = "QR code with frame " + frameNumber;
             } else {
-                outputMessage.hidden = false;
-                outputData.parentElement.hidden = true;
+                status.innerText = "No QR code";
             }
         }
         requestAnimationFrame(tick);
@@ -875,8 +866,6 @@ function initStream() {
 }
 
 // TODO Test - it seems that the scanner stops around frame 1000
-
-// TODO Scan - improve status layout - camera label next to camera selection, scan speed next to percentage, handle 2 stream infos
 
 function init() {
     // Run tests

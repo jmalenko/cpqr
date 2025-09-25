@@ -13,15 +13,22 @@
     </div>
     <div id="right-section">
         <div id="status-section">
-            <div id="loadingMessage">Unable to access video stream (enable camera)</div>
-            <div id="output" hidden>
-                <div id="outputMessage">No QR code detected.</div>
-                <div hidden><b>Data:</b> <span id="outputData"></span></div>
+            <div class="controls-row-1">
+                <div id="status">Unable to access video stream (enable camera)</div>
+                <div class="camera-group">
+                    <label for="cameraSelect">Camera</label>
+                    <select id="cameraSelect"></select>
+                </div>
             </div>
-            <label for="cameraSelect">Camera</label><select id="cameraSelect"></select>
-            <div id="info"></div>
-            <div id="missingList"></div>
-            <div id="scanSpeed"></div>
+            <div class="controls-row-next">
+                <div id="info"></div>
+            </div>
+            <div class="controls-row-next">
+                <div id="missingList"></div>
+            </div>
+            <div class="controls-row-next">
+                <div id="scanSpeed"></div>
+            </div>
         </div>
         <div id="log-section">
             <pre id="log"></pre>
