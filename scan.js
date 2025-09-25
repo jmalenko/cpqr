@@ -754,6 +754,7 @@ function initStream() {
                 cameraSelect.appendChild(option);
             }
         }
+        selectBackCamera();
     }
 
     function getStream(deviceId) {
@@ -786,6 +787,17 @@ function initStream() {
         log("Error getting camera: " + error)
     }
 
+    function selectBackCamera() {
+        for (let i = 0; i < cameraSelect.options.length; i++) {
+            if (cameraSelect.options[i].text.toLowerCase().includes("back")) {
+                cameraSelect.selectedIndex = i;
+                cameraSelect.onchange();
+                break;
+            }
+        }
+    }
+
+
     function drawLine(begin, end, color) {
         canvas.beginPath();
         canvas.moveTo(begin.x, begin.y);
@@ -814,8 +826,6 @@ function initStream() {
 
             canvasElement.height = video.videoHeight;
             canvasElement.width = video.videoWidth;
-
-            // TODO After cameras are detected, select the back facing camera
 
             // TODO Flip video horizontally only on user facing camera
             // Flip video horizontally
