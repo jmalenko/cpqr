@@ -693,7 +693,7 @@ function updateInfo(missing) {
         let percent = Math.round(upperBound / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
         let infoStr2 = percent + "% ... " + upperBound + " / " + numberOfFrames;
         if (hash === hashSaved) {
-            infoStr2 += " Saved";
+            infoStr2 += " <span style='color: #008000'>Saved</span>";
         }
         infoStr2 += "<br/>";
         infoStr2 += fileNameLast;
