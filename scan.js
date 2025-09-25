@@ -23,12 +23,14 @@ function formatDate(date) {
 }
 
 function log(str) {
+    const MAX_LINES = 1000;
+
     const date = new Date();
     const el = document.getElementById("log");
     const logLine = "[" + formatDate(date) + "] " + str;
     const lines = (el.innerHTML ? el.innerHTML.split('\n') : []);
     lines.unshift(logLine);
-    el.innerHTML = lines.slice(0, 100).join('\n');
+    el.innerHTML = lines.slice(0, MAX_LINES).join('\n');
 }
 
 /**
