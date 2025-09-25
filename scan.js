@@ -776,8 +776,11 @@ function initStream() {
         cameraSelect.selectedIndex = [...cameraSelect.options]
             .findIndex(option => option.text === stream.getVideoTracks()[0].label);
 
-        flipVideo = false;
-        log("flipVideo=" + flipVideo);
+        let label = cameraSelect.options[cameraSelect.selectedIndex].text;
+        flipVideo = ! label.toLowerCase().includes("back")
+        if (flipVideo) {
+            log("Flipping video horizontally");
+        }
 
         requestAnimationFrame(tick);
     }
@@ -789,8 +792,9 @@ function initStream() {
 
     function selectBackCamera() {
         for (let i = 0; i < cameraSelect.options.length; i++) {
-            if (cameraSelect.options[i].text.toLowerCase().includes("back")) {
-                log("Selecting back camera: " + cameraSelect.options[i].text)
+            let label = cameraSelect.options[i].text;
+            if (label.toLowerCase().includes("back")) { // Most Android cameras have "back" or "front" in their label
+                log("Selecting back camera: " + label)
                 cameraSelect.selectedIndex = i;
                 cameraSelect.onchange();
                 break;
@@ -828,7 +832,6 @@ function initStream() {
             canvasElement.height = video.videoHeight;
             canvasElement.width = video.videoWidth;
 
-            // TODO Flip video horizontally only on user facing camera
             // Flip video horizontally
             if (!flipVideo) {
                 canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
