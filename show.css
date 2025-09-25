@@ -34,7 +34,8 @@ body {
     align-items: center;
     justify-content: center;
     padding: 5%;
-    box-sizing: border-box;}
+    box-sizing: border-box;
+}
 
 #qrcode * {
     max-width: 100%;
@@ -79,11 +80,13 @@ body {
     #main-layout {
         flex-direction: column;
     }
+
     #qrcode-section {
         flex: none;
         height: 100vw;
         width: 100vw;
     }
+
     #right-section {
         flex: 1 1 0;
         min-width: 0;
