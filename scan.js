@@ -542,7 +542,7 @@ function getContent() {
 
 function decodeContentWithoutChecks(content) {
     let length, from = 0;
-    let versionStr, hash, fileName, data;
+    let versionStr, hash, fileName, fileNameEncoded, data;
 
     [length, versionStr, from] = decodeWithLength(content, from);
     let version = Number(versionStr);
@@ -552,7 +552,7 @@ function decodeContentWithoutChecks(content) {
     [length, hash, from] = decodeWithLength(content, from);
 
     [length, fileNameEncoded, from] = decodeWithLength(content, from);
-    let filename = decodeURIComponent(fileNameEncoded);
+    fileName = decodeURIComponent(fileNameEncoded);
 
     [length, data, from] = decodeWithLength(content, from);
 
@@ -776,10 +776,12 @@ function initStream() {
         cameraSelect.selectedIndex = [...cameraSelect.options]
             .findIndex(option => option.text === stream.getVideoTracks()[0].label);
 
-        let label = cameraSelect.options[cameraSelect.selectedIndex].text;
-        flipVideo = ! label.toLowerCase().includes("back")
-        if (flipVideo) {
-            log("Flipping video horizontally");
+        let option = cameraSelect.options[cameraSelect.selectedIndex];
+        if (option) {
+            flipVideo = !option.text.toLowerCase().includes("back")
+            if (flipVideo) {
+                log("Flipping video horizontally");
+            }
         }
 
         requestAnimationFrame(tick);
