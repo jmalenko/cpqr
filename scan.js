@@ -608,6 +608,9 @@ function onScan(content) {
             frame = Number(frameStr);
             if (contentRead[frame] != null) {
                 console.log("Frame " + frame + " was already encountered in the past");
+                if (contentRead[frame] === contentFrame) {
+                    return;
+                }
             } else {
                 log("Read frame index " + frameStr + " with content " + contentFrame);
             }
@@ -620,6 +623,9 @@ function onScan(content) {
                 contentReadPart[frame] = [];
             if (contentReadPart[frame][part] != null) {
                 console.log("Frame " + frame + "." + part + " was already encountered in the past");
+                if (contentReadPart[frame][part] === contentFrame) {
+                    return;
+                }
             } else {
                 log("Read frame " + frame + "." + part + " with content " + contentFrame);
             }
