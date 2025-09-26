@@ -23,7 +23,7 @@ function formatDate(date) {
 }
 
 function log(str) {
-    const MAX_LINES = 1000;
+    const MAX_LINES = 100;
 
     const date = new Date();
     const el = document.getElementById("log");
