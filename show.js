@@ -573,7 +573,7 @@ function nextFrame() {
     let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
     // log("Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, delta=" + delta + " ms, duration=" + duration + " ms, QR code generation took " + durationQrCodeGeneration + " ms.");
     if (0 < delta && duration <= 0) {
-        log("The system is slow and is not meeting the target duration. Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms.");
+        log("The system is slow and is not meeting the target duration. Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, QR code creation=" + durationQrCodeGeneration + ".");
     }
     if (isNaN(delta)) { // on the first frame, when dateNextFrame was undefined
         duration = DURATION_TARGET
