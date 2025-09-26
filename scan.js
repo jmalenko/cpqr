@@ -592,7 +592,7 @@ function onScan(content) {
         return;
     }
 
-    let frameNumber = null;
+    let frame;
     let missing;
 
     try {
@@ -600,7 +600,6 @@ function onScan(content) {
         let [frameStr, contentFrame] = decodeFrameContent(content);
         // log("Read frame index " + frameStr + " with content " + contentFrame);
 
-        let frame;
         const posDot = frameStr.indexOf(".");
 
         // Save frame
@@ -609,7 +608,7 @@ function onScan(content) {
             if (contentRead[frame] != null) {
                 console.log("Frame " + frame + " was already encountered in the past");
                 if (contentRead[frame] === contentFrame) {
-                    return;
+                    return frame;
                 }
             } else {
                 log("Read frame index " + frameStr + " with content " + contentFrame);
@@ -624,14 +623,13 @@ function onScan(content) {
             if (contentReadPart[frame][part] != null) {
                 console.log("Frame " + frame + "." + part + " was already encountered in the past");
                 if (contentReadPart[frame][part] === contentFrame) {
-                    return;
+                    return frame;
                 }
             } else {
                 log("Read frame " + frame + "." + part + " with content " + contentFrame);
             }
             contentReadPart[frame][part] = contentFrame;
         }
-        frameNumber = frame;
     } catch (e) {
         console.log("READ: " + content);
         console.log("Error processing QR code: " + e.toString(), e)
@@ -686,7 +684,7 @@ function onScan(content) {
     }
 
     updateInfo(missing);
-    return frameNumber;
+    return frame;
 }
 
 function getFileNameLast(fileName) {
