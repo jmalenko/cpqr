@@ -324,6 +324,8 @@ var DURATION_TARGET = 500; // Duration between frames, in milliseconds.
 var duration; // Effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
 var dateNextFrame; // Date of previous run of nextFrame()
 var durationQrCodeGeneration; // Time it took to generate the QR code, in milliseconds. This is used only for debugging purposes.
+let durationActual; // Actual duration between frames, in milliseconds.
+
 var fileName;
 var data;
 
@@ -569,10 +571,11 @@ function onEnd() {
 function nextFrame() {
     // Adjust duration
     let dateNextFrameCurrent = new Date();
-    let durationActual = dateNextFrameCurrent - dateNextFrame;
+    durationActual = dateNextFrameCurrent - dateNextFrame;
     let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
     // log("Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, delta=" + delta + " ms, duration=" + duration + " ms, QR code generation took " + durationQrCodeGeneration + " ms.");
-    if (0 < delta && duration <= 0) {
+    var systemIsSlow = 0 < delta && duration <= 0
+    if (systemIsSlow) {
         log("The system is slow and is not meeting the target duration. Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, QR code creation=" + durationQrCodeGeneration + ".");
     }
     if (isNaN(delta)) { // on the first frame, when dateNextFrame was undefined
@@ -770,7 +773,7 @@ function updateInfo() {
         const ratio = frame / numberOfFrames * 100;
         infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
 
-        const timeLeft = Math.round((numberOfFrames - frame) * DURATION_TARGET / 1000);
+        const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) ? DURATION_TARGET : durationActual) / 1000);
         const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000));
         infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + ". "
     } else {
