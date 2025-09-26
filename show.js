@@ -733,7 +733,7 @@ function onMissingFramesChange(event) {
             nextFrame();
         }
     } else if (event.keyCode === 47) { // Slash
-        el.value = missingStr.replace(/^[0-9-]*[,. ]?/, "");
+        el.value = missingStr.replace(/^[^,. ]*[,. ]?/, "");
         event.returnValue = false; // block key
     }
 }
