@@ -527,7 +527,7 @@ function onPlay() {
     round = 0;
     frame = -1;
     missingFrames = [];
-    missingFramePart = 0;
+    missingFramePart = -1;
     state = STATE_PLAYING;
     duration = DURATION_TARGET;
 
@@ -600,15 +600,21 @@ function nextFrame() {
 
     // Show missing if there are any
     if (0 < missingFrames.length) {
-        // TODO Show missing in rounds
+        // Show 3 frames: frame and two parts. This is to increase probability that the frame is received
         const f = missingFrames[0];
-        if (missingFramePart === 1) {
-            missingFrames.shift();
+        if (missingFramePart === -1) {
+            onShowFrame(f);
+            missingFramePart++;
+        } else {
+            onShowFrame(f, missingFramePart.toString());
+
+            if (missingFramePart === 1) {
+                missingFrames.shift();
+                missingFramePart = -1;
+            } else {
+                missingFramePart++;
+            }
         }
-
-        onShowFrame(f, missingFramePart.toString());
-
-        missingFramePart = 1 - missingFramePart;
     } else { // Show next frame & part
         let partMax = 2 ** round;
 
