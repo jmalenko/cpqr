@@ -718,7 +718,7 @@ function updateInfo(missing) {
     if (missing !== undefined) {
         infoStr += ". Missing " + missing.length + ":";
 
-        elMissingList.innerHTML = missing;
+        elMissingList.innerHTML = formatMissing(missing);
         elMissingList.hidden = false;
     } else {
         elMissingList.hidden = true;
@@ -726,6 +726,39 @@ function updateInfo(missing) {
 
     const el = document.getElementById("info");
     el.innerHTML = infoStr;
+}
+
+// Parameter missing must be an ordered array of numbers.
+// Formats the missing array as a string. Consecutive numbers are grouped as ranges in the format N+M, where N is the first number in the range and M is the lengths of consecutive sequence.
+// Example: [1,3,4,6,7,8] -> "1,3+1,6+2"
+function formatMissing(missing) {
+    if (!missing || missing.length === 0) return "";
+
+    let result = [];
+    let start = missing[0];
+    let count = 1;
+
+    for (let i = 1; i < missing.length; i++) {
+        if (missing[i] === missing[i - 1] + 1) {
+            count++;
+        } else {
+            if (count > 1) {
+                result.push(start + "+" + (count - 1));
+            } else {
+                result.push(start.toString());
+            }
+            start = missing[i];
+            count = 1;
+        }
+    }
+    // Add the last range or number
+    if (count > 1) {
+        result.push(start + "+" + (count - 1));
+    } else {
+        result.push(start.toString());
+    }
+
+    return result.join(", ");
 }
 
 // Inspired by
