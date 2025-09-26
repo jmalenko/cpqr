@@ -587,9 +587,6 @@ function getContentInfo() {
 }
 
 function onScan(content) {
-    console.log("READ: " + content);
-    log("READ: " + content);
-
     if (content.match(MEASURE_HEAD_REGEXP)) {
         scanMeasure(content);
         return;
@@ -601,7 +598,7 @@ function onScan(content) {
     try {
         // Save frame
         let [frameStr, contentFrame] = decodeFrameContent(content);
-        log("Read frame index " + frameStr + " with content " + contentFrame);
+        // log("Read frame index " + frameStr + " with content " + contentFrame);
 
         let frame;
         const posDot = frameStr.indexOf(".");
@@ -610,7 +607,9 @@ function onScan(content) {
         if (posDot === -1) {
             frame = Number(frameStr);
             if (contentRead[frame] != null) {
-                log("Frame " + frame + " was already encountered in the past");
+                console.log("Frame " + frame + " was already encountered in the past");
+            } else {
+                log("Read frame index " + frameStr + " with content " + contentFrame);
             }
             contentRead[frame] = contentFrame;
         } else {
@@ -620,58 +619,64 @@ function onScan(content) {
             if (contentReadPart[frame] === undefined)
                 contentReadPart[frame] = [];
             if (contentReadPart[frame][part] != null) {
-                log("Frame " + frame + "." + part + " was already encountered in the past");
+                console.log("Frame " + frame + "." + part + " was already encountered in the past");
+            } else {
+                log("Read frame " + frame + "." + part + " with content " + contentFrame);
             }
             contentReadPart[frame][part] = contentFrame;
         }
         frameNumber = frame;
-
-        if (! headerDecoded) {
-            try {
-                let [hash, fileName, numberOfFrames] = getContentInfo();
-                log("File name = " + fileName);
-                log("Frames = " + numberOfFrames);
-                headerDecoded = true;
-                if (0 < frame) {
-                    log("Header decoded");
-                }
-            } catch (e) {
-                log("Cannot decode header");
-            }
-        }
-
-        // If all frames then save
-        try {
-            let [hash, fileName, dataURL] = decodeContent();
-
-            if (hash !== hashSaved) {
-                log("Got all frames");
-                log("File name = " + fileName);
-                log("Data = " + dataURL);
-
-                const fileNameLast = getFileNameLast(fileName);
-
-                const posComma = dataURL.indexOf(",");
-                const b64 = dataURL.substr(posComma + 1);
-                const fileContent = atob(b64);
-
-                log("Downloading as " + fileNameLast);
-                download(fileContent, fileNameLast, 'text/plain');
-
-                hashSaved = hash;
-            }
-        } catch (e) {
-            if (e instanceof MissingFrameException) {
-                // The dataURL is not complete yet
-                log("Missing frames " + e.missing);
-                missing = e.missing;
-            }
-        }
     } catch (e) {
+        console.log("READ: " + content);
+        console.log("Error processing QR code: " + e.toString(), e)
         log("Error processing frame" + "\n" +
             "Content: " + content + "\n" +
             "Error: " + e.toString() + "\n" +
             "Stack trace: " + getStackTrace());
+        throw new QrCodeProcessingException("QR Code does not contain a frame");
+    }
+
+    // Log when header decoded
+    try {
+        if (!headerDecoded) {
+            let [hash, fileName, numberOfFrames] = getContentInfo();
+            log("File name = " + fileName);
+            log("Frames = " + numberOfFrames);
+            headerDecoded = true;
+            if (0 < frame) {
+                log("Header decoded");
+            }
+        }
+    } catch (e) {
+        log("Cannot decode header");
+    }
+
+    // If all frames then save
+    try {
+        let [hash, fileName, dataURL] = decodeContent();
+
+        if (hash !== hashSaved) {
+            log("Got all frames");
+            log("File name = " + fileName);
+            log("Data = " + dataURL);
+
+            const fileNameLast = getFileNameLast(fileName);
+
+            const posComma = dataURL.indexOf(",");
+            const b64 = dataURL.substr(posComma + 1);
+            const fileContent = atob(b64);
+
+            log("Downloading as " + fileNameLast);
+            download(fileContent, fileNameLast, 'text/plain');
+
+            hashSaved = hash;
+        }
+    } catch (e) {
+        if (e instanceof MissingFrameException) {
+            // The dataURL is not complete yet
+            log("Missing frames " + e.missing);
+            missing = e.missing;
+        }
     }
 
     updateInfo(missing);
@@ -696,7 +701,7 @@ function updateInfo(missing) {
             infoStr2 += "<span style='color: #008000'>Saved</span> ";
         } else {
             let percent = Math.round(upperBound / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
-            infoStr2 = percent + "% ... " + upperBound + " / " + numberOfFrames+ ". ";
+            infoStr2 = percent + "% ... " + upperBound + " / " + numberOfFrames + ". ";
         }
         infoStr2 += fileNameLast;
 
@@ -849,14 +854,18 @@ function initStream() {
                 inversionAttempts: "dontInvert",
             });
             if (code) {
-                let frameNumber = onScan(code.data);
+                try {
+                    let frameNumber = onScan(code.data);
 
-                drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");
-                drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF3B58");
-                drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
-                drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
+                    drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");
+                    drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF3B58");
+                    drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
+                    drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
 
-                status.innerText = "QR code with frame " + frameNumber;
+                    status.innerText = "QR code with frame " + frameNumber;
+                } catch (e) {
+                    status.innerText = "Unsupported QR code";
+                }
             } else {
                 status.innerText = "No QR code";
             }
