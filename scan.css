@@ -6,8 +6,6 @@ html, body {
 
 body {
     height: 100vh;
-    margin: 0;
-    padding: 0;
 }
 
 #main-layout {
@@ -19,8 +17,8 @@ body {
 }
 
 #canvas-section {
-    flex: 0 0 40vh;
-    max-height: 40vh;
+    flex: 0 0 30vh;
+    max-height: 30vh;
     width: 100vw;
     display: flex;
     align-items: center;
@@ -37,11 +35,11 @@ body {
 
 #status-section {
     flex: 0 0 auto;
-    padding: 1em;
+    padding: 0 1em;
     background: #eee;
     display: flex;
     flex-direction: column;
-    gap: 1em;
+    gap: 0.3em;
     font-size: 2em;
 }
 
@@ -75,14 +73,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1em;
 }
 
 .controls-row-next {
     display: flex;
     align-items: center;
-    gap: 0.5em;
-    margin-top: 1em;
+    gap: 0.2em;
 }
 
 .camera-group {
@@ -115,7 +111,7 @@ body {
         min-width: 0;
         min-height: 0;
         flex-direction: column;
-        gap: 1em;
+        gap: 0.3em;
     }
 
     #log-section {
