@@ -42,6 +42,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1em;
+    font-size: 2em;
 }
 
 #log-section {
@@ -61,10 +62,6 @@ body {
     height: auto;
     object-fit: contain;
     box-sizing: border-box;
-}
-
-#missingList {
-    font-size: xxx-large;
 }
 
 #missingList {
