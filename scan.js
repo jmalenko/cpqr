@@ -479,9 +479,15 @@ let headerDecoded = false; // true if the header (typically in frame 0, but can 
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.substr(from, 1);
     const lengthOfLength = Number(lengthOfLengthStr);
+    if (isNaN(lengthOfLength)) {
+        throw new Error("Invalid variable-length quantity value: length of length is not a number");
+    }
 
     const lengthStr = str.substr(from + 1, lengthOfLength);
     const length = Number(lengthStr);
+    if (isNaN(length)) {
+        throw new Error("Invalid variable-length quantity value: length is not a number");
+    }
 
     const data = str.substr(from + 1 + lengthOfLength, length);
 
@@ -499,7 +505,7 @@ function decodeFrameContent(content) {
 
 function getFrameFromParts(frame, prefix) {
     if (prefix === undefined) prefix = "";
-    if (5 < prefix.length) throw new Error("Cannot construct frame " + frame + " from parts");
+    if (5 < prefix.length) throw new Error("Cannot construct frame " + frame + " from parts because ");
 
     let res = "";
 
@@ -548,6 +554,9 @@ function decodeContentWithoutChecks(content) {
 
     [length, versionStr, from] = decodeWithLength(content, from);
     let version = Number(versionStr);
+    if (isNaN(version)) {
+        throw new Error("Error decoding content: version is not a number");
+    }
     if (version !== 1)
         throw new Exception("Unsupported version " + version);
 
@@ -595,28 +604,33 @@ function onScan(content) {
     let frame;
     let missing;
 
+    // Save frame
     try {
-        // Save frame
         let [frameStr, contentFrame] = decodeFrameContent(content);
         // log("Read frame index " + frameStr + " with content " + contentFrame);
 
         const posDot = frameStr.indexOf(".");
 
-        // Save frame
         if (posDot === -1) {
             frame = Number(frameStr);
+            if (isNaN(frame)) {
+                throw new Error("Error decoding: frame is not a number");
+            }
             if (contentRead[frame] != null) {
                 console.log("Frame " + frame + " was already encountered in the past");
                 if (contentRead[frame] === contentFrame) {
                     return frame;
                 }
             } else {
-                log("Read frame index " + frameStr + " with content " + contentFrame);
+                log("Read frame " + frameStr + " with content " + contentFrame);
             }
             contentRead[frame] = contentFrame;
         } else {
             frame = Number(frameStr.substr(0, posDot));
             const part = frameStr.substr(posDot + 1);
+            if (isNaN(frame)) {
+                throw new Error("Error decoding: frame is not a number");
+            }
 
             if (contentReadPart[frame] === undefined)
                 contentReadPart[frame] = [];
