@@ -712,16 +712,17 @@ function onMissingFramesChange(event) {
         }
 
         log("Add to missing: " + missingFramesNew);
-        // Add to missing frames to show
-        let missingFramesWithDuplicates = missingFrames.concat(missingFramesNew);
+        // Remove new frames after the maximum frame
+        const numberOfFrames = getNumberOfFrames();
+        missingFramesNew = missingFramesNew.filter(function (item) {
+            return item < numberOfFrames;
+        });
         // Remove duplicates
-        missingFrames = missingFramesWithDuplicates.filter(function (item, pos, a) {
-            return a.indexOf(item) === pos;
+        missingFramesNew = missingFramesNew.filter(function (value) {
+            return missingFrames.indexOf(value) === -1;
         });
-        // Remove frames after the maximum frame
-        missingFrames = missingFramesWithDuplicates.filter(function (item) {
-            return item < getNumberOfFrames();
-        });
+        // Add to missing frames to show
+        missingFrames = missingFrames.concat(missingFramesNew);
 
         if (0 < missingFrames.length && state !== STATE_PLAYING) {
             if (state === STATE_FINISHED) {
