@@ -55,7 +55,7 @@ function hashFnv32a(str, asString, seed) {
     }
     if (asString) {
         // Convert to 8 digit hex string
-        return ("0000000" + (hval >>> 0).toString(16)).substr(-8);
+        return ("0000000" + (hval >>> 0).toString(16)).slice(-8);
     }
     return hval >>> 0;
 }
@@ -477,19 +477,19 @@ let hashSaved; // hash of the last saved file (specifically the received hash (o
 let headerDecoded = false; // true if the header (typically in frame 0, but can continue in following frames) was decoded successfully
 
 function decodeWithLength(str, from) {
-    const lengthOfLengthStr = str.substr(from, 1);
+    const lengthOfLengthStr = str.slice(from, from + 1);
     const lengthOfLength = Number(lengthOfLengthStr);
     if (isNaN(lengthOfLength)) {
         throw new Error("Invalid variable-length quantity value: length of length is not a number");
     }
 
-    const lengthStr = str.substr(from + 1, lengthOfLength);
+    const lengthStr = str.slice(from + 1, from + 1 + lengthOfLength);
     const length = Number(lengthStr);
     if (isNaN(length)) {
         throw new Error("Invalid variable-length quantity value: length is not a number");
     }
 
-    const data = str.substr(from + 1 + lengthOfLength, length);
+    const data = str.slice(from + 1 + lengthOfLength, from + 1 + lengthOfLength + length);
 
     const next = from + 1 + lengthOfLength + length;
 
@@ -498,7 +498,7 @@ function decodeWithLength(str, from) {
 
 function decodeFrameContent(content) {
     let [, frameStr, from] = decodeWithLength(content, 0);
-    const contentFrame = content.substr(from);
+    const contentFrame = content.slice(from);
 
     return [frameStr, contentFrame];
 }
@@ -626,8 +626,8 @@ function onScan(content) {
             }
             contentRead[frame] = contentFrame;
         } else {
-            frame = Number(frameStr.substr(0, posDot));
-            const part = frameStr.substr(posDot + 1);
+            frame = Number(frameStr.slice(0, posDot));
+            const part = frameStr.slice(posDot + 1);
             if (isNaN(frame)) {
                 throw new Error("Error decoding: frame is not a number");
             }
@@ -681,7 +681,7 @@ function onScan(content) {
             const fileNameLast = getFileNameLast(fileName);
 
             const posComma = dataURL.indexOf(",");
-            const b64 = dataURL.substr(posComma + 1);
+            const b64 = dataURL.slice(posComma + 1);
             const fileContent = atob(b64);
 
             log("Downloading as " + fileNameLast);
@@ -694,6 +694,11 @@ function onScan(content) {
             // The dataURL is not complete yet
             log("Missing frames " + e.missing);
             missing = e.missing;
+        } else {
+            log("Error when trying to save file" + "\n" +
+                "Error: " + e.toString() + "\n" +
+                "Stack trace: " + getStackTrace());
+            throw e;
         }
     }
 
@@ -703,7 +708,7 @@ function onScan(content) {
 
 function getFileNameLast(fileName) {
     const posSlash = fileName.lastIndexOf("\\");
-    return fileName.substr(posSlash + 1);
+    return fileName.slice(posSlash + 1);
 }
 
 function updateInfo(missing) {
