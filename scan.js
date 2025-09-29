@@ -942,7 +942,7 @@ function init() {
 
     initStream();
 
-    scanSimulated();
+    // scanSimulated();
 
     // scanSimulatedMeasures();
 }
