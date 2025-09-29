@@ -558,7 +558,7 @@ function decodeContentWithoutChecks(content) {
         throw new Error("Error decoding content: version is not a number");
     }
     if (version !== 1)
-        throw new Exception("Unsupported version " + version);
+        throw new Error("Unsupported version " + version);
 
     [length, hash, from] = decodeWithLength(content, from);
 
@@ -575,12 +575,12 @@ function decodeContent() {
     let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
     if (length !== data.length)
-        throw new Exception("Not all data");
+        throw new Error("Not all data");
 
     // Verify hash
     const hashCalculated = hashFnv32a(fileName + data, false);
     if (hash !== hashCalculated.toString())
-        throw new Exception("Incorrect hash");
+        throw new Error("Incorrect hash");
 
     return [hash, fileName, data];
 }
@@ -651,7 +651,7 @@ function onScan(content) {
             "Content: " + content + "\n" +
             "Error: " + e.toString() + "\n" +
             "Stack trace: " + getStackTrace());
-        throw new QrCodeProcessingException("QR Code does not contain a frame");
+        throw new QrCodeProcessingError("QR Code does not contain a frame");
     }
 
     // Log when header decoded
