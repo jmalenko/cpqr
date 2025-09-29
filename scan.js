@@ -439,22 +439,24 @@ function download(strData, strFileName, strMimeType) {
 }
 
 /*
-    Exceptions
-    ==========
+    Errors
+    ======
  */
 
-function MissingFrameException(missing) {
-    this.missing = missing;
-    // Use V8's native method if available, otherwise fallback
-    if ("captureStackTrace" in Error)
-        Error.captureStackTrace(this, MissingFrameException);
-    else
-        this.stack = (new Error()).stack;
+class MissingFrameError extends Error {
+    constructor(missing) {
+        super("Missing frames: " + missing);
+        this.name = "MissingFrameError";
+        this.missing = missing;
+    }
 }
 
-MissingFrameException.prototype = Object.create(Error.prototype);
-MissingFrameException.prototype.name = "MissingFrameException";
-MissingFrameException.prototype.constructor = MissingFrameException;
+class NotAllDataError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "NotAllDataError";
+    }
+}
 
 /*
     Main content
@@ -542,7 +544,7 @@ function getContent() {
     }
 
     if (0 < missing.length) {
-        throw new MissingFrameException(missing);
+        throw new MissingFrameError(missing);
     }
 
     return content;
@@ -575,7 +577,7 @@ function decodeContent() {
     let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
     if (length !== data.length)
-        throw new Error("Not all data");
+        throw new NotAllDataError("Not all data");
 
     // Verify hash
     const hashCalculated = hashFnv32a(fileName + data, false);
@@ -690,10 +692,12 @@ function onScan(content) {
             hashSaved = hash;
         }
     } catch (e) {
-        if (e instanceof MissingFrameException) {
+        if (e instanceof MissingFrameError) {
             // The dataURL is not complete yet
             log("Missing frames " + e.missing);
             missing = e.missing;
+        } else if (e instanceof NotAllDataError) {
+            // Do nothing - it's normal that we do not have all data yet
         } else {
             log("Error when trying to save file" + "\n" +
                 "Error: " + e.toString() + "\n" +
@@ -938,7 +942,7 @@ function init() {
 
     initStream();
 
-    // scanSimulated();
+    scanSimulated();
 
     // scanSimulatedMeasures();
 }
