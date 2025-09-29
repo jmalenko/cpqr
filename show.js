@@ -396,7 +396,7 @@ function init() {
     // showSimulated();
 }
 
-function openFile(event) {
+function onOpenFile(event) {
     const input = event.target;
     const reader = new FileReader();
     reader.fileName = input.value;
