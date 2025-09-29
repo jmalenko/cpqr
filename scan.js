@@ -579,7 +579,7 @@ function decodeContent() {
 
     // Verify hash
     const hashCalculated = hashFnv32a(fileName + data, false);
-    if (hash !== hashCalculated)
+    if (hash !== hashCalculated.toString())
         throw new Exception("Incorrect hash");
 
     return [hash, fileName, data];
