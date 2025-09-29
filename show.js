@@ -55,7 +55,7 @@ function hashFnv32a(str, asString, seed) {
     }
     if (asString) {
         // Convert to 8 digit hex string
-        return ("0000000" + (hval >>> 0).toString(16)).substr(-8);
+        return ("0000000" + (hval >>> 0).toString(16)).slice(-8);
     }
     return hval >>> 0;
 }
@@ -103,7 +103,7 @@ function stringOfLength(length) {
         const lengthN = getNumberLength(i);
         str += new Array(10 - lengthN + 1).join('.');
     }
-    return str.substr(0, length);
+    return str.slice(0, length);
 }
 
 /**
@@ -300,6 +300,21 @@ Encoding that encodes a value with a triple:
 2. length of value
 3. value
 
+Performance optimizations
+=========================
+
+In the past, several optimizations were done. Here is a summary for a 20 MB file in a virtual machine.
+- Observation: hashFnv32a() takes 200 ms.
+  Resolution: Cache the hash value.
+- String.substr() takes 25 ms, String.slice() takes 0 ms.
+  Resolution: Use String.slice(). (String.substr() is obsolete anyway.)
+              Still, for 100 MB file, slice() takes 120 ms.
+- Generation of a QR code with capacity 1000 takes 50 ms.
+  Resolution: We cannot optimize this, it's just one call to the library.
+
+Conclusion: For big files (100 MB), there are two bottlenecks:
+- slice() - 120 ms
+- QR code generation - 50 ms
 
 QR Codes
 ========
@@ -323,11 +338,11 @@ const VERSION = 1;
 var DURATION_TARGET = 500; // Duration between frames, in milliseconds.
 var duration; // Effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
 var dateNextFrame; // Date of previous run of nextFrame()
-var durationQrCodeGeneration; // Time it took to generate the QR code, in milliseconds. This is used only for debugging purposes.
 let durationActual; // Actual duration between frames, in milliseconds.
 
 var fileName;
 var data;
+var hash;
 
 var frame; // From 0. The frames from 0 to frame-1 have been shown.
 var part; // From 0 to round^2-1.
@@ -442,7 +457,6 @@ function getContent() {
     let content = "";
 
     content += encodeWithLength(VERSION);
-    const hash = hashFnv32a(fileName + data, false);
     content += encodeWithLength(hash);
     const fileNameEncoded = encodeURIComponent(fileName);
     content += encodeWithLength(fileNameEncoded); // filename may contain any unicode characters. We have to encode it to ASCII for QR code.
@@ -480,11 +494,11 @@ function getPart(str, part) {
         const posHalf = str.length / 2;
         const char = part[0];
         if (char === "0") {
-            str = str.substr(0, posHalf);
+            str = str.slice(0, posHalf);
         } else {
-            str = str.substr(posHalf);
+            str = str.slice(posHalf);
         }
-        part = part.substr(1)
+        part = part.slice(1);
     }
     return str;
 }
@@ -504,6 +518,8 @@ function show(fileName_, data_) {
 
     log("File name = " + fileName);
     log("Data length = " + data.length);
+
+    hash = hashFnv32a(fileName + data, false);
 
     log("Frames = " + getNumberOfFrames());
     /*
@@ -547,10 +563,7 @@ function onShowFrame(frame, part) {
 
     // TODO Add Capacity to page
 
-    const time1 = new Date();
     qrcode.makeCode(frameContent);
-    const time2 = new Date();
-    durationQrCodeGeneration = time2 - time1;
 
     updateInfo();
 }
@@ -573,10 +586,9 @@ function nextFrame() {
     let dateNextFrameCurrent = new Date();
     durationActual = dateNextFrameCurrent - dateNextFrame;
     let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
-    // log("Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, delta=" + delta + " ms, duration=" + duration + " ms, QR code generation took " + durationQrCodeGeneration + " ms.");
     var systemIsSlow = 0 < delta && duration <= 0
     if (systemIsSlow) {
-        log("The system is slow and is not meeting the target duration. Duration target=" + DURATION_TARGET + " ms, actual duration=" + durationActual + " ms, QR code creation=" + durationQrCodeGeneration + ".");
+        log("The system is slow and is not meeting the target duration. Actual duration=" + durationActual + " ms, duration target=" + DURATION_TARGET + " ms.");
     }
     if (isNaN(delta)) { // on the first frame, when dateNextFrame was undefined
         duration = DURATION_TARGET
@@ -632,6 +644,7 @@ function nextFrame() {
 
         if (round === 0) {
             frame++;
+
             onShowFrame(frame);
         } else if (round - 1 === LAST_ROUND) {
             onEnd();
