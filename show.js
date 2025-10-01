@@ -323,7 +323,7 @@ Binary/byte Max. 2,953 characters (8-bit bytes)
 var CAPACITY_TOTAL; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
 var CAPACITY_TOTAL_MAX = Math.floor(2953 / 4 * 3); // Limit the capacity to 3/4 of the maximum, so that we can use Base64 encoding for correction frames.
 var capacityForDataInOneFrame; // Capacity for data in one frame, after frame header. Note that capacity of correction frame is is higher by 33% due to the Base43 encoding.
-setCapacity(70);
+setCapacity(50);
 
 const VERSION = 1;
 
