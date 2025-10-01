@@ -22,17 +22,13 @@ The following image summarizes the data flow starting with 1. a file existing on
 
 ## Further development
 
-1. Currently, the QR codes encoding the file are shown in rounds. (In fact, there is a small improvement: the content encoded in a QR code in a round is  encoded by two QR codes in the next round.) A smart person could propose a better algorithm for the sender (without any inputs; specifically, the sender may not be aware of the unreceived QR codes).
-
-   Best algorithm is (to my knowledge) _One-way Link_ as described in [The Pump: A Decade of Covert Fun by Myong H. Kang, Ira S. Moskowitz, and Stanley Chincheck](https://www.acsac.org/2005/papers/Kang.pdf).
+1. Currently, the QR codes encoding the file are shown in rounds. Then, correction frames are sent using Progressive Forward Error Correction (PFEC).
 
 2. On target, keep progress in a blob to improve reliability. The current limit for blob is 5 MB (maybe split to files that can be merged by Total Commander).
    
 3. Transfer multiple files. See https://developer.mozilla.org/en-US/docs/Using_files_from_web_applications
 
 4. On source, estimate the best parameters for QR density vs duration (for which one QR code is displayed). 
-
-5. On target, estimate the transfer duration.
 
 
 ## Licence

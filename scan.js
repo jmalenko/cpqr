@@ -60,6 +60,18 @@ function hashFnv32a(str, asString, seed) {
     return hval >>> 0;
 }
 
+// XOR two strings (byte-wise)
+function xorStrings(a, b) {
+    let res = '';
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        let charA = a.charCodeAt(i) || 0;
+        let charB = b.charCodeAt(i) || 0;
+        let xor = charA ^ charB;
+        res += String.fromCharCode(xor);
+    }
+    return res;
+}
+
 /*
     Common but used in this script only
     ===================================
@@ -79,6 +91,22 @@ var getStackTrace = function () {
 const testFrames = [
     // Prepared with CAPACITY_TOTAL = 50
 
+    // TODO More test cases - 4 frames, missing frame 3, one correction 49% should fix it
+    // TODO More test cases - 4 frames, missing frame 4, one correction 49% should fix it
+
+    [ // Same content, the capacity changed to 70 so it fits 2 frames. The format changed to include the variable-length-quantity encoding of data in each frame.
+      // Miss frame 2, send correction that allows building the frame 2.
+        '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base',
+        // '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=',
+        '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U='],
+
+    // Wrong, without th content lengt
+    // [ // Same content, the capacity changed to 70 si ot fits 2 frames.
+    //   // Miss frame 2, send correction that allows building the frame 2.
+    //     '1101112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base',
+    //     // '11164,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=',
+    //     '130,1AAABBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U='],
+
     [ // Send 3 frames
         '1101112104065018274217C:\\fakepath\\a.txt279data:t',
         '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K',
@@ -94,6 +122,7 @@ const testFrames = [
         '112xJvFocSNxZnFvsO9w6HDrcOpDQo=',
         '1101112104065018274217C:\\fakepath\\a.txt279data:t'],
 
+    // TODO Remove obsolete tests
     [ // Send frame 1 in 2 parts
         '1101112104065018274217C:\\fakepath\\a.txt279data:t',
         '131.0ext/plain;base64,SmVkb',
@@ -187,7 +216,6 @@ function scanSimulated() {
 
         // Cleanup data
         contentRead = [];
-        contentReadPart = [];
         hashSaved = "";
     } else {
         frameSimulated++;
@@ -464,15 +492,8 @@ class NotAllDataError extends Error {
  */
 
 let contentRead = []; // contentRead[frameIndex] contains the content of frame frameIndex
-let contentReadPart = []; // contentReadPart[frameIndex][partIndex] contains the content of part partIndex of frame frameIndex
-/*
-PartIndex is a sequence of 0s and 1s where 0 denotes "the left part" and 1 denote "the right part".
-Mathematically: PartIndex is an encoding of a subinterval of the 0-1 interval, in binary encoding.
-For example
-- If we got frame content (stored in contentRead), then fine. Othwerwise, we construct it from parts.
-- A frame can be constructed from parts 0 and 1 (left and right part of the frame).
-- But in case the right part is missing, the frame can be constructed from parts 0 and 10 and 11 (combination of parts 10 and 11 gives part 1).
- */
+
+// TODO Store unused correction frames (because more than one frame is missing) and try to use them later
 
 let hashSaved; // hash of the last saved file (specifically the received hash (of fileName + data)
 
@@ -499,47 +520,32 @@ function decodeWithLength(str, from) {
 }
 
 function decodeFrameContent(content) {
-    let [, frameStr, from] = decodeWithLength(content, 0);
-    const contentFrame = content.slice(from);
+    let from = 0;
+    let frameStr, contentFrame;
+
+    [, frameStr, from] = decodeWithLength(content, from);
+    [, contentFrame, from] = decodeWithLength(content, from);
 
     return [frameStr, contentFrame];
-}
-
-function getFrameFromParts(frame, prefix) {
-    if (prefix === undefined) prefix = "";
-    if (5 < prefix.length) throw new Error("Cannot construct frame " + frame + " from parts because ");
-
-    let res = "";
-
-    for (let i = 0; i <= 1; i++) {
-        const part = prefix + i;
-        // If part not received
-        if (contentReadPart[frame][part] === undefined) {
-            // Construct the part from subparts
-            res += getFrameFromParts(frame, part);
-        } else {
-            res += contentReadPart[frame][part];
-        }
-    }
-
-    return res;
 }
 
 function getContent() {
     let content = "";
     let missing = [];
 
-    const upperBound = Math.max(contentRead.length, contentReadPart.length);
-
-    for (let i = 0; i < upperBound; i++) {
+    for (let i = 0; i < contentRead.length; i++) {
         if (contentRead[i] === undefined) {
-            try {
-                content += getFrameFromParts(i);
-            } catch (e) {
-                missing.push(i);
-            }
+            missing.push(i);
         } else {
-            content += contentRead[i];
+            let [frameStr, contentFrame] = decodeFrameContent(contentRead[i]);
+
+            // Hardening: check that the frame index matches the position in the array
+            frame = Number(frameStr);
+            if (i != frame) {
+                throw new Error("Frame index mismatch: expected " + i + " but got " + frame);
+            }
+
+            content += contentFrame;
         }
     }
 
@@ -588,13 +594,61 @@ function decodeContent() {
 }
 
 function getContentInfo() {
-    const content = contentRead[0] || getFrameFromParts(0);
+    let [, content] = decodeFrameContent(contentRead[0]); // TODO Assumption: The header is in frame 0. In fact, it can continue in following frames.
     let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
     const capacityForDataInOneFrame = content.length;
     const numberOfFrames = Math.ceil(from / capacityForDataInOneFrame); // Keep this consistent with calculation in show.js
 
     return [hash, fileName, numberOfFrames];
+}
+
+function decodeCorrectionFrame(content) {
+    let [indicesLen, indicesStr, from] = decodeWithLength(content, 0);
+    let indices = indicesStr.split(",").map(Number);
+    let payload = content.slice(from)
+
+    // Find all missing indices
+    let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
+    if (missingIndices.length !== 1)
+        return false; // Only recover if exactly one is missing
+
+    let missingIndex = missingIndices[0];
+    let xor = atob(payload);
+    for (let idx of indices) {
+        if (idx !== missingIndex) {
+            xor = xorStrings(xor, contentRead[idx]);
+        }
+    }
+
+    // TODO refactor the following code - it's the same as in onScan
+
+    // Use the recovered content as a normal frame
+    let [frameStr, contentFrame] = decodeFrameContent(xor);
+
+    frame = Number(frameStr);
+    if (isNaN(frame)) {
+        throw new Error("Error decoding: frame is not a number");
+    }
+
+    // Hardening: check that the frame index matches the position in the array
+    if (missingIndex != frame) {
+        throw new Error("Frame index mismatch in recovered frame: expected " + missingIndex + " but got " + frame);
+    }
+
+    log("Recovered frame " + frameStr + " with content " + contentFrame);
+    contentRead[frame] = xor;
+    return true;
+}
+
+function isCorrectionFrame(content) {
+    // Simple heuristic: try to decode as correction frame, e.g. if first field is a list of indices
+    try {
+        let [indicesLen, indicesStr] = decodeWithLength(content, 0);
+        return indicesStr.includes(",");
+    } catch {
+        return false;
+    }
 }
 
 function onScan(content) {
@@ -608,12 +662,12 @@ function onScan(content) {
 
     // Save frame
     try {
-        let [frameStr, contentFrame] = decodeFrameContent(content);
-        // log("Read frame index " + frameStr + " with content " + contentFrame);
+        if (isCorrectionFrame(content)) {
+            decodeCorrectionFrame(content);
+        } else {
+            let [frameStr, contentFrame] = decodeFrameContent(content);
+            // log("Read frame index " + frameStr + " with content " + contentFrame);
 
-        const posDot = frameStr.indexOf(".");
-
-        if (posDot === -1) {
             frame = Number(frameStr);
             if (isNaN(frame)) {
                 throw new Error("Error decoding: frame is not a number");
@@ -626,25 +680,7 @@ function onScan(content) {
             } else {
                 log("Read frame " + frameStr + " with content " + contentFrame);
             }
-            contentRead[frame] = contentFrame;
-        } else {
-            frame = Number(frameStr.slice(0, posDot));
-            const part = frameStr.slice(posDot + 1);
-            if (isNaN(frame)) {
-                throw new Error("Error decoding: frame is not a number");
-            }
-
-            if (contentReadPart[frame] === undefined)
-                contentReadPart[frame] = [];
-            if (contentReadPart[frame][part] != null) {
-                console.log("Frame " + frame + "." + part + " was already encountered in the past");
-                if (contentReadPart[frame][part] === contentFrame) {
-                    return frame;
-                }
-            } else {
-                log("Read frame " + frame + "." + part + " with content " + contentFrame);
-            }
-            contentReadPart[frame][part] = contentFrame;
+            contentRead[frame] = content;
         }
     } catch (e) {
         console.log("READ: " + content);
@@ -656,7 +692,7 @@ function onScan(content) {
         throw new QrCodeProcessingError("QR Code does not contain a frame");
     }
 
-    // Log when header decoded
+    // Log when header decoded later than in first frame (with index 0)
     try {
         if (!headerDecoded) {
             let [hash, fileName, numberOfFrames] = getContentInfo();
@@ -671,6 +707,7 @@ function onScan(content) {
         log("Cannot decode header");
     }
 
+    // TODO Refactoring - extract to methods
     // If all frames then save
     try {
         let [hash, fileName, dataURL] = decodeContent();
@@ -718,7 +755,6 @@ function getFileNameLast(fileName) {
 function updateInfo(missing) {
     let infoStr = "";
     // TODO Improve the percent calculation - consider the missing parts. Also, percent biger than 100% does not make sense. Also in show.js.
-    const upperBound = Math.max(contentRead.length, contentReadPart.length);
     try {
         let [hash, fileName, numberOfFrames] = getContentInfo();
         const fileNameLast = getFileNameLast(fileName);
@@ -727,14 +763,14 @@ function updateInfo(missing) {
         if (hash === hashSaved) {
             infoStr2 += "<span style='color: #008000'>Saved</span> ";
         } else {
-            let percent = Math.round(upperBound / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
-            infoStr2 = percent + "% ... " + upperBound + " / " + numberOfFrames + ". ";
+            let percent = Math.round(contentRead.length / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
+            infoStr2 = percent + "% ... " + contentRead.length + " / " + numberOfFrames + ". ";
         }
         infoStr2 += fileNameLast;
 
         infoStr += infoStr2;
     } catch (e) {
-        infoStr += "?% ..." + upperBound + " / ?";
+        infoStr += "?% ..." + contentRead.length + " / ?";
     }
 
     const elMissingList = document.getElementById("missingList");
@@ -942,7 +978,7 @@ function init() {
 
     initStream();
 
-    // scanSimulated();
+    scanSimulated();
 
     // scanSimulatedMeasures();
 }

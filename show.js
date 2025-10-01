@@ -60,6 +60,18 @@ function hashFnv32a(str, asString, seed) {
     return hval >>> 0;
 }
 
+// XOR two strings (byte-wise)
+function xorStrings(a, b) {
+    let res = '';
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        let charA = a.charCodeAt(i) || 0;
+        let charB = b.charCodeAt(i) || 0;
+        let xor = charA ^ charB;
+        res += String.fromCharCode(xor);
+    }
+    return res;
+}
+
 /*
     Tests
     =====
@@ -74,20 +86,39 @@ function showSimulated() {
 function assertEqual(testName, a, b) {
     if (typeof a !== typeof b) {
         log("Test " + testName + " error: Have different types: got " + typeof a + " but expected " + typeof b);
-        return
+        throw new Error("Test " + testName + " error: Arrays have different lengths: got " + a.length + " but expected " + b.length);
     }
     if (a instanceof Array) {
         if (a.length !== b.length) {
             log("Test " + testName + " error: Arrays have different lengths: got " + a.length + " but expected " + b.length);
-            return
+            throw new Error("Test " + testName + " error: Arrays have different lengths: got " + a.length + " but expected " + b.length);
         }
         for (let i = 0; i < a.length; i++)
             if (a[i] !== b[i]) {
                 log("Test " + testName + " error: Not equal at index " + i + ": got " + a[i] + " but expected " + b[i]);
-                return
+                throw new Error("Test " + testName + " error: Not equal at index " + i + ": got " + a[i] + " but expected " + b[i]);
             }
+    } else if (a !== b && typeof a === "string") {
+        let diffIndex = -1;
+        for (let i = 0; i < Math.max(a.length, b.length); i++) {
+            if (a[i] !== b[i]) {
+                diffIndex = i;
+                break;
+            }
+        }
+        log("Test " + testName + " error: Strings differ at index " + diffIndex);
+        log("Got:      " + a);
+        log("Expected: " + b);
+        if (diffIndex !== -1) {
+            log("          " + " ".repeat(diffIndex) + "^");
+        }
+        if (a.length != b.length) {
+            log("Strings have different lengths: got " + a.length + " but expected " + b.length);
+        }
+        throw new Error("Test " + testName + " error: Strings differ at index " + diffIndex);
     } else if (a !== b) {
         log("Test " + testName + " error: Not equal: got " + a + " but expected " + b)
+        throw new Error("Test " + testName + " error: Not equal: got " + a + " but expected " + b)
     }
 }
 
@@ -166,22 +197,6 @@ function tests() {
     assertEqual("encodeWithLength 10", encodeWithLength(stringOfLength(10)), "2100.........");
     assertEqual("encodeWithLength 11", encodeWithLength(stringOfLength(11)), "2110.........1");
 
-    assertEqual("part2string 0 1", part2string(0, 1), "0");
-    assertEqual("part2string 1 1", part2string(1, 1), "1");
-
-    assertEqual("part2string 0 2", part2string(0, 2), "00");
-    assertEqual("part2string 1 2", part2string(1, 2), "01");
-    assertEqual("part2string 2 2", part2string(2, 2), "10");
-    assertEqual("part2string 3 2", part2string(3, 2), "11");
-
-    assertEqual("getPart 0", getPart("012345678", "0"), "0123");
-    assertEqual("getPart 1", getPart("012345678", "1"), "45678");
-
-    assertEqual("getPart 00", getPart("012345678", "00"), "01");
-    assertEqual("getPart 01", getPart("012345678", "01"), "23");
-    assertEqual("getPart 10", getPart("012345678", "10"), "45");
-    assertEqual("getPart 11", getPart("012345678", "11"), "678");
-
     // assertEqual("Number of frames 0", getNumberOfFrames(stringOfLength(0)), 1); // Note: depends on CAPACITY_TOTAL
     // assertEqual("Number of frames 1", getNumberOfFrames(stringOfLength(1)), 1);
     //
@@ -190,6 +205,25 @@ function tests() {
     //
     // assertEqual("Number of frames 340", getNumberOfFrames(stringOfLength(340)), 2);
     // assertEqual("Number of frames 341", getNumberOfFrames(stringOfLength(341)), 3);
+
+    var a = "Alpha";
+    var b = "Beta_";
+    var c = xorStrings(a, b);
+    assertEqual("xorStrings", a, xorStrings(b, c));
+    assertEqual("xorStrings", b, xorStrings(a, c));
+
+    var a = "Alpha";
+    var b = "Beta";
+    var c = xorStrings(a, b);
+    assertEqual("xorStrings shorter", a, xorStrings(b, c));
+    assertEqual("xorStrings shorter", b + String.fromCharCode(0), xorStrings(a, c));
+
+    var a = "1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base";
+    var b = "11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=";
+    var c = xorStrings(a, b);
+    assertEqual("xorStrings", c, atob("AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U="));
+    assertEqual("xorStrings", a, xorStrings(b, c));
+    assertEqual("xorStrings", b, xorStrings(a, c).slice(0, b.length));
 
     log("Tests finished");
 }
@@ -269,7 +303,24 @@ function nextFrameMeasure() {
 }
 
 /*
-Format of Content
+
+What is transmitted
+===================
+
+- Content Frames
+  - These are the standard frames containing the content data.
+  - Each frame holds a chunk of the content data.
+  - Frames are numbered and sent sequentially.
+
+- Correction Frames
+  - After all content frames are sent, correction frames are transmitted to help recover any lost frames.
+  - Correction frames use Progressive Forward Error Correction (PFEC):
+    - In each round, the sender assumes a certain frame loss rate (starting at 1% and doubling each round).
+    - For each assumed loss rate, enough correction frames are generated to allow recovery from that level of loss.
+    - Correction frames are constructed using XOR-based parity over subsets of content frames.
+    - Correction frames are sent indefinitely, increasing redundancy over time.
+
+Format of content
 =================
 
      Field        Example value                                                      Example value with Variable-length quantity
@@ -278,19 +329,32 @@ Format of Content
   2. Hash         4065018274                                                         2 10 4065018274
   3. File name    in.txt                                                             1 6 in.txt
   4. Data         data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh    2 63 data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
+     (Base64 encoded)
 
 Field "2. Hash" contains the 32 bit FNV-1a hash of the concatenation of the remaining fields.
 
 Header is defined as fields 1-3.
 
-Format of one frame
-===================
+Format of one content frame
+===========================
 
      Field           Example value    Example value with Variable-length quantity
-  -----------------------------------------------------------------------------------------------------------------------------------
+  -------------------------------------------------------------------------------
   1. Frame number    1                1 1 1
   2. Content         Text             1 4 Text
 
+Format of one correction frame
+==============================
+
+     Field            Description                                                   Example value    Example value with Variable-length quantity
+  ----------------------------------------------------------------------------------------------------------------------------------------------
+  1. Frame indices    Comma-separated list of frame numbers included in the XOR.    0,2,5            1 5 0,2,5
+                      (the length includes the commas)
+  2. XOR payload      The result of XOR-ing the content of the listed frames.       A1B2C3D4E5F6     (not used)
+                      (Base64 encoded binary data)
+
+
+Note: length of a correction frame is longer than the QR capacity (defined as a parameter, not necessarily the maximum posible QR capacity of 2953 bytes).
 
 Variable-length quantity
 ========================
@@ -330,8 +394,10 @@ Alphanumeric Max. 4,296 characters
 Binary/byte Max. 2,953 characters (8-bit bytes)
 */
 
-var CAPACITY_TOTAL = 50; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
-var capacityForDataInOneFrame = CAPACITY_TOTAL - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
+var CAPACITY_TOTAL; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
+var CAPACITY_TOTAL_MAX = Math.floor(2953 / 4 * 3); // Limit the capacity to 3/4 of the maximum, so that we can use Base64 encoding for correction frames.
+var capacityForDataInOneFrame; // Capacity for data in one frame, after frame header. Note that capacity of correction frame is is higher by 33% due to the Base43 encoding.
+setCapacity(70);
 
 const VERSION = 1;
 
@@ -345,24 +411,23 @@ var data;
 var hash;
 
 var frame; // From 0. The frames from 0 to frame-1 have been shown.
-var part; // From 0 to round^2-1.
 var missingFrames; // Contains the frames to show as soon as possible. The frame at index _frame_ will be shown afterward.
-var missingFramePart; // Part number to be shown
 
-var round; // In each round, whole content is sent.
-/*
- Round 0: standard, frame by frame
- Round 1-LAST_ROUND: instead of sending a frame, parts representing the frame are sent, te round determines the level
- */
-const LAST_ROUND = 2;
+let lossRate;
+const INITIAL_LOSS_RATE = 0.01;
 
-const STATE_NOT_STARTED = 1;
-const STATE_PLAYING = 2;
-const STATE_FINISHED = 3;
-
-var state = STATE_NOT_STARTED;
+let correctionFrame;
 
 var qrcode;
+
+function setCapacity(capacity) {
+    if (CAPACITY_TOTAL_MAX < capacity) {
+        log("Capacity too large, setting to maximum " + CAPACITY_TOTAL_MAX);
+        capacity = CAPACITY_TOTAL_MAX;
+    }
+    CAPACITY_TOTAL = capacity;
+    capacityForDataInOneFrame = capacity - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
+}
 
 function init() {
     const scale = 10; // Scale factor to make the QR code large. On screen, this will be scaled to available area.
@@ -384,8 +449,7 @@ function init() {
 
     let capacityParam = url.searchParams.get("capacity");
     if (capacityParam !== null) {
-        CAPACITY_TOTAL = capacityParam;
-        capacityForDataInOneFrame = CAPACITY_TOTAL - 5;
+        setCapacity(capacityParam);
     }
 
     // Hide when run from file
@@ -408,7 +472,7 @@ function init() {
         showMeasure();
     }
 
-    // showSimulated();
+    showSimulated();
 }
 
 function onOpenFile(event) {
@@ -453,6 +517,14 @@ function encodeWithLength(obj) {
     return lengthOfLength.toString() + length.toString() + obj;
 }
 
+function encodeArrayWithLength(arr) {
+    if (!Array.isArray(arr))
+        throw Error("Input is not an array");
+    const str = arr.join(",");
+    return encodeWithLength(str);
+}
+
+
 function getContent() {
     let content = "";
 
@@ -469,47 +541,28 @@ function getNumberOfFrames() {
     return Math.ceil(getContent().length / capacityForDataInOneFrame); // Keep this consistent with calculation in scan.js
 }
 
-function getFrameContent(index, part) {
+function getFrameContent(index) {
     const data = getContent();
     const contentFrom = index * capacityForDataInOneFrame;
-    const contentFrame = data.substr(contentFrom, capacityForDataInOneFrame);
+    const contentFrame = data.slice(contentFrom, contentFrom + capacityForDataInOneFrame);
 
     let content = "";
 
-    if (part === undefined) {
-        content += encodeWithLength(index);
-        content += contentFrame;
-    } else {
-        const contentFramePart = getPart(contentFrame, part);
-
-        content += encodeWithLength(index + "." + part);
-        content += contentFramePart;
-    }
+    content += encodeWithLength(index);
+    content += encodeWithLength(contentFrame);
 
     return content;
 }
 
-function getPart(str, part) {
-    while (0 < part.length) {
-        const posHalf = str.length / 2;
-        const char = part[0];
-        if (char === "0") {
-            str = str.slice(0, posHalf);
-        } else {
-            str = str.slice(posHalf);
-        }
-        part = part.slice(1);
-    }
-    return str;
-}
+function getCorrectionFrameContent(assumedLoss, index) {
+    const correction = generateCorrection(assumedLoss, index);
 
-function part2string(part, length) {
-    let partStr = "";
-    for (let i = 0; i < length; i++) {
-        partStr = (part % 2) + partStr;
-        part >>= 1;
-    }
-    return partStr;
+    let content = "";
+
+    content += encodeArrayWithLength(correction.indices);
+    content += correction.payload;
+
+    return content;
 }
 
 function show(fileName_, data_) {
@@ -522,14 +575,6 @@ function show(fileName_, data_) {
     hash = hashFnv32a(fileName + data, false);
 
     log("Frames = " + getNumberOfFrames());
-    /*
-    // Note: makes the browser slow for large data (as the log grows, the browser get slower)
-    log("Data = " + data);
-    log("Content = " + getContent());
-    for (let frame = 0; frame < frames; frame++) {
-        log("Frame " + frame + ": " + getFrameContent(frame));
-    }
-    */
 
     onPlay();
 }
@@ -537,29 +582,21 @@ function show(fileName_, data_) {
 function onPlay() {
     log("Start");
 
-    // Show the QR code
-    const el = document.getElementById("qrcode");
-    el.style.visibility = "visible";
-
     // Initialize
-    round = 0;
     frame = -1;
     missingFrames = [];
-    missingFramePart = -1;
-    state = STATE_PLAYING;
     duration = DURATION_TARGET;
+
+    lossRate = INITIAL_LOSS_RATE;
+    correctionFrame = -1;
 
     nextFrame();
 }
 
-function onShowFrame(frame, part) {
-    let frameContent = getFrameContent(frame, part);
+function onShowFrame(frame) {
+    let frameContent = getFrameContent(frame);
 
-    if (part === undefined) {
-        log("Frame " + frame + ": " + frameContent);
-    } else {
-        log("Frame " + frame + "." + part + ": " + frameContent);
-    }
+    log("Frame " + frame + ": " + frameContent);
 
     // TODO Add Capacity to page
 
@@ -568,20 +605,18 @@ function onShowFrame(frame, part) {
     updateInfo();
 }
 
-function onEnd() {
-    if (state !== STATE_FINISHED) {
-        log("Finished");
-    }
+function onShowCorrectionFrame(lossRate, correctionFrame) {
+    let frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
 
-    state = STATE_FINISHED;
-    dateNextFrame = undefined;
+    log("Correction for " + (lossRate * 100).toFixed(2) + " %, frame " + correctionFrame + ": " + frameContent);
+    // TODO format lossRate (it's integer)
 
-    // Hide the QR code
-    const el = document.getElementById("qrcode");
-    el.style.visibility = "hidden";
+    qrcode.makeCode(frameContent);
+
+    updateInfo();
 }
 
-function nextFrame() {
+function adjustDuration() {
     // Adjust duration
     let dateNextFrameCurrent = new Date();
     durationActual = dateNextFrameCurrent - dateNextFrame;
@@ -612,67 +647,145 @@ function nextFrame() {
     }
     // Store time for next frame
     dateNextFrame = dateNextFrameCurrent;
+}
+
+function showMissing() {
+    const f = missingFrames[0];
+    onShowFrame(f);
+    missingFrames.shift();
+    // TODO Maybe Send a correction made for two frames: this and the previous one. XORed.
+}
+
+function correctionFramesCount(lossRate) {
+    return Math.ceil(getNumberOfFrames() * lossRate);
+}
+
+// TODO only for testing - remove
+function decodeWithLength(str, from) {
+    const lengthOfLengthStr = str.slice(from, from + 1);
+    const lengthOfLength = Number(lengthOfLengthStr);
+    if (isNaN(lengthOfLength)) {
+        throw new Error("Invalid variable-length quantity value: length of length is not a number");
+    }
+
+    const lengthStr = str.slice(from + 1, from + 1 + lengthOfLength);
+    const length = Number(lengthStr);
+    if (isNaN(length)) {
+        throw new Error("Invalid variable-length quantity value: length is not a number");
+    }
+
+    const data = str.slice(from + 1 + lengthOfLength, from + 1 + lengthOfLength + length);
+
+    const next = from + 1 + lengthOfLength + length;
+
+    return [length, data, next];
+}
+
+function decodeFrameContent(content) {
+    let from = 0;
+    let frameStr, contentFrame;
+
+    [, frameStr, from] = decodeWithLength(content, from);
+    [, contentFrame, from] = decodeWithLength(content, from);
+
+    return [frameStr, contentFrame];
+}
+
+// TODO remove above
+
+function generateCorrection(lossRate, index) {
+    const n = getNumberOfFrames();
+    const numMissing = correctionFramesCount(lossRate);
+
+    // Select subset of frames for XOR
+    let indices = [];
+    for (let j = index; j < n; j += numMissing) {
+        indices.push(j);
+    }
+
+    // XOR the selected frames
+    let xor = getFrameContent(indices[0]);
+    for (let k = 1; k < indices.length; k++) {
+        xor = xorStrings(xor, getFrameContent(indices[k]));
+    }
+    let payload = btoa(xor);
+
+    // TODO Remove test
+    // Test decoding
+    let missingIndex = 1;
+    let xorResult = atob(payload);
+    if (xorResult != xor) {
+        console.log("CHECK Error");
+    }
+    for (let idx of indices) {
+        if (idx !== missingIndex) {
+            xorResult = xorStrings(xorResult, getFrameContent(idx));
+        }
+    }
+    if (xorResult != getFrameContent(missingIndex)) {
+        var forComparison = xorResult + "\n" + getFrameContent(missingIndex);
+
+        try {
+            // Use the recovered content as a normal frame
+            let [frameStr, contentFrame] = decodeFrameContent(xorResult);
+
+            var frame2 = Number(frameStr);
+            if (isNaN(frame2)) {
+                throw new Error("Error decoding: frame is not a number");
+            }
+
+            // let [frameStrExpected, contentFrameExpected] = getFrameContent(missingIndex);
+            let [frameStrExpected, contentFrameExpected] = decodeFrameContent(getFrameContent(missingIndex));
+            if (contentFrame != contentFrameExpected) {
+                var forComparison = contentFrame + "\n" + contentFrameExpected;
+                log("CHECK FAILED");
+            }
+            log("Recovered frame " + frameStr + " with content " + contentFrame);
+        } catch (e) {
+            log("Error decoding recovered frame: " + e.message);
+        }
+        log("Error in correction frame generation: cannot recover frame " + missingIndex + " from indices " + indices);
+    } else {
+        log("Test of correction frame generation successful: can recover frame " + missingIndex + " from indices " + indices);
+    }
+
+
+    // Return correction frame object
+    return {indices, payload};
+}
+
+// Return true when sending content data frames. Otherwise correction frames are sent.
+function sendingContent() {
+    return frame + 1 < getNumberOfFrames();
+}
+
+function nextFrame() {
+    adjustDuration();
 
     // Show missing if there are any
     if (0 < missingFrames.length) {
-        // Show 3 frames: frame and two parts. This is to increase probability that the frame is received
-        const f = missingFrames[0];
-        if (missingFramePart === -1) {
-            onShowFrame(f);
-            missingFramePart++;
-        } else {
-            onShowFrame(f, missingFramePart.toString());
-
-            if (missingFramePart === 1) {
-                missingFrames.shift();
-                missingFramePart = -1;
-            } else {
-                missingFramePart++;
-            }
-        }
-    } else { // Show next frame & part
-        let partMax = 2 ** round;
-
-        if ((round === 0 && frame + 1 === getNumberOfFrames()) ||
-            (round > 0 && frame + 1 === getNumberOfFrames() && part + 1 === partMax)) {
-            round++;
-            log("=== Round " + round + " ===");
-            frame = -1;
-            partMax = 2 ** round;
-            part = partMax - 1;
-        }
-
-        if (round === 0) {
+        showMissing();
+    } else {
+        if (sendingContent()) {
+            // Show content frame
             frame++;
 
             onShowFrame(frame);
-        } else if (round - 1 === LAST_ROUND) {
-            onEnd();
-            return;
         } else {
-            if (part + 1 === partMax) {
-                frame++;
-                part = 0;
-            } else {
-                part++;
+            // Show correction frame
+            if (lossRate == INITIAL_LOSS_RATE && correctionFrame == -1) {
+                log("All content frames sent. Starting correction frames with assumed loss " + (lossRate * 100).toFixed(2) + "%");
             }
 
-            let partStr = part2string(part, round);
+            correctionFrame++;
+            if (correctionFrame == correctionFramesCount(lossRate)) {
+                correctionFrame = 0;
+                lossRate *= 2;
+                log("Assumed loss increased to " + (lossRate * 100).toFixed(2) + "%");
+            }
 
-            onShowFrame(frame, partStr);
+            onShowCorrectionFrame(lossRate, correctionFrame);
         }
-
-        // Each block of 10 frames is sent in reverse order, e.g. 10-1, 20-11, ...
-        // Convert frame -> frame2
-        //         0        9
-        //         1        8
-        //         ...
-        //         9        0
-        // const dec = ~~(frame / 10); // modulo, result is integer
-        // const digit = frame % 10;
-        // const D = frame < Math.floor(getNumberOfFrames() / 10) * 10 ? 10 : getNumberOfFrames() - Math.floor(getNumberOfFrames() / 10) * 10;
-        // let frame2 = 10 * dec + (D - digit) - 1;
-        // onShowFrame(frame2);
     }
 
     setTimeout(nextFrame, duration);
@@ -745,16 +858,6 @@ function onMissingFramesChange(event) {
         });
         // Add to missing frames to show
         missingFrames = missingFrames.concat(missingFramesNew);
-
-        if (0 < missingFrames.length && state !== STATE_PLAYING) {
-            if (state === STATE_FINISHED) {
-                // Show the QR code
-                const el = document.getElementById("qrcode");
-                el.style.visibility = "visible";
-            }
-
-            nextFrame();
-        }
     } else if (event.keyCode === 47) { // Slash
         el.value = missingStr.replace(/^[^,. ]*[,. ]?/, "");
         event.returnValue = false; // block key
@@ -781,7 +884,7 @@ function onDurationChangeValue(value) {
 
 function updateInfo() {
     let infoStr = "";
-    if (round === 0) {
+    if (sendingContent()) {
         const numberOfFrames = getNumberOfFrames();
         const ratio = frame / numberOfFrames * 100;
         infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
@@ -790,7 +893,7 @@ function updateInfo() {
         const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000));
         infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + ". "
     } else {
-        infoStr += "Round " + round + ", frame " + frame + "." + part;
+        infoStr += "Correction for loss rate " + lossRate + ", frame " + correctionFrame + ".";
     }
 
     const el = document.getElementById("info");
