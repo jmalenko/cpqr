@@ -257,176 +257,6 @@ function tests() {
 
 
 /*
-    Measure
-    =======
- */
-
-const MEASURE_HEAD_REGEXP = /Duration (\d+), capacity (\d+), frame (\d+) of (\d+), padding /;
-
-var measures = [];
-var measuresFrameMax = -1;
-
-function scanMeasure(content) {
-    log("Measure: " + content);
-    let matches_array = content.match(MEASURE_HEAD_REGEXP);
-
-    let duration_ = Number(matches_array[1]);
-    let capacity_ = Number(matches_array[2]);
-    let frame_ = Number(matches_array[3]);
-    let measuresFrameMax_ = Number(matches_array[4]);
-
-    if (measuresFrameMax_ !== measuresFrameMax) {
-        log("Resetting measure data");
-        measures = [];
-        measuresFrameMax = measuresFrameMax_;
-    }
-
-    if (measures[duration_] === undefined)
-        measures[duration_] = {};
-    if (measures[duration_][capacity_] === undefined)
-        measures[duration_][capacity_] = [];
-
-    measures[duration_][capacity_].push(frame_);
-
-    printMeasureMatrix();
-    printMeasureMatrixTroughput();
-}
-
-function printMeasureMatrix() {
-    // Get the list of durations
-    let durations = Object.keys(measures);
-
-    let capacities = [];
-    for (let d of durations.values()) {
-        let capacities2 = Object.keys(measures[d]);
-        for (let c of capacities2)
-            if (capacities.indexOf(c) === -1) capacities.push(c);
-    }
-
-    durations.sort(sortNumber); // Convert strings to numbers, sort numerically
-    capacities.sort(sortNumber);
-
-    const space = " ";
-    const len = 6;
-
-    let res = "Measuring results - histogram (max is " + measuresFrameMax + ")\n";
-    // Top Header
-    // res += "".padLeft(space, len);
-    res += "Dur" + " ".repeat(len - 5) + "Cap";
-    res += "|";
-    for (let c of capacities) {
-        res += c.padLeft(space, len);
-    }
-    res += "\n";
-    // Separator
-    res += "-".repeat(len);
-    res += "-+";
-    res += "-".repeat(len * capacities.length);
-    res += "\n";
-    // Rows
-    for (let d of durations) {
-        res += d.padLeft(space, len);
-        res += " |";
-        for (let c of capacities) {
-            if (measures[d][c] === undefined) {
-                res += "-".padLeft(space, len);
-            } else {
-                let count = measures[d][c].length;
-                res += count.toString().padLeft(space, len);
-            }
-        }
-        res += "\n";
-    }
-    res = res.slice(0, -1);
-
-    log(res);
-}
-
-function printMeasureMatrixTroughput() {
-    // Get the list of durations
-    let durations = Object.keys(measures);
-
-    let capacities = [];
-    for (let d of durations.values()) {
-        let capacities2 = Object.keys(measures[d]);
-        for (let c of capacities2)
-            if (capacities.indexOf(c) === -1) capacities.push(c);
-    }
-
-    durations.sort(sortNumber); // Convert strings to numbers, sort numerically
-    capacities.sort(sortNumber);
-
-    const space = " ";
-    const len = 6;
-
-    let tBest = 0;
-    let cBest = 0;
-    let dBest = 0;
-
-    let res = "Measuring results - throughput\n";
-    // Top Header
-    // res += "".padLeft(space, len);
-    res += "Dur" + " ".repeat(len - 5) + "Cap";
-    res += "|";
-    for (let c of capacities) {
-        res += c.padLeft(space, len);
-    }
-    res += "\n";
-    // Separator
-    res += "-".repeat(len);
-    res += "-+";
-    res += "-".repeat(len * capacities.length);
-    res += "\n";
-    // Rows
-    for (let d of durations) {
-        res += d.padLeft(space, len);
-        res += " |";
-        for (let c of capacities) {
-            if (measures[d][c] === undefined) {
-                res += "-".padLeft(space, len);
-            } else {
-                let count = measures[d][c].length;
-                let throughtput = Math.round((60000 / d) * c * (count / measuresFrameMax) / 1000); // in BiloBytes per minute
-                res += throughtput.toString().padLeft(space, len);
-                if (tBest < throughtput) {
-                    tBest = throughtput;
-                    cBest = c;
-                    dBest = d;
-                }
-            }
-        }
-        res += "\n";
-    }
-    res = res.slice(0, -1);
-
-    log(res);
-
-    log("Best throughput " + tBest + " kB/min is achieved with capacity " + cBest + " and duration " + dBest);
-}
-
-function scanSimulatedMeasures() {
-    let frame_max = 10;
-    for (let duration = 100; duration <= 1000; duration += 100) {
-        for (let capacity = 200; capacity <= 2000; capacity += 200) {
-            for (let frame = 0; frame < frame_max; frame += 1) {
-                if (Math.random() < 0.5) { // Scan successfully with a probability
-                    const head = "Duration " + duration + ", capacity " + capacity + ", frame " + frame + " of " + frame_max + ", padding ";
-                    scanMeasure(head);
-                }
-            }
-        }
-    }
-}
-
-function sortNumber(a, b) {
-    return Number(a) - Number(b);
-}
-
-String.prototype.padLeft = function (char, length) {
-    return char.repeat(Math.max(0, length - this.length)) + this;
-};
-
-/*
     Download
     ========
  */
@@ -652,11 +482,6 @@ function isCorrectionFrame(content) {
 }
 
 function onScan(content) {
-    if (content.match(MEASURE_HEAD_REGEXP)) {
-        scanMeasure(content);
-        return;
-    }
-
     let frame;
     let missing;
 
@@ -979,8 +804,6 @@ function init() {
     initStream();
 
     scanSimulated();
-
-    // scanSimulatedMeasures();
 }
 
 window.addEventListener('DOMContentLoaded', init);

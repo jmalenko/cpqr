@@ -229,80 +229,6 @@ function tests() {
 }
 
 /*
-    Measure
-    =======
- */
-
-const MEASURE_DURATION_MIN = 30;
-const MEASURE_DURATION_MAX = 210;
-const MEASURE_DURATION_STEP = Math.round((MEASURE_DURATION_MAX - MEASURE_DURATION_MIN) / 6);
-
-const MEASURE_CAPACITY_MIN = 200;
-const MEASURE_CAPACITY_MAX = 320;
-const MEASURE_CAPACITY_STEP = Math.round((MEASURE_CAPACITY_MAX - MEASURE_CAPACITY_MIN) / 6);
-
-const MEASURE_FRAME_MAX = 10;
-
-var durationMeasure;
-var capacityMeasure;
-var frameMeasure;
-
-function showMeasure() {
-    durationMeasure = MEASURE_DURATION_MIN;
-    capacityMeasure = MEASURE_CAPACITY_MIN;
-    frameMeasure = 0;
-
-    duration = durationMeasure;
-
-    nextFrameMeasure();
-}
-
-function nextFrameMeasure() {
-    // Adjust duration
-    const dateNextFameCurrent = new Date();
-    const durationLast = dateNextFameCurrent - dateNextFrame;
-    const delta = durationLast - durationMeasure;
-    dateNextFrame = dateNextFameCurrent;
-    if (!isNaN(delta)) duration -= delta / 10;
-
-    // Show frame
-    const head = "Duration " + durationMeasure + ", capacity " + capacityMeasure + ", frame " + frameMeasure + " of " + MEASURE_FRAME_MAX;
-    log(head);
-
-    const head2 = head + ", padding ";
-    const padding = randomStringOfLength(capacityMeasure - head2.length);
-    const str = head2 + padding;
-    qrcode.makeCode(str);
-
-    // Shift parameters
-    frameMeasure++;
-    if (MEASURE_FRAME_MAX <= frameMeasure) {
-        capacityMeasure += MEASURE_CAPACITY_STEP;
-        frameMeasure = 0;
-    }
-    if (MEASURE_CAPACITY_MAX < capacityMeasure) {
-        durationMeasure += MEASURE_DURATION_STEP;
-        duration += MEASURE_DURATION_STEP;
-        dateNextFrame += MEASURE_DURATION_STEP;
-        capacityMeasure = MEASURE_CAPACITY_MIN;
-    }
-    if (MEASURE_DURATION_MAX < durationMeasure) {
-        durationMeasure = MEASURE_DURATION_MIN;
-        dateNextFrame = undefined;
-
-        // Hide the QR code
-        const el = document.getElementById("qrcode");
-        el.style.visibility = "hidden";
-
-        log("Measuring finished");
-        return; // Measuring finished
-    }
-
-    // Schedule next
-    setTimeout(nextFrameMeasure, duration);
-}
-
-/*
 
 What is transmitted
 ===================
@@ -466,11 +392,6 @@ function init() {
 
     // Run tests
     tests();
-
-    let measureParam = url.searchParams.get("measure");
-    if (measureParam !== null) {
-        showMeasure();
-    }
 
     showSimulated();
 }
