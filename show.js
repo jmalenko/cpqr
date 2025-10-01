@@ -608,8 +608,7 @@ function onShowFrame(frame) {
 function onShowCorrectionFrame(lossRate, correctionFrame) {
     let frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
 
-    log("Correction for " + (lossRate * 100).toFixed(2) + " %, frame " + correctionFrame + ": " + frameContent);
-    // TODO format lossRate (it's integer)
+    log("Correction for " + (lossRate * 100) + " %, frame " + correctionFrame + ": " + frameContent);
 
     qrcode.makeCode(frameContent);
 
@@ -774,14 +773,14 @@ function nextFrame() {
         } else {
             // Show correction frame
             if (lossRate == INITIAL_LOSS_RATE && correctionFrame == -1) {
-                log("All content frames sent. Starting correction frames with assumed loss " + (lossRate * 100).toFixed(2) + "%");
+                log("All content frames sent. Starting correction frames with assumed loss " + (lossRate * 100) + "%");
             }
 
             correctionFrame++;
             if (correctionFrame == correctionFramesCount(lossRate)) {
                 correctionFrame = 0;
                 lossRate *= 2;
-                log("Assumed loss increased to " + (lossRate * 100).toFixed(2) + "%");
+                log("Assumed loss rate increased to " + (lossRate * 100) + "%");
             }
 
             onShowCorrectionFrame(lossRate, correctionFrame);
