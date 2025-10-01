@@ -89,138 +89,174 @@ var getStackTrace = function () {
  */
 
 const testFrames = [
-    // Prepared with CAPACITY_TOTAL = 50
+    // Prepared with the same content.
 
-    // TODO More test cases - 4 frames, missing frame 3, one correction 49% should fix it
-    // TODO More test cases - 4 frames, missing frame 4, one correction 49% should fix it
+    // Content fits 2 frames. (The capacity is 50.)
 
-    [ // Same content, the capacity changed to 70 so it fits 2 frames. The format changed to include the variable-length-quantity encoding of data in each frame.
-      // Miss frame 2, send correction that allows building the frame 2.
-        '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base',
-        // '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=',
-        '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U='],
+    {
+        name: "2 frames, send all the content frames",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+            // '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame
+        ]
+    },
 
-    // Wrong, without th content lengt
-    // [ // Same content, the capacity changed to 70 si ot fits 2 frames.
-    //   // Miss frame 2, send correction that allows building the frame 2.
-    //     '1101112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base',
-    //     // '11164,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=',
-    //     '130,1AAABBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U='],
+    {
+        name: "2 frames, send all the content frames in opposite direction",
+        frames: [
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+        ]
+    },
 
-    [ // Send 3 frames
-        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
-        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K',
-        '112xJvFocSNxZnFvsO9w6HDrcOpDQo='],
+    {
+        name: "2 frames, miss frame 0, send correction that allows building the frame",
+        frames: [
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame
+        ]
+    },
 
-    [ // Send frame 1 at the end
-        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
-        '112xJvFocSNxZnFvsO9w6HDrcOpDQo=',
-        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K'],
+    {
+        name: "2 frames, miss frame 1, send correction that allows building the frame",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame
+        ]
+    },
 
-    [ // Send frame 0 at the end
-        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K',
-        '112xJvFocSNxZnFvsO9w6HDrcOpDQo=',
-        '1101112104065018274217C:\\fakepath\\a.txt279data:t'],
+    // Content fits 3 frames. (The capacity is 40.)
 
-    // TODO Remove obsolete tests
-    [ // Send frame 1 in 2 parts
-        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
-        '131.0ext/plain;base64,SmVkb',
-        '131.1mEsDQpEdsSbLg0KVMWZaQ0K',
-        '112xJvFocSNxZnFvsO9w6HDrcOpDQo='],
+    {
+        name: "3 frames, send all the content frames",
+        frames: [
+            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
+            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
+            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
+            // More correction scenarios are possible
+            // Correction for 1% loss (one frame):
+            // '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0', // Correction frame for 1% loss
+            // Correction for 64% loss (two frames):
+            // '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
+            // '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
+        ]
+    },
 
-    [ // Send frame 1 part 2 in two 2 subparts
-        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
-        '131.0ext/plain;base64,SmVkb',
-        '141.10mEsDQpEdsSbL',
-        '141.11g0KVMWZaQ0K',
-        '112xJvFocSNxZnFvsO9w6HDrcOpDQo='],
+    {
+        name: "3 frames, send all the content frames, frame 0 as last",
+        frames: [
+            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
+            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
+            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
+        ]
+    },
 
-    [ // Send 3 frames, but change last character in frame 1, resend the correct frame 1 at the end
-        '1101112104065018274217C:\\fakepath\\a.txt279data:t',
-        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0_',
-        '112xJvFocSNxZnFvsO9w6HDrcOpDQo=',
-        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K'],
+    {
+        name: "3 frames, miss frame 0, send correction",
+        frames: [
+            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
+            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
+            '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0', // Correction frame for 1% loss
+        ]
+    },
 
-    [ // Send 3 frames, frame 0 is sent in parts
-        '130.01112104065018274217C:\\f',
-        '130.1akepath\\a.txt279data:t',
-        '111ext/plain;base64,SmVkbmEsDQpEdsSbLg0KVMWZaQ0K',
-        '112xJvFocSNxZnFvsO9w6HDrcOpDQo='],
+    {
+        name: "3 frames, miss frame 1, send correction",
+        frames: [
+            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
+            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
+            '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0', // Correction frame for 1% loss
+        ]
+    },
 
-    [ // Send 3 frames, only parts of length 1
-        '130.01112104065018274217C:\\',
-        '130.1fakepath\\a.txt279data:t',
-        '131.0ext/plain;base64,SmVkb',
-        '131.1mEsDQpEdsSbLg0KVMWZaQ0K',
-        '132.0xJvFocSNxZnFvs',
-        '132.1O9w6HDrcOpDQo='],
+    {
+        name: "3 frames, miss frame 2, send correction",
+        frames: [
+            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
+            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
+            '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0', // Correction frame for 1% loss
+        ]
+    },
 
-    [ // Send 3 frames, only parts of length 2
-        '140.0011121040650',
-        '140.0118274217C:\\',
-        '140.10fakepath\\a.',
-        '140.11txt279data:t',
-        '141.00ext/plain;b',
-        '141.01ase64,SmVkb',
-        '141.10mEsDQpEdsSb',
-        '141.11Lg0KVMWZaQ0K',
-        '142.00xJvFocS',
-        '142.01NxZnFvs',
-        '142.10O9w6HDr',
-        '142.11cOpDQo='],
+    {
+        name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received",
+        frames: [
+            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
+            '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
+            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
+        ]
+    },
 
-    [ // Send 3 frames, only parts of length 3
-        '150.00011121',
-        '150.001040650',
-        '150.01018274',
-        '150.011217C:\\',
-        '150.100fakep',
-        '150.101ath\\a.',
-        '150.110txt279',
-        '150.111data:t',
-        '151.000ext/p',
-        '151.001lain;b',
-        '151.010ase64',
-        '151.011,SmVkb',
-        '151.100mEsDQ',
-        '151.101pEdsSb',
-        '151.110Lg0KVM',
-        '151.111WZaQ0K',
-        '152.000xJv',
-        '152.001FocS',
-        '152.010NxZ',
-        '152.011nFvs',
-        '152.100O9w',
-        '152.1016HDr',
-        '152.110cOp',
-        '152.111DQo=']
+    {
+        name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received, swap correction frames",
+        frames: [
+            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
+            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
+            '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
+        ]
+    },
+
+    {
+        name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received",
+        frames: [
+            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
+            '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
+            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
+        ]
+    },
+
+    // TODO This test does not work because ynused correction frames are not stored for later use
+    {
+        name: "3 frames, miss frames 1 and 2, send corrections, unused correction frames must be stored for a later correction",
+        frames: [
+            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
+            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
+            '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
+        ]
+    }
 ];
 
-let fileSimulated = 0;
-let frameSimulated = 0;
+let fileSimulated = -1;
+let frameSimulated;
+
+function simulationInProgress() {
+    return 0 <= fileSimulated && fileSimulated < testFrames.length;
+}
+
+function initData() {
+    contentRead = [];
+    hashSaved = "";
+}
 
 function scanSimulated() {
-    if (fileSimulated >= testFrames.length) {
-        log("Simulated scans finished");
-        updateInfo();
-        return;
-    }
-
-    onScan(testFrames[fileSimulated][frameSimulated]);
-
-    if (frameSimulated + 1 === testFrames[fileSimulated].length) {
+    if (fileSimulated < 0 || (frameSimulated + 1 === testFrames[fileSimulated].frames.length)) {
         // Move to next file
         fileSimulated++;
         frameSimulated = 0;
+        initData();
 
-        // Cleanup data
-        contentRead = [];
-        hashSaved = "";
+        if (!simulationInProgress()) {
+            log("=== Simulated scans finished === ");
+            updateInfo();
+
+            // Have to clean it manually after tests to really get it to the initial state (as in HTML)
+            const el = document.getElementById("info");
+            el.innerHTML = "";
+
+            return;
+        }
+
+        log("=== Next simulated scan: " + testFrames[fileSimulated].name + " ===");
     } else {
         frameSimulated++;
     }
-    setTimeout(scanSimulated, 1000);
+    let frameData = testFrames[fileSimulated].frames[frameSimulated]
+    if (frameData != undefined) {
+        onScan(frameData);
+    }
+
+    setTimeout(scanSimulated, 10);
 }
 
 function assertEqual(testName, a, b) {
@@ -549,7 +585,11 @@ function onScan(content) {
             const fileContent = atob(b64);
 
             log("Downloading as " + fileNameLast);
-            download(fileContent, fileNameLast, 'text/plain');
+            if (simulationInProgress()) {
+                log("Simulation - skipping download");
+            } else {
+                download(fileContent, fileNameLast, 'text/plain');
+            }
 
             hashSaved = hash;
         }

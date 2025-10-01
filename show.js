@@ -590,6 +590,13 @@ function generateCorrection(lossRate, index) {
         indices.push(j);
     }
 
+    // There must be at least two frames to make a correction frame useful (and correction frame detection to work in scan)
+    if (indices.length < 2) {
+        // Add first or last frame
+        indices.unshift(index == 0 ? n-1 : 0);
+    }
+
+
     // XOR the selected frames
     let xor = getFrameContent(indices[0]);
     for (let k = 1; k < indices.length; k++) {
