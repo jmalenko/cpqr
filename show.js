@@ -709,46 +709,6 @@ function generateCorrection(lossRate, index) {
     }
     let payload = btoa(xor);
 
-    // TODO Remove test
-    // Test decoding
-    let missingIndex = 1;
-    let xorResult = atob(payload);
-    if (xorResult != xor) {
-        console.log("CHECK Error");
-    }
-    for (let idx of indices) {
-        if (idx !== missingIndex) {
-            xorResult = xorStrings(xorResult, getFrameContent(idx));
-        }
-    }
-    if (xorResult != getFrameContent(missingIndex)) {
-        var forComparison = xorResult + "\n" + getFrameContent(missingIndex);
-
-        try {
-            // Use the recovered content as a normal frame
-            let [frameStr, contentFrame] = decodeFrameContent(xorResult);
-
-            var frame2 = Number(frameStr);
-            if (isNaN(frame2)) {
-                throw new Error("Error decoding: frame is not a number");
-            }
-
-            // let [frameStrExpected, contentFrameExpected] = getFrameContent(missingIndex);
-            let [frameStrExpected, contentFrameExpected] = decodeFrameContent(getFrameContent(missingIndex));
-            if (contentFrame != contentFrameExpected) {
-                var forComparison = contentFrame + "\n" + contentFrameExpected;
-                log("CHECK FAILED");
-            }
-            log("Recovered frame " + frameStr + " with content " + contentFrame);
-        } catch (e) {
-            log("Error decoding recovered frame: " + e.message);
-        }
-        log("Error in correction frame generation: cannot recover frame " + missingIndex + " from indices " + indices);
-    } else {
-        log("Test of correction frame generation successful: can recover frame " + missingIndex + " from indices " + indices);
-    }
-
-
     // Return correction frame object
     return {indices, payload};
 }
