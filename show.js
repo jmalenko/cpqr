@@ -718,6 +718,22 @@ function sendingContent() {
     return frame + 1 < getNumberOfFrames();
 }
 
+// Return true when sending correction frames. (Sending stops when loss rate exceeds 100%.)
+function sendingCorrections() {
+    return lossRate <= 1;
+}
+
+function onEnd() {
+    log("End");
+
+    updateInfo();
+
+    // Hide the QR code
+    const el = document.getElementById("qrcode");
+    el.style.visibility = "hidden";
+}
+
+
 function nextFrame() {
     adjustDuration();
 
@@ -730,7 +746,7 @@ function nextFrame() {
             frame++;
 
             onShowFrame(frame);
-        } else {
+        } else if (sendingCorrections()) {
             // Show correction frame
             if (lossRate == INITIAL_LOSS_RATE && correctionFrame == -1) {
                 log("All content frames sent. Starting correction frames with assumed loss " + (lossRate * 100) + "%");
@@ -740,10 +756,16 @@ function nextFrame() {
             if (correctionFrame == correctionFramesCount(lossRate)) {
                 correctionFrame = 0;
                 lossRate *= 2;
+                if (!sendingCorrections()) {
+                    onEnd()
+                    return;
+                }
                 log("Assumed loss rate increased to " + (lossRate * 100) + "%");
             }
 
             onShowCorrectionFrame(lossRate, correctionFrame);
+        } else {
+            return;
         }
     }
 
@@ -851,7 +873,7 @@ function updateInfo() {
         const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) ? DURATION_TARGET : durationActual) / 1000);
         const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000));
         infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + ". "
-    } else {
+    } else if (sendingCorrections()) {
         infoStr += "Correction for loss rate " + lossRate + ", frame " + correctionFrame + ".";
     }
 
