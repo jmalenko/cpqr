@@ -659,39 +659,6 @@ function correctionFramesCount(lossRate) {
     return Math.ceil(getNumberOfFrames() * lossRate);
 }
 
-// TODO only for testing - remove
-function decodeWithLength(str, from) {
-    const lengthOfLengthStr = str.slice(from, from + 1);
-    const lengthOfLength = Number(lengthOfLengthStr);
-    if (isNaN(lengthOfLength)) {
-        throw new Error("Invalid variable-length quantity value: length of length is not a number");
-    }
-
-    const lengthStr = str.slice(from + 1, from + 1 + lengthOfLength);
-    const length = Number(lengthStr);
-    if (isNaN(length)) {
-        throw new Error("Invalid variable-length quantity value: length is not a number");
-    }
-
-    const data = str.slice(from + 1 + lengthOfLength, from + 1 + lengthOfLength + length);
-
-    const next = from + 1 + lengthOfLength + length;
-
-    return [length, data, next];
-}
-
-function decodeFrameContent(content) {
-    let from = 0;
-    let frameStr, contentFrame;
-
-    [, frameStr, from] = decodeWithLength(content, from);
-    [, contentFrame, from] = decodeWithLength(content, from);
-
-    return [frameStr, contentFrame];
-}
-
-// TODO remove above
-
 function generateCorrection(lossRate, index) {
     const n = getNumberOfFrames();
     const numMissing = correctionFramesCount(lossRate);
