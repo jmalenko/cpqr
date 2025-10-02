@@ -4,7 +4,7 @@
     script.src = 'common.js';
     script.type = 'text/javascript';
     script.onload = function () {
-        init();
+        onLoad();
     };
     document.head.appendChild(script);
 })();
@@ -254,7 +254,7 @@ function setCapacity(capacity) {
     capacityForDataInOneFrame = capacity - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
 }
 
-function init() {
+function onLoad() {
     const scale = 10; // Scale factor to make the QR code large. On screen, this will be scaled to available area.
     qrcode = new QRCode("qrcode", {
         width: scale * 177, // The QR code has max 177 blocks (in one dimension)
