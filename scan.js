@@ -3,9 +3,7 @@
     const script = document.createElement('script');
     script.src = 'common.js';
     script.type = 'text/javascript';
-    script.onload = function () {
-        onLoad();
-    };
+    script.onload = () => onLoad();
     document.head.appendChild(script);
 })();
 
