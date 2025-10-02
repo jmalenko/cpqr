@@ -570,9 +570,8 @@ function adjustDuration() {
 }
 
 function showMissing() {
-    const f = missingFrames[0];
+    const f = missingFrames.shift();
     onShowFrame(f);
-    missingFrames.shift();
     // TODO Maybe Send a correction made for two frames: this and the previous one. XORed.
 }
 
