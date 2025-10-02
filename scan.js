@@ -161,7 +161,7 @@ const testFrames = [
             '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
         ],
         expected: false // No file saved, we have frame 0 with incorrect data
-        // TODO Can this be identified with correction and fixed?
+        // This situation could be potentially identified with the (existing) correction. But why would we do that? If we have frame 0, we should not need the correction.
     },
 
     {
@@ -201,7 +201,6 @@ const testFrames = [
             '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc1g=', // Correction frame (last character of frame 1 changed from e to X; then the correction frame was recreated)
         ],
         expected: false // No file saved, recovered frame 0 with wrong data, fails hash check
-        // TODO Can this be identified with correction and fixed?
     },
 
     {
@@ -219,7 +218,6 @@ const testFrames = [
             '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIAtgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame (in frame 1 content, the file namech changed from "a" to "X"; then the correction frame was recreated. The "DJ" in the middle changed to "At".)
         ],
         expected: false // No file saved, recovered frame 1 with wrong data, fails hash check
-        // TODO Can this be identified with correction and fixed?
     },
 
     // Content fits 3 frames. (The capacity is 40.)
