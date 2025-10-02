@@ -393,7 +393,7 @@ function init() {
     // Run tests
     tests();
 
-    showSimulated();
+    // showSimulated();
 }
 
 function onOpenFile(event) {
