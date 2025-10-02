@@ -904,7 +904,7 @@ function onLoad() {
 
     initStream();
 
-    scanSimulated();
+    // scanSimulated();
 }
 
 init();
