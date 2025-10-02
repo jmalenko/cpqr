@@ -635,7 +635,7 @@ function saveFile() {
         } else if (e instanceof NotAllDataError) {
             // Do nothing - it's normal that we do not have all data yet
         } else {
-            log("Error when trying to saveFile file" + "\n" +
+            log("Error when trying to save file" + "\n" +
                 "Error: " + e.toString() + "\n" +
                 "Stack trace: " + getStackTrace());
             throw e;
