@@ -856,8 +856,7 @@ function initStream() {
         if (lastFrameTime !== null) {
             let scanSpeedMs = now - lastFrameTime;
             let scanFps = (1000 / scanSpeedMs).toFixed(1);
-            let recommendedShowSpeedMs = Math.ceil(scanSpeedMs * 2.1 / 10) * 10; // Round to higher 10 ms
-            document.getElementById("scanSpeed").innerText = "Scan speed: " + scanSpeedMs.toFixed(1) + " ms (" + scanFps + " fps). Show can have duration " + recommendedShowSpeedMs + " ms.";
+            document.getElementById("scanSpeed").innerText = "Scan speed: " + scanSpeedMs.toFixed(1) + " ms (" + scanFps + " fps).";
         }
         lastFrameTime = now;
 
