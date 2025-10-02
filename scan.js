@@ -111,6 +111,15 @@ const testFrames = [
     },
 
     {
+        name: "2 frames, send frame 0 twice",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+        ]
+    },
+
+    {
         name: "2 frames, miss frame 0, send correction that allows building the frame",
         frames: [
             '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
@@ -491,23 +500,38 @@ function decodeCorrectionFrame(content) {
         }
     }
 
-    // TODO refactor the following code - it's the same as in onScan
+    let frame = saveFrame(xor);
 
+    // Hardening: check that the frame index matches the position in the array
+    if (missingIndex != frame) {
+        log("Warning: Frame index mismatch in recovered frame: expected " + missingIndex + " but got " + frame);
+    }
+
+    return frame;
+}
+
+function saveFrame(content) {
     // Use the recovered content as a normal frame
-    let [frameStr, contentFrame] = decodeFrameContent(xor);
+    let [frameStr, contentFrame] = decodeFrameContent(content);
 
     frame = Number(frameStr);
     if (isNaN(frame)) {
         throw new Error("Error decoding: frame is not a number");
     }
 
-    // Hardening: check that the frame index matches the position in the array
-    if (missingIndex != frame) {
-        throw new Error("Frame index mismatch in recovered frame: expected " + missingIndex + " but got " + frame);
+    if (contentRead[frame] != null) {
+        if (contentRead[frame] === contentFrame) {
+            log("Frame " + frame + " with the same content was already encountered in the past");
+            return frame;
+        } else {
+            // Encountered a frame with a new content.
+            // This is not usual, but can happen when two files are sent.
+        }
+    } else {
+        log("Read frame " + frameStr + " with content " + contentFrame);
     }
 
-    // log("Recovered frame " + frame + " with content " + contentFrame);
-    contentRead[frame] = xor;
+    contentRead[frame] = content;
 
     return frame;
 }
@@ -539,11 +563,7 @@ function isCorrectionFrame(content) {
     }
 }
 
-function onScan(content) {
-    let frame;
-    let missing;
-
-    // Save frame
+function processFrame(content) {
     try {
         if (isCorrectionFrame(content)) {
             var recoveredFrame = decodeCorrectionFrame(content);
@@ -551,26 +571,11 @@ function onScan(content) {
                 log("Recovered frame " + recoveredFrame + " with content " + contentRead[recoveredFrame]);
                 recoveryWithUnusedCorrectionFrames();
             }
+            return recoveredFrame;
         } else {
-            let [frameStr, contentFrame] = decodeFrameContent(content);
-            // log("Read frame index " + frameStr + " with content " + contentFrame);
-
-            frame = Number(frameStr);
-            if (isNaN(frame)) {
-                throw new Error("Error decoding: frame is not a number");
-            }
-            if (contentRead[frame] != null) {
-                console.log("Frame " + frame + " was already encountered in the past");
-                if (contentRead[frame] === contentFrame) {
-                    return frame;
-                }
-            } else {
-                log("Read frame " + frameStr + " with content " + contentFrame);
-            }
-            contentRead[frame] = content;
+            return saveFrame(content);
         }
     } catch (e) {
-        console.log("READ: " + content);
         console.log("Error processing QR code: " + e.toString(), e)
         log("Error processing frame" + "\n" +
             "Content: " + content + "\n" +
@@ -578,7 +583,9 @@ function onScan(content) {
             "Stack trace: " + getStackTrace());
         throw new QrCodeProcessingError("QR Code does not contain a frame");
     }
+}
 
+function decodeHeader(frame) {
     // Log when header decoded later than in first frame (with index 0)
     try {
         if (!headerDecoded) {
@@ -593,9 +600,10 @@ function onScan(content) {
     } catch (e) {
         log("Cannot decode header");
     }
+}
 
-    // TODO Refactoring - extract to methods
-    // If all frames then save
+function saveFile() {
+    // If all frames then download
     try {
         let [hash, fileName, dataURL] = decodeContent();
 
@@ -623,18 +631,27 @@ function onScan(content) {
         if (e instanceof MissingFrameError) {
             // The dataURL is not complete yet
             log("Missing frames " + e.missing);
-            missing = e.missing;
+            return e.missing;
         } else if (e instanceof NotAllDataError) {
             // Do nothing - it's normal that we do not have all data yet
         } else {
-            log("Error when trying to save file" + "\n" +
+            log("Error when trying to saveFile file" + "\n" +
                 "Error: " + e.toString() + "\n" +
                 "Stack trace: " + getStackTrace());
             throw e;
         }
     }
+}
+
+function onScan(content) {
+    let frame = processFrame(content);
+
+    decodeHeader(frame);
+
+    let missing = saveFile();
 
     updateInfo(missing);
+
     return frame;
 }
 
