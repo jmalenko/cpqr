@@ -90,7 +90,7 @@ function assertEqual(testName, a, b) {
         if (diffIndex !== -1) {
             log("          " + " ".repeat(diffIndex) + "^");
         }
-        if (a.length != b.length) {
+        if (a.length !== b.length) {
             log("Strings have different lengths: got " + a.length + " but expected " + b.length);
         }
         throw new Error("Test " + testName + " error: Strings differ at index " + diffIndex);
