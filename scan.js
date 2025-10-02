@@ -484,7 +484,7 @@ function decodeContent() {
 }
 
 function getContentInfo() {
-    let [, content] = decodeFrameContent(contentRead[0]); // TODO Assumption: The header is in frame 0. In fact, it can continue in following frames.
+    let [frameStr, content] = decodeFrameContent(contentRead[0]); // TODO Assumption: The header is in frame 0. In fact, it can continue in following frames.
     let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
     const capacityForDataInOneFrame = content.length;
@@ -619,9 +619,26 @@ function decodeHeader(frame) {
     }
 }
 
+function allFramesRead() {
+    if (!headerDecoded) {
+        return false;
+    }
+
+    let [hash, fileName, numberOfFrames] = getContentInfo();
+    const numberOfFramesReceived = Object.keys(contentRead).length;
+
+    return numberOfFrames <= numberOfFramesReceived;
+}
+
 function saveFile() {
-    // If all frames then download
     try {
+        if (!allFramesRead()) {
+            return;
+        }
+
+        // If all frames then download
+        log("All frames received, trying to save file");
+
         let [hash, fileName, dataURL] = decodeContent();
 
         if (hash !== hashSaved) {

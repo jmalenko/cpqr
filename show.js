@@ -198,7 +198,8 @@ In the past, several optimizations were done. Here is a summary for a 20 MB file
               Still, for 100 MB file, slice() takes 120 ms.
 - Generation of a QR code with capacity 1000 takes 50 ms.
   Resolution: We cannot optimize this, it's just one call to the library.
-
+- In scan, the saving of the file was not optimized: The file was built by concatenating strings (with frame data) whenever a frame was received, which is slow.
+  Resolution: Do this only when all the frames are received.
 Conclusion: For big files (100 MB), there are two bottlenecks:
 - slice() - 120 ms
 - QR code generation - 50 ms
