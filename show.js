@@ -237,8 +237,6 @@ var frame; // From 0. The frames from 0 to frame-1 have been shown.
 var missingFrames; // Contains the frames to show as soon as possible. The frame at index _frame_ will be shown afterward.
 
 let lossRate;
-const INITIAL_LOSS_RATE = 0.01;
-
 let correctionFrame;
 
 var qrcode;
@@ -405,7 +403,7 @@ function onPlay() {
     missingFrames = [];
     duration = DURATION_TARGET;
 
-    lossRate = INITIAL_LOSS_RATE;
+    lossRate = 0.01;
     correctionFrame = -1;
 
     nextFrame();
@@ -539,7 +537,7 @@ function nextFrame() {
             onShowFrame(frame);
         } else if (sendingCorrections()) {
             // Show correction frame
-            if (lossRate == INITIAL_LOSS_RATE && correctionFrame == -1) {
+            if (correctionFrame == -1) {
                 log("All content frames sent. Starting correction frames with assumed loss " + (lossRate * 100) + "%");
             }
 
