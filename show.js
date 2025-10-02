@@ -104,21 +104,22 @@ function tests() {
     // assertEqual("Number of frames 340", getNumberOfFrames(stringOfLength(340)), 2);
     // assertEqual("Number of frames 341", getNumberOfFrames(stringOfLength(341)), 3);
 
-    var a = "Alpha";
-    var b = "Beta_";
-    var c = xorStrings(a, b);
+    var a, b, c;
+    a = "Alpha";
+    b = "Beta_";
+    c = xorStrings(a, b);
     assertEqual("xorStrings", a, xorStrings(b, c));
     assertEqual("xorStrings", b, xorStrings(a, c));
 
-    var a = "Alpha";
-    var b = "Beta";
-    var c = xorStrings(a, b);
+    a = "Alpha";
+    b = "Beta";
+    c = xorStrings(a, b);
     assertEqual("xorStrings shorter", a, xorStrings(b, c));
     assertEqual("xorStrings shorter", b + String.fromCharCode(0), xorStrings(a, c));
 
-    var a = "1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base";
-    var b = "11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=";
-    var c = xorStrings(a, b);
+    a = "1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base";
+    b = "11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=";
+    c = xorStrings(a, b);
     assertEqual("xorStrings", c, atob("AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U="));
     assertEqual("xorStrings", a, xorStrings(b, c));
     assertEqual("xorStrings", b, xorStrings(a, c).slice(0, b.length));
