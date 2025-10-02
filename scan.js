@@ -556,7 +556,7 @@ function recoveryWithUnusedCorrectionFrames() {
         changed = false;
         for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
             const frame = unusedCorrectionFrames[i];
-            var recoveredFrame = decodeCorrectionFrame(frame)
+            let recoveredFrame = decodeCorrectionFrame(frame)
             if (recoveredFrame != -1) {
                 log("Used a stored correction frame to recover a missing frame " + recoveredFrame + " with content " + contentRead[recoveredFrame]);
                 unusedCorrectionFrames.splice(i, 1);
@@ -579,14 +579,14 @@ function isCorrectionFrame(content) {
 function processFrame(content) {
     try {
         if (isCorrectionFrame(content)) {
-            var recoveredFrame = decodeCorrectionFrame(content);
+            let recoveredFrame = decodeCorrectionFrame(content);
             if (recoveredFrame != -1) {
                 log("Recovered frame " + recoveredFrame + " with content " + contentRead[recoveredFrame]);
                 recoveryWithUnusedCorrectionFrames();
             }
             return recoveredFrame;
         } else {
-            var frame = saveFrame(content);
+            let frame = saveFrame(content);
             if (frame != -1) {
                 log("Read frame " + frame + " with content " + contentRead[frame]);
             }
@@ -755,12 +755,12 @@ function initStream() {
 
     let currentStream = null;
 
-    var video = document.createElement("video");
-    var canvasElement = document.getElementById("canvas");
-    var canvas = canvasElement.getContext("2d");
-    var status = document.getElementById("status");
+    let video = document.createElement("video");
+    let canvasElement = document.getElementById("canvas");
+    let canvas = canvasElement.getContext("2d");
+    let status = document.getElementById("status");
 
-    var flipVideo;
+    let flipVideo;
 
     cameraSelect.onchange = function () {
         getStream(cameraSelect.value);
@@ -870,8 +870,8 @@ function initStream() {
                 canvas.drawImage(video, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
                 canvas.restore();
             }
-            var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-            var code = jsQR(imageData.data, imageData.width, imageData.height, {
+            let imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+            let code = jsQR(imageData.data, imageData.width, imageData.height, {
                 inversionAttempts: "dontInvert",
             });
             if (code) {

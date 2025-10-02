@@ -35,7 +35,7 @@ function formatDate(date) {
  */
 function hashFnv32a(str, asString, seed) {
     /*jshint bitwise:false */
-    var i, l,
+    let i, l,
         hval = (seed === undefined) ? 0x811c9dc5 : seed;
 
     for (i = 0, l = str.length; i < l; i++) {
