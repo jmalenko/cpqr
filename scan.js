@@ -91,7 +91,7 @@ var getStackTrace = function () {
 const testFrames = [
     // Prepared with the same content.
 
-    // Content fits 2 frames. (The capacity is 50.)
+    // Content fits 2 frames. (The capacity is 70.)
 
     {
         name: "2 frames, send all the content frames",
@@ -133,6 +133,93 @@ const testFrames = [
             '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
             '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame
         ]
+    },
+
+    // Even more unusual scenarios for 2 frames
+
+    {
+        name: "2 frames, send only frame 0",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+        ],
+        expected: false // No file saved, missing frame 1
+    },
+
+    {
+        name: "2 frames, send only frame 1",
+        frames: [
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+        ],
+        expected: false // No file saved, missing frame 0
+    },
+
+    {
+        name: "2 frames, send frame 0 correctly and then with incorrect data",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;basX', // Frame 0 incorrect (last character changed to X)
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+        ],
+        expected: false // No file saved, we have frame 0 with incorrect data
+        // TODO Can this be identified with correction and fixed?
+    },
+
+    {
+        name: "2 frames, send frame 0 with incorrect data and then correctly",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;basX', // Frame 0 incorrect (last character changed to X)
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+        ]
+        // Expected: File saved, we have correct data at the moment when all frames were received
+    },
+
+    {
+        name: "2 frames, send frame 1 correctly and then with incorrect data",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQoX', // Frame 1 incorrect (last character changed to X)
+        ]
+        // Expected: File saved, we have correct data at the moment when all frames were received
+    },
+
+    {
+        name: "2 frames, send frame 1 with incorrect data and then correctly",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQoX', // Frame 1 incorrect (last character changed to X)
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+        ],
+        // Expected: File saved, we have correct data at the moment when all frames were received
+    },
+
+    {
+        name: "2 frames, miss frame 0, send incorrect correction",
+        frames: [
+            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
+            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc1g=', // Correction frame (last character of frame 1 changed from e to X; then the correction frame was recreated)
+        ],
+        expected: false // No file saved, recovered frame 0 with wrong data, fails hash check
+        // TODO Can this be identified with correction and fixed?
+    },
+
+    {
+        name: "2 frames, miss frame 1, send incorrect correction, but the recovered frame 1 is shorter than the correction so the incorrect part is not used",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc1g=', // Correction frame (last character of frame 1 changed from "e" to "X"; then the correction frame was recreated. The "2U=" at the end changed to "1g=".)
+        ],
+    },
+
+    {
+        name: "2 frames, miss frame 1, send incorrect correction (with changed 1st character)",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIAtgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame (in frame 1 content, the file namech changed from "a" to "X"; then the correction frame was recreated. The "DJ" in the middle changed to "At".)
+        ],
+        expected: false // No file saved, recovered frame 1 with wrong data, fails hash check
+        // TODO Can this be identified with correction and fixed?
     },
 
     // Content fits 3 frames. (The capacity is 40.)
@@ -227,6 +314,7 @@ const testFrames = [
 
 let fileSimulated = -1;
 let frameSimulated;
+let downloadedInSimulation;
 
 function simulationInProgress() {
     return 0 <= fileSimulated && fileSimulated < testFrames.length;
@@ -240,9 +328,19 @@ function initData() {
 
 function scanSimulated() {
     if (fileSimulated < 0 || (frameSimulated + 1 === testFrames[fileSimulated].frames.length)) {
+        // Check downloaded status of the test that just finished
+        if (fileSimulated >= 0) {
+            const downloadExpected = testFrames[fileSimulated].expected ?? true;
+            if (downloadExpected !== downloadedInSimulation) {
+                log("Test '" + testFrames[fileSimulated].name + "' failed: expected downloaded = " + downloadExpected + " but got " + downloadedInSimulation);
+                throw Error("Test failed");
+            }
+        }
+
         // Move to next file
         fileSimulated++;
         frameSimulated = 0;
+        downloadedInSimulation = false;
         initData();
 
         if (!simulationInProgress()) {
@@ -462,8 +560,10 @@ function decodeContent() {
 
     // Verify hash
     const hashCalculated = hashFnv32a(fileName + data, false);
-    if (hash !== hashCalculated.toString())
-        throw new Error("Incorrect hash");
+    if (hash !== hashCalculated.toString()) {
+        log("Incorrect hash")
+        throw new NotAllDataError("Incorrect hash");
+    }
 
     return [hash, fileName, data];
 }
@@ -527,8 +627,6 @@ function saveFrame(content) {
             // Encountered a frame with a new content.
             // This is not usual, but can happen when two files are sent.
         }
-    } else {
-        log("Read frame " + frameStr + " with content " + contentFrame);
     }
 
     contentRead[frame] = content;
@@ -573,7 +671,11 @@ function processFrame(content) {
             }
             return recoveredFrame;
         } else {
-            return saveFrame(content);
+            var frame = saveFrame(content);
+            if (frame != -1) {
+                log("Read frame " + frame + " with content " + contentRead[frame]);
+            }
+            return frame;
         }
     } catch (e) {
         console.log("Error processing QR code: " + e.toString(), e)
@@ -621,6 +723,7 @@ function saveFile() {
             log("Downloading as " + fileNameLast);
             if (simulationInProgress()) {
                 log("Simulation - skipping download");
+                downloadedInSimulation = true;
             } else {
                 download(fileContent, fileNameLast, 'text/plain');
             }
