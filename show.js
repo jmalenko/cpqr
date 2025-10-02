@@ -659,7 +659,7 @@ function updateInfo() {
         const ratio = frame / numberOfFrames * 100;
         infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
 
-        const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) ? DURATION_TARGET : durationActual) / 1000);
+        const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) || 0 < duration ? DURATION_TARGET : durationActual) / 1000);
         const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000));
         infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + ". "
     } else if (sendingCorrections()) {
