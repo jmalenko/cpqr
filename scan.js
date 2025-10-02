@@ -320,12 +320,6 @@ function simulationInProgress() {
     return 0 <= fileSimulated && fileSimulated < testFrames.length;
 }
 
-function initData() {
-    contentRead = [];
-    hashSaved = "";
-    unusedCorrectionFrames = [];
-}
-
 function scanSimulated() {
     if (fileSimulated < 0 || (frameSimulated + 1 === testFrames[fileSimulated].frames.length)) {
         // Check downloaded status of the test that just finished
@@ -341,7 +335,7 @@ function scanSimulated() {
         fileSimulated++;
         frameSimulated = 0;
         downloadedInSimulation = false;
-        initData();
+        init();
 
         if (!simulationInProgress()) {
             log("=== Simulated scans finished === ");
@@ -464,13 +458,20 @@ class NotAllDataError extends Error {
     ============
  */
 
-let contentRead = []; // contentRead[frameIndex] contains the content of frame frameIndex
+let contentRead; // contentRead[frameIndex] contains the content of frame frameIndex
 
 let hashSaved; // hash of the last saved file (specifically the received hash (of fileName + data)
 
-let headerDecoded = false; // true if the header (typically in frame 0, but can continue in following frames) was decoded successfully
+let headerDecoded; // true if the header (typically in frame 0, but can continue in following frames) was decoded successfully
 
-let unusedCorrectionFrames = []; // Store correction frames that could not be used immediately, but might be useful later
+let unusedCorrectionFrames; // Store correction frames that could not be used immediately, but might be useful later
+
+function init() {
+    contentRead = [];
+    hashSaved = undefined;
+    headerDecoded = false;
+    unusedCorrectionFrames = [];
+}
 
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.slice(from, from + 1);
@@ -983,7 +984,7 @@ function initStream() {
 
 // TODO Test - it seems that the scanner stops around frame 1000
 
-function init() {
+function onLoad() {
     // Run tests
     tests();
 
@@ -992,4 +993,5 @@ function init() {
     scanSimulated();
 }
 
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', onLoad);
+init();
