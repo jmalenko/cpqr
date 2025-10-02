@@ -206,7 +206,6 @@ const testFrames = [
         ]
     },
 
-    // TODO This test does not work because ynused correction frames are not stored for later use
     {
         name: "3 frames, miss frames 1 and 2, send corrections, unused correction frames must be stored for a later correction",
         frames: [
@@ -227,6 +226,7 @@ function simulationInProgress() {
 function initData() {
     contentRead = [];
     hashSaved = "";
+    unusedCorrectionFrames = [];
 }
 
 function scanSimulated() {
@@ -359,11 +359,11 @@ class NotAllDataError extends Error {
 
 let contentRead = []; // contentRead[frameIndex] contains the content of frame frameIndex
 
-// TODO Store unused correction frames (because more than one frame is missing) and try to use them later
-
 let hashSaved; // hash of the last saved file (specifically the received hash (of fileName + data)
 
 let headerDecoded = false; // true if the header (typically in frame 0, but can continue in following frames) was decoded successfully
+
+let unusedCorrectionFrames = []; // Store correction frames that could not be used immediately, but might be useful later
 
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.slice(from, from + 1);
@@ -476,8 +476,12 @@ function decodeCorrectionFrame(content) {
 
     // Find all missing indices
     let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
-    if (missingIndices.length !== 1)
-        return false; // Only recover if exactly one is missing
+    // Only recover if exactly one is missing. If more than one is missing, store the correction for a later use.
+    if (missingIndices.length !== 1) {
+        log("Correction frame received, but cannot be used now (missing " + missingIndices.length + " frames: " + missingIndices + "), storing for later use");
+        unusedCorrectionFrames.push(content);
+        return -1;
+    }
 
     let missingIndex = missingIndices[0];
     let xor = atob(payload);
@@ -502,9 +506,27 @@ function decodeCorrectionFrame(content) {
         throw new Error("Frame index mismatch in recovered frame: expected " + missingIndex + " but got " + frame);
     }
 
-    log("Recovered frame " + frameStr + " with content " + contentFrame);
+    // log("Recovered frame " + frame + " with content " + contentFrame);
     contentRead[frame] = xor;
-    return true;
+
+    return frame;
+}
+
+// TODO Recovery with unused frames can be done more effectively: By looking at the indices, we can order them appropriately. The current solution just keeps trying until no correction can be used.
+function recoveryWithUnusedCorrectionFrames() {
+    let changed = true;
+    while (changed) {
+        changed = false;
+        for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
+            const frame = unusedCorrectionFrames[i];
+            var recoveredFrame = decodeCorrectionFrame(frame)
+            if (recoveredFrame != -1) {
+                log("Used a stored correction frame to recover a missing frame " + recoveredFrame + " with content " + contentRead[recoveredFrame]);
+                unusedCorrectionFrames.splice(i, 1);
+                changed = true;
+            }
+        }
+    }
 }
 
 function isCorrectionFrame(content) {
@@ -524,7 +546,11 @@ function onScan(content) {
     // Save frame
     try {
         if (isCorrectionFrame(content)) {
-            decodeCorrectionFrame(content);
+            var recoveredFrame = decodeCorrectionFrame(content);
+            if (recoveredFrame != -1) {
+                log("Recovered frame " + recoveredFrame + " with content " + contentRead[recoveredFrame]);
+                recoveryWithUnusedCorrectionFrames();
+            }
         } else {
             let [frameStr, contentFrame] = decodeFrameContent(content);
             // log("Read frame index " + frameStr + " with content " + contentFrame);
