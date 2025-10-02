@@ -646,9 +646,11 @@ function onDurationChangeValue(value) {
     DURATION_TARGET = value;
     duration = DURATION_TARGET;
 
+    let scanFps = (1000 / DURATION_TARGET).toFixed(1);
     const speedBytesPerSecond = capacityForDataInOneFrame * (1000 / DURATION_TARGET);
     const speedMegaBytesPerHour = speedBytesPerSecond * 3600 / 1e6;
-    let infoStr = " ... " + speedBytesPerSecond.toFixed(0) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h";
+
+    let infoStr = " ... " + scanFps + " fps ... " + speedBytesPerSecond.toFixed(0) + " B/s = " + speedMegaBytesPerHour.toFixed(2) + " MB/h";
     const el = document.getElementById("speed");
     el.innerHTML = infoStr;
 }
