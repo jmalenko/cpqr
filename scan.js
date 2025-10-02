@@ -766,7 +766,6 @@ function getFileNameLast(fileName) {
 
 function updateInfo(missing) {
     let infoStr = "";
-    // TODO Improve the percent calculation - consider the missing parts. Also, percent biger than 100% does not make sense. Also in show.js.
     try {
         let [hash, fileName, numberOfFrames] = getContentInfo();
         const fileNameLast = getFileNameLast(fileName);
