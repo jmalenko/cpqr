@@ -630,12 +630,23 @@ function allFramesRead() {
     return numberOfFrames <= numberOfFramesReceived;
 }
 
+// Return list if indices till maxIndex index that are missing in contentRead
+function getMissingFrames() {
+    const maxIndex = Math.max(...Object.keys(contentRead).map(Number));
+    const framesRead = Object.keys(contentRead).map(Number);
+
+    let missing = [];
+    for (let i = 0; i <= maxIndex; i++) {
+        if (!framesRead.includes(i)) {
+            missing.push(i);
+        }
+    }
+
+    return missing;
+}
+
 function saveFile() {
     try {
-        if (!allFramesRead()) {
-            return;
-        }
-
         // If all frames then download
         log("All frames received, trying to save file");
 
@@ -683,7 +694,9 @@ function onScan(content) {
 
     decodeHeader(frame);
 
-    let missing = saveFile();
+    let missing = allFramesRead()
+        ? saveFile()
+        : getMissingFrames();
 
     updateInfo(missing);
 
