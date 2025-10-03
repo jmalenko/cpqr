@@ -488,7 +488,7 @@ function generateCorrection(lossRate, index) {
     // There must be at least two frames to make a correction frame useful (and correction frame detection to work in scan)
     if (indices.length < 2) {
         // Add first or last frame
-        indices.unshift(index == 0 ? n-1 : 0);
+        indices.unshift(index == 0 ? n - 1 : 0);
     }
 
 
