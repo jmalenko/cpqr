@@ -8,18 +8,6 @@
 })();
 
 /*
-    Common but used in this script only
-    ===================================
- */
-
-var getStackTrace = function () {
-    let obj = {};
-    Error.captureStackTrace(obj, getStackTrace);
-    return obj.stack;
-};
-
-
-/*
     Tests & Simulation
     ==================
  */
@@ -382,6 +370,17 @@ let unusedCorrectionFrames; // Store correction frames that could not be used im
 
 let contentPrevious; // Content of previous data in QR code
 
+const QR_CODE_SAME_AS_PREVIOUS = 1;
+const FRAME_DECODED = 2;
+const CORRECTION_DECODED = 3;
+const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING = 4;
+
+const SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING = 11;
+const SAVE_FILE_ERROR = 12;
+const SAVE_FILE_HAS_MISMATCH = 13;
+const SAVE_FILE_NOT_ALL_DATA = 14;
+const SAVE_FILE_SAVED = 15;
+
 function init() {
     contentRead = [];
     hashSaved = undefined;
@@ -507,7 +506,7 @@ function decodeCorrectionFrame(content) {
     if (missingIndices.length !== 1) {
         log("Correction frame received, but cannot be used now (missing " + missingIndices.length + " frames: " + missingIndices + "), storing for later use");
         unusedCorrectionFrames.push(content);
-        return -1;
+        return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING};
     }
 
     let missingIndex = missingIndices[0];
@@ -518,14 +517,14 @@ function decodeCorrectionFrame(content) {
         }
     }
 
-    let frame = saveFrame(xor);
+    let result = saveFrame(xor);
 
     // Hardening: check that the frame index matches the position in the array
-    if (missingIndex != frame) {
-        log("Warning: Frame index mismatch in recovered frame: expected " + missingIndex + " but got " + frame);
+    if (missingIndex != result.frame) {
+        log("Warning: Frame index mismatch in recovered frame: expected " + missingIndex + " but got " + result.frame);
     }
 
-    return frame;
+    return {resultCode: CORRECTION_DECODED, frame: result.frame};
 }
 
 function saveFrame(content) {
@@ -539,8 +538,7 @@ function saveFrame(content) {
 
     if (contentRead[frame] != null) {
         if (contentRead[frame] === contentFrame) {
-            log("Frame " + frame + " with the same content was already encountered in the past");
-            return frame;
+            // log("Frame " + frame + " with the same content was already encountered in the past");
         } else {
             // Encountered a frame with a new content.
             // This is not usual, but can happen when two files are sent.
@@ -549,24 +547,27 @@ function saveFrame(content) {
 
     contentRead[frame] = content;
 
-    return frame;
+    return {resultCode: FRAME_DECODED, frame};
 }
 
 // TODO Recovery with unused frames can be done more effectively: By looking at the indices, we can order them appropriately. The current solution just keeps trying until no correction can be used.
 function recoveryWithUnusedCorrectionFrames() {
+    let frameList = [];
     let changed = true;
     while (changed) {
         changed = false;
         for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
             const frame = unusedCorrectionFrames[i];
-            let recoveredFrame = decodeCorrectionFrame(frame)
-            if (recoveredFrame != -1) {
-                log("Used a stored correction frame to recover a missing frame " + recoveredFrame + " with content " + contentRead[recoveredFrame]);
+            let result = decodeCorrectionFrame(frame)
+            if (result.resultCode == CORRECTION_DECODED) {
+                log("Used a stored correction frame to recover a missing frame " + result.frame + " with content " + contentRead[result.frame]);
+                frameList.push(result.frame);
                 unusedCorrectionFrames.splice(i, 1);
                 changed = true;
             }
         }
     }
+    return frameList;
 }
 
 function isCorrectionFrame(content) {
@@ -580,28 +581,20 @@ function isCorrectionFrame(content) {
 }
 
 function processFrame(content) {
-    try {
-        if (isCorrectionFrame(content)) {
-            let recoveredFrame = decodeCorrectionFrame(content);
-            if (recoveredFrame != -1) {
-                log("Recovered frame " + recoveredFrame + " with content " + contentRead[recoveredFrame]);
-                recoveryWithUnusedCorrectionFrames();
-            }
-            return recoveredFrame;
+    if (isCorrectionFrame(content)) {
+        let result = decodeCorrectionFrame(content);
+        if (result.resultCode == CORRECTION_DECODED) {
+            log("Recovered frame " + result.frame + " with content " + contentRead[result.frame]);
+            let frameList = recoveryWithUnusedCorrectionFrames();
+            frameList.unshift(result.frame);
+            return {resultCode: CORRECTION_DECODED, frames: frameList};
         } else {
-            let frame = saveFrame(content);
-            if (frame != -1) {
-                log("Read frame " + frame + " with content " + contentRead[frame]);
-            }
-            return frame;
+            return result;
         }
-    } catch (e) {
-        console.log("Error processing QR code: " + e.toString(), e)
-        log("Error processing frame" + "\n" +
-            "Content: " + content + "\n" +
-            "Error: " + e.toString() + "\n" +
-            "Stack trace: " + getStackTrace());
-        throw new QrCodeProcessingError("QR Code does not contain a frame");
+    } else {
+        let result = saveFrame(content);
+        log("Read frame " + result.frame + " with content " + contentRead[result.frame]);
+        return result;
     }
 }
 
@@ -675,19 +668,23 @@ function saveFile() {
             }
 
             hashSaved = hash;
+            return {resultCode: SAVE_FILE_SAVED};
+        } else  {
+            return {resultCode: SAVE_FILE_HAS_MISMATCH};
         }
     } catch (e) {
         if (e instanceof MissingFrameError) {
             // The dataURL is not complete yet
             log("Missing frames " + e.missing);
-            return e.missing;
+            return {resultCode: SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING, missing: e.missing};
         } else if (e instanceof NotAllDataError) {
             // Do nothing - it's normal that we do not have all data yet
+            return {resultCode: SAVE_FILE_NOT_ALL_DATA};
         } else {
             log("Error when trying to save file" + "\n" +
                 "Error: " + e.toString() + "\n" +
-                "Stack trace: " + getStackTrace());
-            throw e;
+                "Stack trace: " + e.stack);
+            return {resultCode: SAVE_FILE_ERROR, error: e};
         }
     }
 }
@@ -695,21 +692,28 @@ function saveFile() {
 function onScan(content) {
     // End if the same content as previously
     if (content == contentPrevious) {
-        return -1;
+        return {resultCode: QR_CODE_SAME_AS_PREVIOUS};
     }
     contentPrevious = content;
 
-    let frame = processFrame(content);
+    let result = processFrame(content);
+    if (![FRAME_DECODED, CORRECTION_DECODED].includes(result.resultCode)) {
+        return result;
+    }
 
     decodeHeader(frame);
 
-    let missing = allFramesRead()
-        ? saveFile()
-        : getMissingFrames();
+    if (allFramesRead()) {
+        let resultSave = saveFile();
+        if (resultSave.resultCode == SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING) {
+            updateInfo(resultSave.missing);
+        }
+    } else {
+        let missing = getMissingFrames();
+        updateInfo(missing);
+    }
 
-    updateInfo(missing);
-
-    return frame;
+    return result;
 }
 
 function getFileNameLast(fileName) {
@@ -899,7 +903,6 @@ function initStream() {
         }
         lastFrameTime = now;
 
-        status.innerText = "Loading video..."
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
             canvasElement.hidden = false;
             canvasElement.height = video.videoHeight;
@@ -919,22 +922,35 @@ function initStream() {
                 inversionAttempts: "dontInvert",
             });
             if (code) {
-                try {
-                    drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");
-                    drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF3B58");
-                    drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
-                    drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
+                drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");
+                drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF3B58");
+                drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
+                drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
 
-                    let frameNumber = onScan(code.data);
-                    if (frameNumber !== -1) {
-                        status.innerText = "QR code with frame " + frameNumber;
+                try {
+                    let result = onScan(code.data);
+                    if (result.resultCode == QR_CODE_SAME_AS_PREVIOUS) {
+                        // Do nothing - keep the previous string
+                    } else if (result.resultCode == FRAME_DECODED) {
+                        status.innerText = "QR code with frame " + result.frame;
+                    } else if (result.resultCode == CORRECTION_DECODED) {
+                        status.innerText = "QR code with correction used to decode frames " + result.frames;
+                    } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING) {
+                        status.innerText = "QR code with correction saved to be used later";
+                    } else {
+                        status.innerText = "Unknown result code " + result.resultCode;
                     }
                 } catch (e) {
-                    status.innerText = "Unsupported QR code";
+                    log("Error processing QR code: " + e.toString() + "\n" +
+                        "QR code content: " + code.data + "\n" +
+                        "Stack trace:" + "\n" + e.stack);
+                    status.innerText = "Unsupported QR code (Error: " + e.toString() + ")";
                 }
             } else {
                 status.innerText = "No QR code";
             }
+        } else {
+            status.innerText = "Loading video..."
         }
         requestAnimationFrame(tick);
     }
