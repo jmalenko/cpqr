@@ -430,52 +430,6 @@ function onStart() {
     nextFrame();
 }
 
-function onShowFrame(frame) {
-    let durationMs = measureTimeMs(() => {
-        frameContent = getFrameContent(frame);
-    });
-    if (systemIsSlow())
-        log("  Duration getFrameContent() " + durationMs + " ms");
-
-    log("Frame " + frame + ": " + frameContent);
-
-    // TODO Add Capacity to page
-
-    durationMs = measureTimeMs(() => {
-        qrcode.makeCode(frameContent);
-    });
-    if (systemIsSlow())
-        log("  Duration makeCode() " + durationMs + " ms");
-
-    durationMs = measureTimeMs(() => {
-        updateInfo();
-    });
-    if (systemIsSlow())
-        log("  Duration updateInfo() " + durationMs + " ms");
-}
-
-function onShowCorrectionFrame(lossRate, correctionFrame) {
-    let durationMs = measureTimeMs(() => {
-        let frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
-    });
-    if (systemIsSlow())
-        log("  Duration getCorrectionFrameContent() " + durationMs + " ms");
-
-    log("Correction for " + (lossRate * 100) + " %, frame " + correctionFrame + ": " + frameContent);
-
-    durationMs = measureTimeMs(() => {
-        qrcode.makeCode(frameContent);
-    });
-    if (systemIsSlow())
-        log("  Duration makeCode() " + durationMs + " ms");
-
-    durationMs = measureTimeMs(() => {
-        updateInfo();
-    });
-    if (systemIsSlow())
-        log("  Duration updateInfo() " + durationMs + " ms");
-}
-
 function systemIsSlow() {
     let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
     return 0 < delta && duration <= 0
@@ -511,12 +465,6 @@ function adjustDuration() {
     }
     // Store time for next frame
     dateNextFrame = dateNextFrameCurrent;
-}
-
-function showMissing() {
-    const f = missingFrames.shift();
-    onShowFrame(f);
-    // TODO Maybe Send a correction made for two frames: this and the previous one. XORed.
 }
 
 function correctionFramesCount(lossRate) {
@@ -579,37 +527,60 @@ function onEnd() {
 function nextFrame() {
     adjustDuration();
 
-    // Show missing if there are any
-    if (0 < missingFrames.length) {
-        showMissing();
-    } else {
-        if (sendingContent()) {
-            // Show content frame
-            frame++;
+    let frameContent;
 
-            onShowFrame(frame);
-        } else if (sendingCorrections()) {
-            // Show correction frame
-            if (correctionFrame == -1) {
-                log("All content frames sent. Starting correction frames with assumed loss " + (lossRate * 100) + "%");
-            }
+    let durationMs = measureTimeMs(() => {
+        // Show missing if there are any
+        if (0 < missingFrames.length) {
+            const f = missingFrames.shift();
+            frameContent = getFrameContent(f);
+            // TODO Maybe Send a correction made for two frames: this and the previous one. XORed.
 
-            correctionFrame++;
-            if (correctionFrame == correctionFramesCount(lossRate)) {
-                correctionFrame = 0;
-                lossRate *= 2;
-                if (!sendingCorrections()) {
-                    onEnd()
-                    return;
-                }
-                log("Assumed loss rate increased to " + (lossRate * 100) + "%");
-            }
-
-            onShowCorrectionFrame(lossRate, correctionFrame);
+            log("Frame " + frame + ": " + frameContent);
         } else {
-            return;
+            if (sendingContent()) {
+                // Show content frame
+                frame++;
+
+                frameContent = getFrameContent(frame);
+                log("Frame " + frame + ": " + frameContent);
+            } else if (sendingCorrections()) {
+                // Show correction frame
+                if (correctionFrame == -1) {
+                    log("All content frames sent. Starting correction frames with assumed loss " + (lossRate * 100) + "%");
+                }
+
+                correctionFrame++;
+                if (correctionFrame == correctionFramesCount(lossRate)) {
+                    correctionFrame = 0;
+                    lossRate *= 2;
+                    if (!sendingCorrections()) {
+                        onEnd()
+                        return;
+                    }
+                    log("Assumed loss rate increased to " + (lossRate * 100) + "%");
+                }
+
+                frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
+                log("Correction for " + (lossRate * 100) + " %, frame " + correctionFrame + ": " + frameContent);
+            }
         }
+    });
+
+    if (frameContent == undefined) {
+        return;
     }
+
+    let durationMsQr = measureTimeMs(() => {
+        qrcode.makeCode(frameContent);
+    });
+
+    if (systemIsSlow()) {
+        log("  Get frame content duration " + durationMs + " ms");
+        log("  Creating QR code duration " + durationMsQr + " ms");
+    }
+
+    updateInfo();
 
     setTimeout(nextFrame, duration);
 }
