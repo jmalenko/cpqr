@@ -512,6 +512,11 @@ function sendingCorrections() {
     return lossRate <= 1;
 }
 
+// Return true when sending ended.
+function sendingEnded() {
+    return !sendingContent() && !sendingCorrections() && 0 < frame;
+}
+
 function onEnd() {
     log("End");
 
@@ -602,6 +607,54 @@ function onMissingFramesChange(event) {
                     if (to < from) return;
                     for (let i = from; i <= to; i++) {
                         missingFramesNew.push(i);
+                    }
+                    return;
+                }
+
+                let itemUpperCase = item.toUpperCase();
+                let itemFirstChar = itemUpperCase.charAt(0);
+                let itemNumberStr = itemUpperCase.slice(1);
+                let itemNumber = Number(itemNumberStr);
+                if (isNaN(itemNumber)) {
+                    log("Invalid number \"" + itemNumberStr + "\".");
+                    return;
+                }
+
+                // Fn - changes current frame to n
+                // Example: F10 -> change current frame to 10
+                if (itemFirstChar === "F") {
+                    let frameNew = itemNumber;
+                    if (frameNew < 0 || getNumberOfFrames() <= frameNew) {
+                        log("Cannot change frame to " + frameNew + " as it's not a valid frame number.");
+                    } else {
+                        log("Change frame to " + frameNew);
+                        let restartNeeded = sendingEnded();
+
+                        frame = frameNew - 1; // -1 as the frame will be increased by one when shown next time
+
+                        if (restartNeeded) {
+                            nextFrame();
+                        }
+                    }
+                    return;
+                }
+
+                // Ln - changes current correction loss rate to n
+                // Example: L10 -> change current correction loss rate to n
+                if (itemFirstChar === "L") {
+                    let lossRateNew = itemNumber / 100;
+                    if (lossRateNew <= 0 || 100 <= lossRateNew) {
+                        log("Cannot change loss rate frame to " + lossRateNew + " as it's not a valid loss rate number.");
+                    } else {
+                        log("Change loss rate to " + itemNumber + "%");
+                        let restartNeeded = sendingEnded();
+
+                        lossRate = lossRateNew;
+                        correctionFrame = -1;
+
+                        if (restartNeeded) {
+                            nextFrame();
+                        }
                     }
                     return;
                 }
