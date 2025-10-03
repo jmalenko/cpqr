@@ -408,11 +408,11 @@ function show(fileName_, data_) {
 
     log("Frames = " + getNumberOfFrames());
 
-    onPlay();
+    onStart();
 }
 
-function onPlay() {
-    log("Start");
+function onStart() {
+    log("Start showing");
 
     // Initialize
     frame = -1;
@@ -500,7 +500,7 @@ function adjustDuration() {
 
     // If the system is faster than DURATION_TARGET, then actively wait
     if (delta < -1) { // Ignore small negative values. The system can be faster by 1 ms.
-        log("The system is too fast. Actively waiting for the target duration to end.");
+        // log("The system is too fast. Actively waiting for the target duration to end.");
         do {
             dateNextFrameCurrent = new Date();
             durationActual = dateNextFrameCurrent - dateNextFrame;
@@ -566,7 +566,7 @@ function sendingEnded() {
 }
 
 function onEnd() {
-    log("End");
+    log("End showing");
 
     updateInfo();
 
