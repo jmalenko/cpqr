@@ -737,7 +737,7 @@ function updateInfo() {
         const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000), false);
         infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + ". "
     } else if (sendingCorrections()) {
-        infoStr += "Correction for loss rate " + lossRate + ", frame " + correctionFrame + ".";
+        infoStr += "Correction for loss rate " + (100 * lossRate) + ", frame " + correctionFrame + ".";
     }
 
     const el = document.getElementById("info");
