@@ -3,7 +3,7 @@
     ================
  */
 
-function formatDate(date) {
+function formatDate(date, showMillis) {
     let year = date.getFullYear();
     let month = date.getMonth();
     let day = date.getDate();
@@ -19,7 +19,7 @@ function formatDate(date) {
     seconds = seconds < 10 ? '0' + seconds : seconds;
     millis = millis < 10 ? '00' + millis : millis < 100 ? '0' + millis : millis;
 
-    return year + "-" + month + "-" + day + " " + hours + ':' + minutes + ':' + seconds + "." + millis;
+    return year + "-" + month + "-" + day + " " + hours + ':' + minutes + ':' + seconds + (showMillis === undefined || showMillis ? "." + millis : "");
 }
 
 /**
