@@ -536,7 +536,7 @@ function nextFrame() {
             frameContent = getFrameContent(f);
             // TODO Maybe Send a correction made for two frames: this and the previous one. XORed.
 
-            log("Frame " + frame + ": " + frameContent);
+            log("Frame " + f + ": " + frameContent);
         } else {
             if (sendingContent()) {
                 // Show content frame
