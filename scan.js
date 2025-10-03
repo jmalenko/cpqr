@@ -380,11 +380,14 @@ let headerDecoded; // true if the header (typically in frame 0, but can continue
 
 let unusedCorrectionFrames; // Store correction frames that could not be used immediately, but might be useful later
 
+let contentPrevious; // Content of previous data in QR code
+
 function init() {
     contentRead = [];
     hashSaved = undefined;
     headerDecoded = false;
     unusedCorrectionFrames = [];
+    contentPrevious = undefined;
 }
 
 function decodeWithLength(str, from) {
@@ -690,6 +693,12 @@ function saveFile() {
 }
 
 function onScan(content) {
+    // End if the same content as previously
+    if (content == contentPrevious) {
+        return -1;
+    }
+    contentPrevious = content;
+
     let frame = processFrame(content);
 
     decodeHeader(frame);
@@ -911,14 +920,15 @@ function initStream() {
             });
             if (code) {
                 try {
-                    let frameNumber = onScan(code.data);
-
                     drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");
                     drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF3B58");
                     drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
                     drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
 
-                    status.innerText = "QR code with frame " + frameNumber;
+                    let frameNumber = onScan(code.data);
+                    if (frameNumber !== -1) {
+                        status.innerText = "QR code with frame " + frameNumber;
+                    }
                 } catch (e) {
                     status.innerText = "Unsupported QR code";
                 }
