@@ -950,7 +950,7 @@ function initStream() {
                 status.innerText = "No QR code";
             }
         } else {
-            status.innerText = "Loading video..."
+            // status.innerText = "Loading video..."
         }
         requestAnimationFrame(tick);
     }
