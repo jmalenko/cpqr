@@ -61,6 +61,13 @@ function xorStrings(a, b) {
     return res;
 }
 
+function measureTimeMs(fn) {
+    const start = new Date();
+    fn();
+    const end = new Date();
+    return end - start;
+}
+
 function assertEqual(testName, a, b) {
     if (typeof a !== typeof b) {
         log("Test " + testName + " error: Have different types: got " + typeof a + " but expected " + typeof b);

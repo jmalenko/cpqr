@@ -198,11 +198,17 @@ In the past, several optimizations were done. Here is a summary for a 20 MB file
               Still, for 100 MB file, slice() takes 120 ms.
 - Generation of a QR code with capacity 1000 takes 50 ms.
   Resolution: We cannot optimize this, it's just one call to the library.
+
+- In show, each frame generation was done fully, including getContent() and slice(). Just slice() took 120 ms with 100 MB file.
+  Resolution: Cache the frames when the file is loaded. This is surprising as slice() is called the same number of time, but the entire preparation takes 900 ms. (Yes, just 8 times more than getting the frame content for one frame.)
+              Reading from cache is fast (0 ms).
+
 - In scan, the saving of the file was not optimized: The file was built by concatenating strings (with frame data) whenever a frame was received, which is slow.
   Resolution: Do this only when all the frames are received.
-Conclusion: For big files (100 MB), there are two bottlenecks:
-- slice() - 120 ms
+
+Conclusion: After the optimizations, the only bottleneck is with QR:
 - QR code generation - 50 ms
+- QR code scanning (and recognition) - 40 ms on Pixel 9a
 
 QR Codes
 ========
@@ -233,6 +239,7 @@ let durationActual; // Actual duration between frames, in milliseconds.
 let fileName;
 let data;
 let hash;
+let cacheFrameContent; // Cache of prepared frames. Index is the frame number.
 
 let frame; // From 0. The frames from 0 to frame-1 have been shown.
 let missingFrames; // Contains the frames to show as soon as possible. The frame at index _frame_ will be shown afterward.
@@ -358,10 +365,18 @@ function getNumberOfFrames() {
     return Math.ceil(getContent().length / capacityForDataInOneFrame); // Keep this consistent with calculation in scan.js
 }
 
-function getFrameContent(index) {
+function createCache() {
+    cacheFrameContent = [];
+    const numberOfFrames = getNumberOfFrames();
     const data = getContent();
-    const contentFrom = index * capacityForDataInOneFrame;
-    const contentFrame = data.slice(contentFrom, contentFrom + capacityForDataInOneFrame);
+    for (let index = 0; index < numberOfFrames; index++) {
+        const contentFrom = index * capacityForDataInOneFrame;
+        cacheFrameContent[index] = data.slice(contentFrom, contentFrom + capacityForDataInOneFrame);
+    }
+}
+
+function getFrameContent(index) {
+    const contentFrame = cacheFrameContent[index];
 
     let content = "";
 
@@ -407,40 +422,73 @@ function onPlay() {
     lossRate = 0.01;
     correctionFrame = -1;
 
+    let durationMs = measureTimeMs(() => {
+        createCache();
+    });
+    log("Cache creation took " + durationMs + " ms");
+
     nextFrame();
 }
 
 function onShowFrame(frame) {
-    let frameContent = getFrameContent(frame);
+    let durationMs = measureTimeMs(() => {
+        frameContent = getFrameContent(frame);
+    });
+    if (systemIsSlow())
+        log("  Duration getFrameContent() " + durationMs + " ms");
 
     log("Frame " + frame + ": " + frameContent);
 
     // TODO Add Capacity to page
 
-    qrcode.makeCode(frameContent);
+    durationMs = measureTimeMs(() => {
+        qrcode.makeCode(frameContent);
+    });
+    if (systemIsSlow())
+        log("  Duration makeCode() " + durationMs + " ms");
 
-    updateInfo();
+    durationMs = measureTimeMs(() => {
+        updateInfo();
+    });
+    if (systemIsSlow())
+        log("  Duration updateInfo() " + durationMs + " ms");
 }
 
 function onShowCorrectionFrame(lossRate, correctionFrame) {
-    let frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
+    let durationMs = measureTimeMs(() => {
+        let frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
+    });
+    if (systemIsSlow())
+        log("  Duration getCorrectionFrameContent() " + durationMs + " ms");
 
     log("Correction for " + (lossRate * 100) + " %, frame " + correctionFrame + ": " + frameContent);
 
-    qrcode.makeCode(frameContent);
+    durationMs = measureTimeMs(() => {
+        qrcode.makeCode(frameContent);
+    });
+    if (systemIsSlow())
+        log("  Duration makeCode() " + durationMs + " ms");
 
-    updateInfo();
+    durationMs = measureTimeMs(() => {
+        updateInfo();
+    });
+    if (systemIsSlow())
+        log("  Duration updateInfo() " + durationMs + " ms");
+}
+
+function systemIsSlow() {
+    let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
+    return 0 < delta && duration <= 0
 }
 
 function adjustDuration() {
     // Adjust duration
     let dateNextFrameCurrent = new Date();
     durationActual = dateNextFrameCurrent - dateNextFrame;
-    let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
-    let systemIsSlow = 0 < delta && duration <= 0
-    if (systemIsSlow) {
+    if (systemIsSlow()) {
         log("The system is slow and is not meeting the target duration. Actual duration=" + durationActual + " ms, duration target=" + DURATION_TARGET + " ms.");
     }
+    let delta = durationActual - DURATION_TARGET; // Positive: system is slow, Negative: system is fast
     if (isNaN(delta)) { // on the first frame, when dateNextFrame was undefined
         duration = DURATION_TARGET
     } else {
