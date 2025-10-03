@@ -523,6 +523,15 @@ function onEnd() {
     el.style.visibility = "hidden";
 }
 
+function onRestart() {
+    log("Restart showing");
+
+    // Hide the QR code
+    const el = document.getElementById("qrcode");
+    el.style.visibility = "visible";
+
+    nextFrame();
+}
 
 function nextFrame() {
     adjustDuration();
@@ -652,7 +661,7 @@ function onMissingFramesChange(event) {
                         frame = frameNew - 1; // -1 as the frame will be increased by one when shown next time
 
                         if (restartNeeded) {
-                            nextFrame();
+                            onRestart();
                         }
                     }
                     return;
@@ -672,7 +681,7 @@ function onMissingFramesChange(event) {
                         correctionFrame = -1;
 
                         if (restartNeeded) {
-                            nextFrame();
+                            onRestart();
                         }
                     }
                     return;
