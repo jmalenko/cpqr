@@ -857,10 +857,14 @@ function updateInfo(missing) {
         if (0 < contentRead.length) {
             const maxIndex = Math.max(...Object.keys(contentRead).map(Number));
             let lossRate = missing.length / maxIndex;
-            infoStr += "Loss rate " + (100 * lossRate).toFixed(2) + "%. ";
+            if (!isNaN(lossRate)) {
+                infoStr += "Loss rate " + (100 * lossRate).toFixed(2) + "%. ";
+            }
         }
 
-        infoStr += "Missing " + missing.length + ":";
+        if (0 < missing.length) {
+            infoStr += "Missing " + missing.length + ":";
+        }
 
         elMissingList.innerHTML = formatMissing(missing);
         elMissingList.hidden = false;
