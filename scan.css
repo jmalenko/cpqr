@@ -24,6 +24,7 @@ body {
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
+    touch-action: pan-x pan-y;
 }
 
 #right-section {
