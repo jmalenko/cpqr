@@ -414,6 +414,9 @@ const QR_CODE_SAME_AS_PREVIOUS = 1;
 const FRAME_DECODED = 2;
 const CORRECTION_DECODED = 3;
 const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING = 4;
+const CORRECTION_ALL_DATA_KNOWN = 5;
+const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE = 6;
+const FRAME_ALREADY_KNOWN = 7;
 
 const SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING = 11;
 const SAVE_FILE_ERROR = 12;
@@ -543,10 +546,19 @@ function decodeCorrectionFrame(content) {
     // Find all missing indices
     let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
     // Only recover if exactly one is missing. If more than one is missing, store the correction for a later use.
-    if (missingIndices.length !== 1) {
-        log("Correction frame received, but cannot be used now (missing " + missingIndices.length + " frames: " + missingIndices + "), storing for later use");
-        unusedCorrectionFrames.push(content);
-        return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING};
+    if (missingIndices.length == 0) {
+        log("Correction frame received, but contains only known data: " + content);
+        return {resultCode: CORRECTION_ALL_DATA_KNOWN};
+    } else if (missingIndices.length !== 1) {
+        if (unusedCorrectionFrames.includes(content)) {
+            log("Correction frame received, but it's already stored: " + content);
+            return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE};
+        } else {
+            log("Correction frame received, but cannot be used now (missing " + missingIndices.length + " frames: " + missingIndices + "), storing for later use");
+            unusedCorrectionFrames.push(content);
+            return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING};
+        }
+
     }
 
     let missingIndex = missingIndices[0];
@@ -578,8 +590,12 @@ function saveFrame(content) {
 
     if (contentRead[frame] != null) {
         if (contentRead[frame] === contentFrame) {
-            // log("Frame " + frame + " with the same content was already encountered in the past");
+            log("Frame " + frame + " with the same content was already encountered in the past");
+            return {resultCode: FRAME_ALREADY_KNOWN, frame};
         } else {
+            log("Frame " + frame + " with new content: " + content);
+            log("                    previous content: " + contentRead[frame]);
+            // log("Frame " + frame + " with new content");
             // Encountered a frame with a new content.
             // This is not usual, but can happen when two files are sent.
         }
@@ -597,17 +613,40 @@ function recoveryWithUnusedCorrectionFrames() {
     while (changed) {
         changed = false;
         for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
-            const frame = unusedCorrectionFrames[i];
-            let result = decodeCorrectionFrame(frame)
+            const content = unusedCorrectionFrames[i];
+            let result = decodeCorrectionFrame(content)
             if (result.resultCode == CORRECTION_DECODED) {
                 log("Used a stored correction frame to recover a missing frame " + result.frame + " with content " + contentRead[result.frame]);
                 frameList.push(result.frame);
                 unusedCorrectionFrames.splice(i, 1);
                 changed = true;
+            } else if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
+                log("A stored correction frame removed as all the data is known");
+                unusedCorrectionFrames.splice(i, 1);
             }
         }
     }
+    if (0 < frameList.length) {
+        removeUnneededStoredCorrectionFrames();
+    }
     return frameList;
+}
+
+function removeUnneededStoredCorrectionFrames() {
+    for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
+        const content = unusedCorrectionFrames[i];
+
+        let [indicesLen, indicesStr, from] = decodeWithLength(content, 0);
+        let indices = indicesStr.split(",").map(Number);
+
+        // Find all missing indices
+        let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
+
+        if (missingIndices.length == 0) {
+            log("A stored correction frame removed as all the data is known: " + content);
+            unusedCorrectionFrames.splice(i, 1);
+        }
+    }
 }
 
 function isCorrectionFrame(content) {
@@ -633,8 +672,17 @@ function processFrame(content) {
         }
     } else {
         let result = saveFrame(content);
-        log("Read frame " + result.frame + " with content " + contentRead[result.frame]);
-        return result;
+        if (result.resultCode == FRAME_DECODED) {
+            log("Read frame " + result.frame + " with content " + contentRead[result.frame]);
+
+            let frameList = recoveryWithUnusedCorrectionFrames();
+            return {resultCode: FRAME_DECODED, frame: result.frame, frames: frameList};
+        } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
+            log("Read frame " + result.frame + " which was already known");
+            return result;
+        } else {
+            throw Erorr("Unsupported result code " + result.resultCode);
+        }
     }
 }
 
@@ -709,7 +757,7 @@ function saveFile() {
 
             hashSaved = hash;
             return {resultCode: SAVE_FILE_SAVED};
-        } else  {
+        } else {
             return {resultCode: SAVE_FILE_HAS_MISMATCH};
         }
     } catch (e) {
@@ -736,6 +784,11 @@ function onScan(content) {
     }
     contentPrevious = content;
 
+    // TODO Investigate why a QR code is recognized but contains no data
+    if (content.length < 3) {
+        log("WARNING: Scanned content too short: '" + content + "'. Length =" + content.length);
+    }
+
     let result = processFrame(content);
     if (![FRAME_DECODED, CORRECTION_DECODED].includes(result.resultCode)) {
         return result;
@@ -745,7 +798,9 @@ function onScan(content) {
 
     if (allFramesRead()) {
         let resultSave = saveFile();
-        if (resultSave.resultCode == SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING) {
+        if (resultSave.resultCode == SAVE_FILE_SAVED) {
+            updateInfo();
+        } else if (resultSave.resultCode == SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING) {
             updateInfo(resultSave.missing);
         }
     } else {
@@ -771,25 +826,28 @@ function updateInfo(missing) {
         if (hash === hashSaved) {
             infoStr2 += "<span style='color: #008000'>Saved</span> ";
         } else {
-            let percent = Math.round(contentRead.length / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
-            infoStr2 = percent + "% ... " + contentRead.length + " / " + numberOfFrames + ". ";
+            let receivedDataFrames = Object.keys(contentRead).length;
+            let percent = Math.round(receivedDataFrames / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
+            infoStr2 = percent + "% ... " + receivedDataFrames + " / " + numberOfFrames + " data frames, and " + unusedCorrectionFrames.length + " correction frames. ";
         }
         infoStr2 += fileNameLast;
 
         infoStr += infoStr2;
     } catch (e) {
-        infoStr += "?% ..." + contentRead.length + " / ?";
+        let receivedDataFrames = Object.keys(contentRead).length;
+        infoStr += "?% ..." + receivedDataFrames + " / ? data frames, and " + unusedCorrectionFrames.length + " correction frames";
     }
+    infoStr += "</br>";
 
     const elMissingList = document.getElementById("missingList");
     if (missing !== undefined) {
         if (0 < contentRead.length) {
             const maxIndex = Math.max(...Object.keys(contentRead).map(Number));
             let lossRate = missing.length / maxIndex;
-            infoStr += ". Loss rate " + (100 * lossRate).toFixed(2) + "%";
+            infoStr += "Loss rate " + (100 * lossRate).toFixed(2) + "%. ";
         }
 
-        infoStr += ". Missing " + missing.length + ":";
+        infoStr += "Missing " + missing.length + ":";
 
         elMissingList.innerHTML = formatMissing(missing);
         elMissingList.hidden = false;
@@ -972,9 +1030,17 @@ function initStream() {
                     if (result.resultCode == QR_CODE_SAME_AS_PREVIOUS) {
                         // Do nothing - keep the previous string
                     } else if (result.resultCode == FRAME_DECODED) {
-                        status.innerText = "QR code with frame " + result.frame;
+                        status.innerText = result.frames != undefined && 0 < result.frames.length
+                            ? "QR code with frame " + result.frame + " and recovered frames " + result.frames
+                            : "QR code with frame " + result.frame;
+                    } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
+                        status.innerText = "QR code with frame " + result.frame + " already known";
                     } else if (result.resultCode == CORRECTION_DECODED) {
                         status.innerText = "QR code with correction used to decode frames " + result.frames;
+                    } else if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
+                        status.innerText = "QR code with correction not needed - all data already known";
+                    } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE) {
+                        status.innerText = "QR code with correction not needed - correction already stored";
                     } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING) {
                         status.innerText = "QR code with correction saved to be used later";
                     } else {
