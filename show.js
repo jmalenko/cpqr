@@ -615,6 +615,8 @@ function onMissingFramesChange(event) {
     if (event.keyCode === 13) { // Enter
         const missingFramesNewGroups = missingStr.split(/[,. ]+/);
 
+        let restartNeeded = sendingEnded();
+
         // Replace ranges
         let missingFramesNew = [];
         missingFramesNewGroups.forEach(function (item) {
@@ -662,12 +664,10 @@ function onMissingFramesChange(event) {
                         log("Cannot change frame to " + frameNew + " as it's not a valid frame number.");
                     } else {
                         log("Change frame to " + frameNew);
-                        let restartNeeded = sendingEnded();
-
                         frame = frameNew - 1; // -1 as the frame will be increased by one when shown next time
-
-                        if (restartNeeded) {
-                            onRestart();
+                        if (!sendingCorrections()) {
+                            lossRate = lossRateNew;
+                            correctionFrame = -1;
                         }
                     }
                     return;
@@ -681,14 +681,8 @@ function onMissingFramesChange(event) {
                         log("Cannot change loss rate frame to " + lossRateNew + " as it's not a valid loss rate number.");
                     } else {
                         log("Change loss rate to " + itemNumber + "%");
-                        let restartNeeded = sendingEnded();
-
                         lossRate = lossRateNew;
                         correctionFrame = -1;
-
-                        if (restartNeeded) {
-                            onRestart();
-                        }
                     }
                     return;
                 }
@@ -715,6 +709,10 @@ function onMissingFramesChange(event) {
         });
         // Add to missing frames to show
         missingFrames = missingFrames.concat(missingFramesNew);
+
+        if (restartNeeded) {
+            onRestart();
+        }
     } else if (event.keyCode === 47) { // Slash
         el.value = missingStr.replace(/^[^,. ]*[,. ]?/, "");
         event.returnValue = false; // block key
