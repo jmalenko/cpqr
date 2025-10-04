@@ -252,6 +252,9 @@ let qrcode;
 
 let timer;
 
+let measureTimeContent;
+let measureTimeQr;
+
 function setCapacity(capacity) {
     if (CAPACITY_TOTAL_MAX < capacity) {
         log("Capacity too large, setting to maximum " + CAPACITY_TOTAL_MAX);
@@ -295,6 +298,9 @@ function onLoad() {
     durationInput.value = DURATION_TARGET;
 
     onDurationChangeValue(DURATION_TARGET)
+
+    measureTimeContent = createMeasureTime();
+    measureTimeQr = createMeasureTime();
 
     // Run tests
     tests();
@@ -548,7 +554,7 @@ function nextFrame() {
 
     let frameContent;
 
-    let durationMs = measureTimeMs(() => {
+    let durationStats = measureTimeContent(() => {
         // Show missing if there are any
         if (0 < missingFrames.length) {
             const f = missingFrames.shift();
@@ -593,13 +599,13 @@ function nextFrame() {
         onEnd();
     }
 
-    let durationMsQr = measureTimeMs(() => {
+    let durationStatsQr = measureTimeQr(() => {
         qrcode.makeCode(frameContent);
     });
 
     if (systemIsSlow()) {
-        log("  Get frame content duration " + durationMs + " ms");
-        log("  Creating QR code duration " + durationMsQr + " ms");
+        log(`  Get frame content duration ${durationStats.ms} ms, avg=${durationStats.avg.toFixed(2)} ms, stdDev=${durationStats.stddev.toFixed(2)} ms`);
+        log(`  Creating QR code duration ${durationStatsQr.ms} ms, avg=${durationStatsQr.avg.toFixed(2)} ms, stddev=${durationStatsQr.stddev.toFixed(2)} ms`);
     }
 
     updateInfo();

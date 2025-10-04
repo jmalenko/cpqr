@@ -68,6 +68,55 @@ function measureTimeMs(fn) {
     return end - start;
 }
 
+function createMeasureTime() {
+    const stats = {count: 0, sum: 0, sumSq: 0};
+    return function (fn) {
+        const start = new Date();
+        fn();
+        const end = new Date();
+        const ms = end - start;
+
+        stats.count++;
+        stats.sum += ms;
+        stats.sumSq += ms * ms;
+
+        const avg = stats.sum / stats.count;
+        const variance = stats.count > 1
+            ? (stats.sumSq - stats.sum * stats.sum / stats.count) / (stats.count - 1)
+            : 0;
+        const stddev = Math.sqrt(variance);
+
+        return {ms, avg, stddev};
+    };
+}
+
+function createMeasureInterval() {
+    let lastTime = null;
+    const stats = {count: 0, sum: 0, sumSq: 0};
+
+    return function () {
+        const now = Date.now();
+        let result = {};
+        if (lastTime !== null) {
+            const ms = now - lastTime;
+
+            stats.count++;
+            stats.sum += ms;
+            stats.sumSq += ms * ms;
+
+            const avg = stats.sum / stats.count;
+            const variance = stats.count > 1
+                ? (stats.sumSq - stats.sum * stats.sum / stats.count) / (stats.count - 1)
+                : 0;
+            const stddev = Math.sqrt(variance);
+
+            result = {ms, avg, stddev};
+        }
+        lastTime = now;
+        return result;
+    };
+}
+
 function assertEqual(testName, a, b) {
     if (typeof a !== typeof b) {
         log("Test " + testName + " error: Have different types: got " + typeof a + " but expected " + typeof b);

@@ -913,7 +913,7 @@ function formatMissing(missing) {
 // https://simpl.info/getusermedia/sources/ - getting the selector with cameras
 // https://cozmo.github.io/jsQR/ - getting the video stream and processing video frame by frame
 function initStream() {
-    let lastFrameTime = null;
+    let scanSpeedStats = createMeasureInterval();
 
     const cameraSelect = document.getElementById('cameraSelect');
 
@@ -1011,13 +1011,12 @@ function initStream() {
     function onAnimationFrame() {
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
             // Calculate scan speed
-            let now = Date.now();
-            if (lastFrameTime !== null) {
-                let scanSpeedMs = now - lastFrameTime;
-                let scanFps = (1000 / scanSpeedMs).toFixed(1);
-                document.getElementById("scanSpeed").innerText = "Scan speed: " + scanSpeedMs.toFixed(1) + " ms (" + scanFps + " fps).";
+            let scanStats = scanSpeedStats();
+            if (scanStats.ms !== undefined) {
+                // log(`Duration between scan ${scanStats.ms} ms, avg=${scanStats.avg.toFixed(2)} ms, stddev=${scanStats.stddev.toFixed(2)} ms`);
+                let scanFps = (1000 / scanStats.avg).toFixed(1);
+                document.getElementById("scanSpeed").innerText = "Scan speed: " + scanStats.avg.toFixed(1) + " ms (" + scanFps + " fps).";
             }
-            lastFrameTime = now;
 
             canvasElement.hidden = false;
             canvasElement.height = video.videoHeight;
