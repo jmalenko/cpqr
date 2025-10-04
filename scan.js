@@ -144,6 +144,15 @@ const testFrames = [
         expected: false // No file saved, recovered frame 1 with wrong data, fails hash check
     },
 
+    {
+        name: "2 frames, miss frame 1, send a wrong frame 2 (so download is triggered)",
+        frames: [
+            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
+            '11211X', // Frame 3 incorrect
+        ],
+        expected: false // No file saved, missing frame 1
+    },
+
     // Content fits 3 frames. (The capacity is 40.)
 
     {
@@ -428,12 +437,6 @@ const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING = 4;
 const CORRECTION_ALL_DATA_KNOWN = 5;
 const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE = 6;
 const FRAME_ALREADY_KNOWN = 7;
-
-const SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING = 11;
-const SAVE_FILE_ERROR = 12;
-const SAVE_FILE_HAS_MISMATCH = 13;
-const SAVE_FILE_NOT_ALL_DATA = 14;
-const SAVE_FILE_SAVED = 15;
 
 function init() {
     contentRead = [];
@@ -775,23 +778,19 @@ function saveFile() {
             }
 
             hashSaved = hash;
-            return {resultCode: SAVE_FILE_SAVED};
-        } else {
-            return {resultCode: SAVE_FILE_HAS_MISMATCH};
+            return {saved: true};
         }
     } catch (e) {
         if (e instanceof MissingFrameError) {
             // The dataURL is not complete yet
             log("Missing frames " + e.missing);
-            return {resultCode: SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING, missing: e.missing};
+            return {missing: e.missing};
         } else if (e instanceof NotAllDataError) {
             // Do nothing - it's normal that we do not have all data yet
-            return {resultCode: SAVE_FILE_NOT_ALL_DATA};
         } else {
             log("Error when trying to save file" + "\n" +
                 "Error: " + e.toString() + "\n" +
                 "Stack trace: " + e.stack);
-            return {resultCode: SAVE_FILE_ERROR, error: e};
         }
     }
 }
@@ -812,9 +811,9 @@ function onScan(content) {
 
     if (allFramesRead()) {
         let resultSave = saveFile();
-        if (resultSave.resultCode == SAVE_FILE_SAVED) {
+        if (resultSave != undefined && resultSave.saved) {
             updateInfo();
-        } else if (resultSave.resultCode == SAVE_FILE_IMPOSSIBLE_FRAMES_MISSING) {
+        } else if (resultSave != undefined && resultSave.missing) {
             updateInfo(resultSave.missing);
         }
     } else {
