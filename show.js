@@ -574,7 +574,11 @@ function nextFrame() {
                     correctionFrame = 0;
                     lossRate *= 2;
                     if (!sendingCorrections()) {
-                        return;
+                        // TODO Better solution to keep showing indefinitely
+                        lossRate = 0.03;
+                        log("All correction frames sent. Changing assumed loss rate to " + (lossRate * 100) + "% and continuing to send correction frames.");
+                        // Resend frame 0 to increase probability that it's received
+                        missingFrames.push(0);
                     }
                     log("Assumed loss rate increased to " + (lossRate * 100) + "%");
                 }
