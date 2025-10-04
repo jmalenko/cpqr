@@ -398,6 +398,12 @@ function getCorrectionFrameContent(assumedLoss, index) {
 }
 
 function show(fileName_, data_) {
+    if (data != undefined && sendingEnded()) {
+        // Hide the QR code
+        const el = document.getElementById("qrcode");
+        el.style.visibility = "visible";
+    }
+
     fileName = fileName_;
     data = data_;
 
@@ -510,7 +516,7 @@ function sendingCorrections() {
 
 // Return true when sending ended.
 function sendingEnded() {
-    return !sendingContent() && !sendingCorrections() && 0 < frame;
+    return !sendingContent() && !sendingCorrections() && -1 < frame;
 }
 
 function onEnd() {
