@@ -364,7 +364,7 @@ function download(strData, strFileName, strMimeType) {
     let a = document.createElement("a");
 
     // build download link:
-    a.href = "data:" + strMimeType + "charset=utf-8," + escape(strData);
+    a.href = "data:" + strMimeType + "charset=utf-8," + encodeURIComponent(strData);
 
     if (window.MSBlobBuilder) { // IE10
         let bb = new MSBlobBuilder();
@@ -964,7 +964,7 @@ function initStream() {
     function gotStream(stream) {
         currentStream = stream;
         video.srcObject = stream;
-        video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+        video.setAttribute("playsinline", "true"); // required to tell iOS safari we don't want fullscreen
         video.play();
 
         cameraSelect.selectedIndex = [...cameraSelect.options]
@@ -992,7 +992,7 @@ function initStream() {
             if (label.toLowerCase().includes("back")) { // Most Android cameras have "back" or "front" in their label
                 log("Selecting back camera: " + label)
                 cameraSelect.selectedIndex = i;
-                cameraSelect.onchange();
+                cameraSelect.onchange(cameraSelect.value);
                 break;
             }
         }
