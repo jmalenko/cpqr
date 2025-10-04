@@ -19,7 +19,7 @@
                 <input id="filename" type="file" onchange="onOpenFile(event)">
                 <div class="duration-group">
                     <label for="duration">Duration</label>
-                    <input id="duration" type="number" min="1" onchange="onDurationChange(event)">
+                    <input id="duration" type="number" min="1" onchange="onDurationChange(event); this.blur();">
                     <span>ms
                         <span id="speed"></span>
                     </span>
@@ -30,7 +30,7 @@
             </div>
             <div class="controls-row-next">
                 <label for="missing">Show again:</label>
-                <input id="missing" onkeypress="onMissingFramesChange(event)"
+                <input id="missing" onkeydown="onMissingFramesChange(event)"
                        title="You can use most natural separators and ranges. Example: 2,3.4 5.7-9.11+4. Press / to delete a number from beginning.">
             </div>
         </div>
