@@ -595,6 +595,9 @@ function saveFrame(content) {
         } else {
             log("Frame " + frame + " with new content: " + content);
             log("         previous content: " + contentRead[frame]);
+            // TODO It seems that when a data frame is 1. recovered from correction and then 2. scanned again, it can have different content. Why?
+            assertEqual("Previous content should be the same as current content", contentRead[frame], content);
+
             // log("Frame " + frame + " with new content");
             // Encountered a frame with a new content.
             // This is not usual, but can happen when two files are sent.
