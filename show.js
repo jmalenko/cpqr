@@ -553,7 +553,7 @@ function nextFrame() {
         if (0 < missingFrames.length) {
             const f = missingFrames.shift();
             frameContent = getFrameContent(f);
-            // TODO Maybe Send a correction made for two frames: this and the previous one. XORed.
+            // TODO Maybe send a correction made of two frames: this and the previous one. XORed.
 
             log("Frame " + f + ": " + frameContent);
         } else {
