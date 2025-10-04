@@ -974,7 +974,7 @@ function initStream() {
             }
         }
 
-        requestAnimationFrame(tick);
+        requestAnimationFrame(onAnimationFrame);
     }
 
     function handleError(error) {
@@ -1004,17 +1004,17 @@ function initStream() {
         canvas.stroke();
     }
 
-    function tick() {
-        // Calculate scan speed
-        let now = Date.now();
-        if (lastFrameTime !== null) {
-            let scanSpeedMs = now - lastFrameTime;
-            let scanFps = (1000 / scanSpeedMs).toFixed(1);
-            document.getElementById("scanSpeed").innerText = "Scan speed: " + scanSpeedMs.toFixed(1) + " ms (" + scanFps + " fps).";
-        }
-        lastFrameTime = now;
-
+    function onAnimationFrame() {
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            // Calculate scan speed
+            let now = Date.now();
+            if (lastFrameTime !== null) {
+                let scanSpeedMs = now - lastFrameTime;
+                let scanFps = (1000 / scanSpeedMs).toFixed(1);
+                document.getElementById("scanSpeed").innerText = "Scan speed: " + scanSpeedMs.toFixed(1) + " ms (" + scanFps + " fps).";
+            }
+            lastFrameTime = now;
+
             canvasElement.hidden = false;
             canvasElement.height = video.videoHeight;
             canvasElement.width = video.videoWidth;
@@ -1071,7 +1071,7 @@ function initStream() {
         } else {
             // status.innerText = "Loading video..."
         }
-        requestAnimationFrame(tick);
+        requestAnimationFrame(onAnimationFrame);
     }
 }
 
