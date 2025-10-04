@@ -616,6 +616,9 @@ function onMissingFramesChange(event) {
         const missingFramesNewGroups = missingStr.split(/[,. ]+/);
 
         let restartNeeded = sendingEnded();
+        
+        // TODO When showing ended, the restart sometimes does not restart
+        log("restartNeeded = " + restartNeeded);
 
         // Replace ranges
         let missingFramesNew = [];
