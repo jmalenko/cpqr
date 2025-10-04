@@ -594,7 +594,7 @@ function saveFrame(content) {
             return {resultCode: FRAME_ALREADY_KNOWN, frame};
         } else {
             log("Frame " + frame + " with new content: " + content);
-            log("                    previous content: " + contentRead[frame]);
+            log("         previous content: " + contentRead[frame]);
             // log("Frame " + frame + " with new content");
             // Encountered a frame with a new content.
             // This is not usual, but can happen when two files are sent.
