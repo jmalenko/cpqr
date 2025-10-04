@@ -246,8 +246,11 @@ let missingFrames; // Contains the frames to show as soon as possible. The frame
 
 let lossRate;
 let correctionFrame;
+const LOSS_RATE_INITIAL = 0.01;
 
 let qrcode;
+
+let timer;
 
 function setCapacity(capacity) {
     if (CAPACITY_TOTAL_MAX < capacity) {
@@ -398,7 +401,7 @@ function getCorrectionFrameContent(assumedLoss, index) {
 }
 
 function show(fileName_, data_) {
-    if (data != undefined && sendingEnded()) {
+    if (data != undefined && !sending()) {
         // Hide the QR code
         const el = document.getElementById("qrcode");
         el.style.visibility = "visible";
@@ -425,7 +428,7 @@ function onStart() {
     missingFrames = [];
     duration = DURATION_TARGET;
 
-    lossRate = 0.01;
+    lossRate = LOSS_RATE_INITIAL;
     correctionFrame = -1;
 
     let durationMs = measureTimeMs(() => {
@@ -514,13 +517,14 @@ function sendingCorrections() {
     return lossRate <= 1;
 }
 
-// Return true when sending ended.
-function sendingEnded() {
-    return !sendingContent() && !sendingCorrections() && -1 < frame;
+function sending() {
+    return timer != undefined;
 }
 
 function onEnd() {
     log("End showing");
+
+    timer = undefined;
 
     updateInfo();
 
@@ -570,7 +574,6 @@ function nextFrame() {
                     correctionFrame = 0;
                     lossRate *= 2;
                     if (!sendingCorrections()) {
-                        onEnd()
                         return;
                     }
                     log("Assumed loss rate increased to " + (lossRate * 100) + "%");
@@ -583,7 +586,7 @@ function nextFrame() {
     });
 
     if (frameContent == undefined) {
-        return;
+        onEnd();
     }
 
     let durationMsQr = measureTimeMs(() => {
@@ -597,7 +600,7 @@ function nextFrame() {
 
     updateInfo();
 
-    setTimeout(nextFrame, duration);
+    timer = setTimeout(nextFrame, duration);
 }
 
 /*
@@ -615,10 +618,7 @@ function onMissingFramesChange(event) {
     if (event.keyCode === 13) { // Enter
         const missingFramesNewGroups = missingStr.split(/[,. ]+/);
 
-        let restartNeeded = sendingEnded();
-        
-        // TODO When showing ended, the restart sometimes does not restart
-        log("restartNeeded = " + restartNeeded);
+        let restartNeeded = false;
 
         // Replace ranges
         let missingFramesNew = [];
@@ -669,10 +669,11 @@ function onMissingFramesChange(event) {
                         log("Change frame to " + frameNew);
                         frame = frameNew - 1; // -1 as the frame will be increased by one when shown next time
                         if (!sendingCorrections()) {
-                            lossRate = lossRateNew;
+                            lossRate = LOSS_RATE_INITIAL;
                             correctionFrame = -1;
                         }
                     }
+                    restartNeeded = true;
                     return;
                 }
 
@@ -687,6 +688,7 @@ function onMissingFramesChange(event) {
                         lossRate = lossRateNew;
                         correctionFrame = -1;
                     }
+                    restartNeeded = true;
                     return;
                 }
 
@@ -700,20 +702,26 @@ function onMissingFramesChange(event) {
             return;
         }
 
-        log("Add to missing: " + missingFramesNew);
-        // Remove new frames after the maximum frame
-        const numberOfFrames = getNumberOfFrames();
-        missingFramesNew = missingFramesNew.filter(function (item) {
-            return item < numberOfFrames;
-        });
-        // Remove duplicates
-        missingFramesNew = missingFramesNew.filter(function (value) {
-            return missingFrames.indexOf(value) === -1;
-        });
-        // Add to missing frames to show
-        missingFrames = missingFrames.concat(missingFramesNew);
+        if (0 < missingFramesNew.length) {
+            log("Add to missing: " + missingFramesNew);
+            // Remove new frames after the maximum frame
+            const numberOfFrames = getNumberOfFrames();
+            missingFramesNew = missingFramesNew.filter(function (item) {
+                return item < numberOfFrames;
+            });
+            // Remove duplicates
+            missingFramesNew = missingFramesNew.filter(function (value) {
+                return missingFrames.indexOf(value) === -1;
+            });
+            // Add to missing frames to show
+            missingFrames = missingFrames.concat(missingFramesNew);
 
-        if (restartNeeded) {
+            if (0 < missingFrames.length) {
+                restartNeeded = true;
+            }
+        }
+
+        if (!sending() && restartNeeded) {
             onRestart();
         }
     } else if (event.keyCode === 47) { // Slash
