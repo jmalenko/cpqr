@@ -697,6 +697,10 @@ function processFrame(content) {
         if (result.resultCode == FRAME_DECODED) {
             log("Read frame " + result.frame + " with content " + contentRead[result.frame]);
 
+            if (frame == 0) {
+                headerDecoded = false;
+            }
+
             let frameList = recoveryWithUnusedCorrectionFrames();
             return {resultCode: FRAME_DECODED, frame: result.frame, frames: frameList};
         } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
