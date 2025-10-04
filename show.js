@@ -487,8 +487,6 @@ function correctionFramesCount(lossRate) {
 }
 
 function generateCorrection(lossRate, index) {
-    // TODO Calculation of correction frame can take a long time if there are many frames. Optimize it.    const n = getNumberOfFrames();
-
     const n = getNumberOfFrames();
     const numMissing = correctionFramesCount(lossRate);
 
