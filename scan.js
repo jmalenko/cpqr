@@ -546,7 +546,17 @@ function decodeContent() {
 }
 
 function getContentInfo() {
-    let [frameStr, content] = decodeFrameContent(contentRead[0]); // TODO Assumption: The header is in frame 0. In fact, it can continue in following frames.
+    // Assumption: The header is in first 3 frames. In fact, it can continue in following frames.
+    // Risk: The page may not show the information about the file.
+    // Why this is NOT improved: 1. This function should be fast. 2. In practice the capacity is big enough to fit the header in frame 0.
+    // This is not a risk for saving the file as it gets everything from decodeContent().
+    let headerContent = "";
+    for (let i = 0; i < 3; i++) {
+        if (contentRead[i] !== undefined) {
+            headerContent += contentRead[i];
+        }
+    }
+    let [frameStr, content] = decodeFrameContent(headerContent);
     let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
 
     const capacityForDataInOneFrame = content.length;
