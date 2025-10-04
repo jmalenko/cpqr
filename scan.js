@@ -1080,6 +1080,8 @@ function initStream() {
 }
 
 function onLoad() {
+    init();
+
     tests();
 
     initStream();
@@ -1087,4 +1089,3 @@ function onLoad() {
     // scanSimulated();
 }
 
-init();
