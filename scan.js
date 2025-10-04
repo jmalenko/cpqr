@@ -550,14 +550,11 @@ function decodeCorrectionFrame(content) {
     let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
     // Only recover if exactly one is missing. If more than one is missing, store the correction for a later use.
     if (missingIndices.length == 0) {
-        log("Correction frame received, but contains only known data: " + content);
         return {resultCode: CORRECTION_ALL_DATA_KNOWN};
     } else if (missingIndices.length !== 1) {
         if (unusedCorrectionFrames.includes(content)) {
-            log("Correction frame received, but it's already stored: " + content);
             return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE};
         } else {
-            log("Correction frame received, but cannot be used now (missing " + missingIndices.length + " frames: " + missingIndices + "), storing for later use");
             unusedCorrectionFrames.push(content);
             return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING};
         }
@@ -671,6 +668,13 @@ function processFrame(content) {
             frameList.unshift(result.frame);
             return {resultCode: CORRECTION_DECODED, frames: frameList};
         } else {
+            if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
+                log("Correction frame received, but ignored as all the data is known");
+            } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE) {
+                log("Correction frame received, but it's already stored: " + content);
+            } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING) {
+                log("Correction frame received, but cannot be used now (missing " + missingIndices.length + " frames: " + missingIndices + "), storing for later use");
+            }
             return result;
         }
     } else {
