@@ -590,7 +590,6 @@ function saveFrame(content) {
 
     if (contentRead[frame] != null) {
         if (contentRead[frame] === content) {
-            log("Frame " + frame + " with the same content was already encountered in the past");
             return {resultCode: FRAME_ALREADY_KNOWN, frame};
         } else {
             log("Frame " + frame + " with new content: " + content);
