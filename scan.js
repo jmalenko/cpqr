@@ -556,7 +556,7 @@ function decodeCorrectionFrame(content) {
             return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE};
         } else {
             unusedCorrectionFrames.push(content);
-            return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING};
+            return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING, frames: missingIndices};
         }
 
     }
@@ -673,7 +673,7 @@ function processFrame(content) {
             } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE) {
                 log("Correction frame received, but it's already stored: " + content);
             } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING) {
-                log("Correction frame received, but cannot be used now (missing " + missingIndices.length + " frames: " + missingIndices + "), storing for later use");
+                log("Correction frame received, but cannot be used now (missing " + result.frames.length + " frames: " + result.frames + "), storing for later use");
             }
             return result;
         }
