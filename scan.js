@@ -434,6 +434,9 @@ function init() {
 
 function decodeWithLength(str, from) {
     const lengthOfLengthStr = str.slice(from, from + 1);
+    if (lengthOfLengthStr.length != 1) {
+        throw new Error("Invalid variable-length quantity value: length of length cannot be determined");
+    }
     const lengthOfLength = Number(lengthOfLengthStr);
     if (isNaN(lengthOfLength)) {
         throw new Error("Invalid variable-length quantity value: length of length is not a number");
@@ -783,11 +786,6 @@ function onScan(content) {
         return {resultCode: QR_CODE_SAME_AS_PREVIOUS};
     }
     contentPrevious = content;
-
-    // TODO Investigate why a QR code is recognized but contains no data
-    if (content.length < 3) {
-        log("WARNING: Scanned content too short: '" + content + "'. Length =" + content.length);
-    }
 
     let result = processFrame(content);
     if (![FRAME_DECODED, CORRECTION_DECODED].includes(result.resultCode)) {
