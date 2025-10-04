@@ -758,7 +758,7 @@ function saveFile() {
 
             log("Downloading as " + fileNameLast);
             if (simulationInProgress()) {
-                log("Simulation - skipping download");
+                log("Skipping download in simulation");
                 downloadedInSimulation = true;
             } else {
                 download(fileContent, fileNameLast, 'text/plain');
