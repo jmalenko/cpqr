@@ -1066,8 +1066,6 @@ function initStream() {
     }
 }
 
-// TODO Test - it seems that the scanner stops around frame 1000
-
 function onLoad() {
     tests();
 
