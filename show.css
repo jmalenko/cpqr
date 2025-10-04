@@ -116,8 +116,15 @@ body {
     margin-top: 1em;
 }
 
+#filename {
+    min-width: 3em;
+    flex-shrink: 1;
+    width: auto;
+}
+
 #duration {
-    width: 5em;
+    min-width: 5em;
+    flex-shrink: 1;
 }
 
 #missing {
