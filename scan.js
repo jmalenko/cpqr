@@ -234,6 +234,46 @@ const testFrames = [
     }
 ];
 
+// Test disabled, because it is too long for practical use
+// let longTest = {
+//     name: "Many frames",
+//     frames: [
+//         '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt599999data:text/plain;base', // Frame 0 incorrect, length of data changed to 99999
+//         '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQoX', // Frame 1 incorrect (last character changed to X)
+//     ],
+//     expected: false // No file saved as after frame 0 and incorrect frame 1, there many frames
+// }
+// for (let i = 2; i < 301; i++) {
+//     const doubleFromIndex = 100
+//     let content = "";
+//
+//     content += encodeWithLength(i < doubleFromIndex ? i : doubleFromIndex + 2 * (i - doubleFromIndex + 1));
+//     content += "214SomeMadeUpData";
+//
+//     longTest.frames.push(content);
+// }
+// testFrames.push(longTest)
+//
+// function encodeWithLength(obj) {
+//     let length;
+//     if (typeof obj === "string")
+//         length = obj.length;
+//     else if (typeof obj === "number")
+//         length = getNumberLength(obj);
+//     else
+//         throw Error("Unsupported type " + typeof obj);
+//
+//     const lengthOfLength = getNumberLength(length);
+//     if (9 < lengthOfLength)
+//         throw Error("Too long length of length");
+//
+//     return lengthOfLength.toString() + length.toString() + obj;
+// }
+//
+// function getNumberLength(number) {
+//     return number.toString().length;
+// }
+
 let fileSimulated = -1;
 let frameSimulated;
 let downloadedInSimulation;
