@@ -243,6 +243,8 @@ let cacheFrameContent; // Cache of prepared frames. Index is the frame number.
 
 let frame; // From 0. The frames from 0 to frame-1 have been shown.
 let missingFrames; // Contains the frames to show as soon as possible. The frame at index _frame_ will be shown afterward.
+let missingFrameDelta; // When showing missing frames, this is set to a number > 0. It is decreased by one for each correction frame shown. When it reaches 0, the next missing frame is shown.
+const MISSING_FRAME_DELTA_MAX = 3; // Maximum value for missingFrameDelta. Higher values increase the chance of recovery, but also increase the time to show all frames.
 
 let lossRate;
 let correctionFrame;
@@ -398,7 +400,16 @@ function getFrameContent(index) {
 
 function getCorrectionFrameContent(assumedLoss, index) {
     const correction = generateCorrection(assumedLoss, index);
+    return getCorrection(correction);
+}
 
+function getCorrectionFrameContentForIndices(indices) {
+    const payload = generateCorrectionForIndices(indices);
+    let correction = {indices, payload};
+    return getCorrection(correction);
+}
+
+function getCorrection(correction) {
     let content = "";
 
     content += encodeArrayWithLength(correction.indices);
@@ -501,15 +512,19 @@ function generateCorrection(lossRate, index) {
         indices.unshift(index == 0 ? n - 1 : 0);
     }
 
+    let payload = generateCorrectionForIndices(indices);
+
+    // Return correction frame object
+    return {indices, payload};
+}
+
+function generateCorrectionForIndices(indices) {
     // XOR the selected frames
     let xor = getFrameContent(indices[0]);
     for (let k = 1; k < indices.length; k++) {
         xor = xorStrings(xor, getFrameContent(indices[k]));
     }
-    let payload = btoa(xor);
-
-    // Return correction frame object
-    return {indices, payload};
+    return btoa(xor);
 }
 
 // Return true when sending content data frames. Otherwise correction frames are sent.
@@ -556,11 +571,38 @@ function nextFrame() {
     let durationStats = measureTimeContent(() => {
         // Show missing if there are any
         if (0 < missingFrames.length) {
-            const f = missingFrames.shift();
-            frameContent = getFrameContent(f);
-            // TODO Maybe send a missing frame as a correction made of two frames: this and the previous one. XORed.
+            const f = missingFrames[0];
+            if (missingFrameDelta == undefined) {
+                // Basic option: Show missing frame
+                frameContent = getFrameContent(f);
+                log("Frame " + f + ": " + frameContent);
 
-            log("Frame " + f + ": " + frameContent);
+                missingFrameDelta = 0;
+            } else {
+                // Improvement for higher reliability: send a missing frame as a correction made of two frames: this and another one.
+                // Downside: For a correction, we send several frames - that's nice. But often, we should send a sequence of missing frames. Then every frame is sent several times.
+                missingFrameDelta++;
+
+                let delta = missingFrameDelta;
+
+                if (missingFrameDelta == MISSING_FRAME_DELTA_MAX) {
+                    missingFrameDelta = undefined;
+                    missingFrames.shift();
+                }
+
+                let otherFrameIndex = f - delta;
+                if (otherFrameIndex < 0) {
+                    otherFrameIndex = f + delta;
+                }
+                if (getNumberOfFrames() <= otherFrameIndex) {
+                    log("Correction for frame " + f + " skipped because there is no frame with index different by " + delta);
+                    timer = setTimeout(nextFrame, 0); // Run immediately
+                    return;
+                }
+
+                frameContent = getCorrectionFrameContentForIndices([f, otherFrameIndex]);
+                log("Correction for frame " + f + " with frame " + otherFrameIndex + ": " + frameContent);
+            }
         } else {
             if (sendingContent()) {
                 // Show content frame
