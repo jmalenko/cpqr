@@ -723,7 +723,8 @@ function onMissingFramesChange(event) {
                 }
 
                 // Single number
-                missingFramesNew.push(item);
+                const index = Number(item);
+                missingFramesNew.push(index);
             }
         );
 
