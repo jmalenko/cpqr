@@ -246,7 +246,8 @@ let missingFrames; // Contains the frames to show as soon as possible. The frame
 
 let lossRate;
 let correctionFrame;
-const LOSS_RATE_INITIAL = 0.01;
+const LOSS_RATES = [0.01, 0.02, 0.03, 0.05, 0.08, 0.13, 0.21, 0.34, 0.55, 0.89]; // Fibonacci-like sequence.
+let lossRateIndex; // Index to LOSS_RATES
 
 let qrcode;
 
@@ -305,7 +306,7 @@ function onLoad() {
     // Run tests
     tests();
 
-    showSimulated();
+    // showSimulated();
 }
 
 function onOpenFile(event) {
@@ -433,9 +434,7 @@ function onStart() {
     frame = -1;
     missingFrames = [];
     duration = DURATION_TARGET;
-
-    lossRate = LOSS_RATE_INITIAL;
-    correctionFrame = -1;
+    lossRateIndex = -1;
 
     let durationMs = measureTimeMs(() => {
         createCache();
@@ -520,7 +519,7 @@ function sendingContent() {
 
 // Return true when sending correction frames. (Sending stops when loss rate exceeds 100%.)
 function sendingCorrections() {
-    return lossRate <= 1;
+    return lossRateIndex < LOSS_RATES.length;
 }
 
 function sending() {
@@ -571,32 +570,44 @@ function nextFrame() {
                 log("Frame " + frame + ": " + frameContent);
             } else if (sendingCorrections()) {
                 // Show correction frame
-                if (correctionFrame == -1) {
-                    log("All content frames sent. Starting correction frames with assumed loss " + (lossRate * 100) + "%");
-                }
-
-                correctionFrame++;
-                if (correctionFrame == correctionFramesCount(lossRate)) {
+                if (lossRateIndex == -1) {
+                    lossRateIndex++;
+                    lossRate = LOSS_RATES[lossRateIndex];
                     correctionFrame = 0;
-                    lossRate *= 2;
-                    if (!sendingCorrections()) {
-                        // TODO Better solution to keep showing indefinitely
-                        lossRate = 0.03;
-                        log("All correction frames sent. Changing assumed loss rate to " + (lossRate * 100) + "% and continuing to send correction frames.");
-                        // Resend frame 0 to increase probability that it's received
-                        missingFrames.push(0);
+                    log("All content frames sent. Starting correction frames with assumed loss rate " + (lossRate * 100) + "%");
+                } else {
+                    if (correctionFrame + 1 == correctionFramesCount(lossRate)) {
+                        lossRateIndex++;
+                        if (lossRateIndex == LOSS_RATES.length) {
+                            return;
+                        }
+                        lossRate = LOSS_RATES[lossRateIndex];
+                        correctionFrame = 0;
+                        log("Assumed loss rate changed to " + (lossRate * 100) + "%");
+                    } else {
+                        correctionFrame++;
                     }
-                    log("Assumed loss rate increased to " + (lossRate * 100) + "%");
                 }
 
                 frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
-                log("Correction for " + (lossRate * 100) + " %, frame " + correctionFrame + ": " + frameContent);
+                log("Correction for " + (lossRate * 100) + "%, frame " + correctionFrame + ": " + frameContent);
             }
         }
     });
 
     if (frameContent == undefined) {
-        onEnd();
+        // Option 1: stop
+        // onEnd();
+        // return;
+
+        // Option 2: restart from beginning. (Why not to use the opportunity.)
+        log("All data and correction frames sent. Restarting from the beginning.");
+
+        frame = -1;
+        lossRateIndex = -1;
+
+        timer = setTimeout(nextFrame, 0); // Run immediately
+        return;
     }
 
     let durationStatsQr = measureTimeQr(() => {
@@ -655,7 +666,8 @@ function onMissingFramesChange(event) {
                             : getNumberOfFrames() + frameNew;
                         frame--; // -1 as the frame will be increased by one when shown next time
                         if (!sendingCorrections()) {
-                            lossRate = LOSS_RATE_INITIAL;
+                            lossRateIndex = 0;
+                            lossRate = LOSS_RATES[lossRateIndex];
                             correctionFrame = -1;
                         }
                     }
@@ -675,6 +687,7 @@ function onMissingFramesChange(event) {
                         log("Cannot change loss rate frame to " + lossRateNew + " as it's not a valid loss rate number.");
                     } else {
                         log("Change loss rate to " + itemNumber + "%");
+                        lossRateIndex = LOSS_RATES.length - 1;
                         lossRate = lossRateNew;
                         correctionFrame = -1;
                     }
