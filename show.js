@@ -255,7 +255,7 @@ let qrcode;
 
 let timer;
 
-let measureTimeContent;
+let measureTimeProcessing;
 let measureTimeQr;
 
 function setCapacity(capacity) {
@@ -302,7 +302,7 @@ function onLoad() {
 
     onDurationChangeValue(DURATION_TARGET)
 
-    measureTimeContent = createMeasureTime();
+    measureTimeProcessing = createMeasureTime();
     measureTimeQr = createMeasureTime();
 
     // Run tests
@@ -568,7 +568,7 @@ function nextFrame() {
 
     let frameContent;
 
-    let durationStats = measureTimeContent(() => {
+    let durationStats = measureTimeProcessing(() => {
         // Show missing if there are any
         if (0 < missingFrames.length) {
             const f = missingFrames[0];

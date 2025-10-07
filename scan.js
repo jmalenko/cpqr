@@ -438,6 +438,9 @@ let unusedCorrectionFrames; // Store correction frames that could not be used im
 
 let contentPrevious; // Content of previous data in QR code
 
+let measureTimeProcessing;
+let measureTimeQr;
+
 const QR_CODE_SAME_AS_PREVIOUS = 1;
 const FRAME_DECODED = 2;
 const CORRECTION_DECODED = 3;
@@ -452,6 +455,9 @@ function init() {
     headerDecoded = false;
     unusedCorrectionFrames = [];
     contentPrevious = undefined;
+
+    measureTimeProcessing = createMeasureTime();
+    measureTimeQr = createMeasureTime();
 }
 
 function decodeWithLength(str, from) {
@@ -931,6 +937,27 @@ function formatMissing(missing) {
     return result.join(", ");
 }
 
+function resultCodeToString(resultCode) {
+    switch (resultCode) {
+        case QR_CODE_SAME_AS_PREVIOUS:
+            return "QR code same as previous";
+        case FRAME_DECODED:
+            return "Frame decoded";
+        case CORRECTION_DECODED:
+            return "Correction decoded";
+        case CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING:
+            return "Correction: more frames missing";
+        case CORRECTION_ALL_DATA_KNOWN:
+            return "Correction: all data known";
+        case CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE:
+            return "Correction: duplicate, more frames missing";
+        case FRAME_ALREADY_KNOWN:
+            return "Frame already known";
+        default:
+            return "Unknown result code";
+    }
+}
+
 // Inspired by
 // https://simpl.info/getusermedia/sources/ - getting the selector with cameras
 // https://cozmo.github.io/jsQR/ - getting the video stream and processing video frame by frame
@@ -1035,7 +1062,7 @@ function initStream() {
             // Calculate scan speed
             let scanStats = scanSpeedStats();
             if (scanStats.ms !== undefined) {
-                // log(`Duration between scan ${scanStats.ms} ms, avg=${scanStats.avg.toFixed(2)} ms, stddev=${scanStats.stddev.toFixed(2)} ms`);
+                log(`Duration between animation frames ${scanStats.ms} ms, avg=${scanStats.avg.toFixed(2)} ms, stddev=${scanStats.stddev.toFixed(2)} ms`);
                 let sigma = (scanStats.ms - scanStats.avg) / scanStats.stddev;
                 if (Math.abs(sigma) < 1) {
                     document.getElementById("scanSpeed").innerText = "Scan speed: " + scanStats.avg.toFixed(1) + " ms.";
@@ -1058,9 +1085,15 @@ function initStream() {
                 canvas.restore();
             }
             let imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-            let code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: "dontInvert",
+
+            let code;
+            let durationStatsQr = measureTimeQr(() => {
+                code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
             });
+            log(`  Recognize QR code duration ${durationStatsQr.ms} ms, avg=${durationStatsQr.avg.toFixed(2)} ms, stddev=${durationStatsQr.stddev.toFixed(2)} ms`);
+
             if (code) {
                 drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");
                 drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF3B58");
@@ -1068,7 +1101,13 @@ function initStream() {
                 drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
 
                 try {
-                    let result = onScan(code.data);
+                    let result;
+                    let durationStats = measureTimeProcessing(() => {
+                        result = onScan(code.data);
+                    });
+                    log(`  Processing frame content duration ${durationStats.ms} ms, avg=${durationStats.avg.toFixed(2)} ms, stdDev=${durationStats.stddev.toFixed(2)} ms`);
+                    log("Processing result: " + resultCodeToString(result.resultCode));
+
                     if (result.resultCode == QR_CODE_SAME_AS_PREVIOUS) {
                         // Do nothing - keep the previous string
                     } else if (result.resultCode == FRAME_DECODED) {
