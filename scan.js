@@ -1036,8 +1036,12 @@ function initStream() {
             let scanStats = scanSpeedStats();
             if (scanStats.ms !== undefined) {
                 // log(`Duration between scan ${scanStats.ms} ms, avg=${scanStats.avg.toFixed(2)} ms, stddev=${scanStats.stddev.toFixed(2)} ms`);
-                let scanFps = (1000 / scanStats.avg).toFixed(1);
-                document.getElementById("scanSpeed").innerText = "Scan speed: " + scanStats.avg.toFixed(1) + " ms (" + scanFps + " fps).";
+                let sigma = (scanStats.ms - scanStats.avg) / scanStats.stddev;
+                if (Math.abs(sigma) < 1) {
+                    document.getElementById("scanSpeed").innerText = "Scan speed: " + scanStats.avg.toFixed(1) + " ms.";
+                } else {
+                    document.getElementById("scanSpeed").innerText = "Scan speed: " + scanStats.avg.toFixed(1) + " ms, last " + scanStats.ms.toFixed(1) + " ms.";
+                }
             }
 
             canvasElement.hidden = false;
