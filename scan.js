@@ -351,6 +351,14 @@ function tests() {
     assertEqual("decodeWithLength 10", decodeWithLength("2100.........", 0), [10, "0.........", 13]);
     assertEqual("decodeWithLength 11", decodeWithLength("2110.........1", 0), [11, "0.........1", 14]);
 
+    assertEqual("formatMissing empty", formatMissing([]), "");
+    assertEqual("formatMissing empty", formatMissing([1]), "1");
+    assertEqual("formatMissing empty", formatMissing([1, 2]), "1+1");
+    assertEqual("formatMissing empty", formatMissing([1, 2, 3]), "1+2");
+    assertEqual("formatMissing empty", formatMissing([1, 2, 5]), "1+1, 5");
+    assertEqual("formatMissing empty", formatMissing([1, 2, 5, 6]), "1+1, 5+1");
+    assertEqual("formatMissing empty", formatMissing([1, 2, 5, 6, 7]), "5+2, 1+1");
+
     log("Tests finished");
 }
 
@@ -896,7 +904,7 @@ function updateInfo(missing) {
 function formatMissing(missing) {
     if (!missing || missing.length === 0) return "";
 
-    let result = [];
+    let result = []; // Array of [start, count] pairs
     let start = missing[0];
     let count = 1;
 
@@ -904,21 +912,21 @@ function formatMissing(missing) {
         if (missing[i] === missing[i - 1] + 1) {
             count++;
         } else {
-            if (count > 1) {
-                result.push(start + "+" + (count - 1));
-            } else {
-                result.push(start.toString());
-            }
+            result.push([start, count - 1]);
             start = missing[i];
             count = 1;
         }
     }
     // Add the last range or number
-    if (count > 1) {
-        result.push(start + "+" + (count - 1));
-    } else {
-        result.push(start.toString());
-    }
+    result.push([start, count - 1]);
+
+    // Order by length of the sequence, decreasing (2nd number in the array)
+    result.sort((a, b) => b[1] - a[1]);
+
+    // Format the result
+    result = result.map(pair => pair[1] > 0
+        ? `${pair[0]}+${pair[1]}`
+        : `${pair[0]}`);
 
     return result.join(", ");
 }
