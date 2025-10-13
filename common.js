@@ -1,4 +1,17 @@
 /*
+    Constants
+    =========
+ */
+
+const QR_CODE_SAME_AS_PREVIOUS = 1;
+const FRAME_DECODED = 2;
+const CORRECTION_DECODED = 3;
+const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING = 4;
+const CORRECTION_ALL_DATA_KNOWN = 5;
+const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE = 6;
+const FRAME_ALREADY_KNOWN = 7;
+
+/*
     Common Functions
     ================
  */
@@ -158,6 +171,12 @@ function assertEqual(testName, a, b) {
 
 function log(str) {
     const MAX_LINES = 100;
+
+    // TODO Hotfix - replace log() with console.log() in worker
+    if (typeof document === "undefined") {
+        console.log(str);
+        return;
+    }
 
     const date = new Date();
     const el = document.getElementById("log");
