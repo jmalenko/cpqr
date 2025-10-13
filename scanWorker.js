@@ -78,7 +78,7 @@ function tests() {
     assertEqual("decodeWithLength 10", decodeWithLength("2100.........", 0), [10, "0.........", 13]);
     assertEqual("decodeWithLength 11", decodeWithLength("2110.........1", 0), [11, "0.........1", 14]);
 
-    log("Tests finished in scanWorker.js");
+    console.log("Tests finished in scanWorker.js");
 }
 
 function init() {
