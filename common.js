@@ -3,7 +3,18 @@
     =========
  */
 
-// Messages between scan.js and scanWorker.js
+// Messages with worker
+// scan.js --> scanWorker.js
+const MSG_TYPE_INIT = 'init';
+const MSG_TYPE_TESTS = 'tests';
+const MSG_TYPE_SCAN = 'scan';
+// scan.js <-- scanWorker.js
+const MSG_TYPE_QUEUED = "queued";
+const MSG_TYPE_PROCESSED = "processed";
+const MSG_TYPE_ERROR = "error";
+const MSG_TYPE_SAVE = "save";
+
+// QR data processing result codes
 const FRAME_DECODED = 1;
 const CORRECTION_DECODED = 2;
 const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING = 3;

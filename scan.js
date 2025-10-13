@@ -351,7 +351,9 @@ function tests() {
     assertEqual("formatMissing empty", formatMissing([1, 2, 5, 6]), "1+1, 5+1");
     assertEqual("formatMissing empty", formatMissing([1, 2, 5, 6, 7]), "5+2, 1+1");
 
-    log("Tests finished");
+    log("Tests finished in scan.js");
+
+    worker.postMessage({type: MSG_TYPE_TESTS});
 }
 
 
@@ -423,25 +425,27 @@ let measureTimeQr;
 const worker = new Worker('scanWorker.js');
 
 worker.onmessage = function (e) {
-    const result = e.data;
-    log("Worker result: " + JSON.stringify(result));
-    if (result.status === 'processed' && result.result) {
-        onResult(result.result);
-    } else if (result.status === 'error') {
-        status.innerText = "Worker error: " + result.error;
-    } else if (result.status === 'save') {
-        const fileNameLast = getFileNameLast(result.fileName);
-        log("Downloading " + result.fileNameLast);
+    const message = e.data;
+    log("Worker result: " + JSON.stringify(message));
+    if (message.type === MSG_TYPE_QUEUED) {
+        // Optionally update queue status in UI
+        // status.innerText = "Queued (" + result.queueLength + ")";
+        log("Queued (" + message.queueLength + ")");
+    } else if (message.type === MSG_TYPE_PROCESSED && message.result) {
+        onResult(message.result);
+    } else if (message.type === MSG_TYPE_ERROR) {
+        status.innerText = "Worker error: " + message.error;
+    } else if (message.type === MSG_TYPE_SAVE) {
+        const fileNameLast = getFileNameLast(message.fileName);
+        log("Downloading " + message.fileNameLast);
         if (simulationInProgress()) {
             log("Skipping download in simulation");
             downloadedInSimulation = true;
         } else {
-            download(result.data, fileNameLast, 'text/plain');
+            download(message.data, fileNameLast, 'text/plain');
         }
-    } else if (result.status === 'queued') {
-        // Optionally update queue status in UI
-        // status.innerText = "Queued (" + result.queueLength + ")";
-        log("Queued (" + result.queueLength + ")");
+    } else {
+        throw new Error("Unsupported message from worker: " + message.type);
     }
 };
 
@@ -482,9 +486,9 @@ function init() {
     unusedCorrectionFrames = [];
     contentPrevious = undefined;
 
-    worker.postMessage({type: 'init'});
-
     measureTimeQr = createMeasureTime();
+
+    worker.postMessage({type: MSG_TYPE_INIT});
 }
 
 function onScan(content) {
@@ -499,7 +503,7 @@ function onScan(content) {
     }
     contentPrevious = content;
 
-    worker.postMessage({type: 'scan', data: content});
+    worker.postMessage({type: MSG_TYPE_SCAN, data: content});
 
     return {resultCode: QR_CODE_ADDED_TO_QUEUE};
 }
@@ -774,7 +778,6 @@ function onLoad() {
     init();
 
     tests();
-    worker.postMessage({type: 'tests'});
 
     initStream();
 

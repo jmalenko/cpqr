@@ -4,17 +4,20 @@ let queue = [];
 let processing = false;
 
 self.onmessage = function (e) {
-    if (e.data.type === 'scan') {
-        queue.push(e.data.data);
+    const message = e.data;
+    if (message.type === MSG_TYPE_SCAN) {
+        queue.push(message.data);
         // console.log("Queued scan, queue length: " + queue.length);
-        self.postMessage({status: 'queued', queueLength: queue.length});
+        self.postMessage({type: MSG_TYPE_QUEUED, queueLength: queue.length});
         if (!processing) {
             processQueue();
         }
-    } else if (e.data.type === 'tests') {
+    } else if (message.type === MSG_TYPE_TESTS) {
         tests();
-    } else if (e.data.type === 'init') {
+    } else if (message.type === MSG_TYPE_INIT) {
         init();
+    } else {
+        throw new Error("Unsupported message from worker: " + message.type);
     }
 };
 
@@ -24,9 +27,9 @@ async function processQueue() {
         try {
             const data = queue.shift();
             let result = processScan(data);
-            self.postMessage({status: 'processed', result});
+            self.postMessage({type: MSG_TYPE_PROCESSED, result});
         } catch (e) {
-            self.postMessage({status: 'error', error: e.toString()});
+            self.postMessage({type: MSG_TYPE_ERROR, error: e.toString()});
         }
     }
     processing = false;
@@ -69,13 +72,6 @@ let contentPrevious; // Content of previous data in QR code
 
 let measureTimeProcessing;
 
-const worker = new Worker('scanWorker.js');
-worker.onmessage = function (e) {
-    const result = e.data;
-    console.log("Worker result: " + JSON.stringify(result));
-    // TODO Update UI/status based on result
-};
-
 function tests() {
     assertEqual("decodeWithLength 0", decodeWithLength("10"), [0, "", 2]);
     assertEqual("decodeWithLength 1", decodeWithLength("110", 0), [1, "0", 3]);
@@ -84,7 +80,8 @@ function tests() {
 
     assertEqual("decodeWithLength 10", decodeWithLength("2100.........", 0), [10, "0.........", 13]);
     assertEqual("decodeWithLength 11", decodeWithLength("2110.........1", 0), [11, "0.........1", 14]);
-    log("Tests finished");
+
+    log("Tests finished in scanWorker.js");
 }
 
 function init() {
@@ -469,7 +466,7 @@ function processScan(content) {
     if (allFramesRead()) {
         let resultSave = saveFile();
         if (resultSave != undefined && resultSave.saved) {
-            self.postMessage({status: 'save', data: resultSave.data, fileName: resultSave.fileName});
+            self.postMessage({type: MSG_TYPE_SAVE, data: resultSave.data, fileName: resultSave.fileName}); // TODO Don't send message here, but return a value and send message in processQueue()
         }
     }
 
