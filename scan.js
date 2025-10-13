@@ -725,7 +725,7 @@ function initStream() {
             // Measure animation speed
             let statsAnimationFrame = measureIntervalAnimationFrame();
             if (statsAnimationFrame.ms !== undefined) {
-                if (isAboveSigma(statsAnimationFrame, 2)) {
+                if (isAboveSigma(statsAnimationFrame, 3)) {
                     log(`WARNING: Animation frame variation ${statsAnimationFrame.ms} ms, avg=${statsAnimationFrame.avg.toFixed(1)} ms, stddev=${statsAnimationFrame.stddev.toFixed(1)} ms`);
                 }
                 document.getElementById("scanSpeed").innerText = "Scan speed: avg " + statsAnimationFrame.avg.toFixed(1) + " ms; last " + statsAnimationFrame.ms.toFixed(1) + " ms.";
@@ -752,7 +752,7 @@ function initStream() {
                     inversionAttempts: "dontInvert",
                 });
             });
-            if (isAboveSigma(statsQrRecognition, 2)) {
+            if (isAboveSigma(statsQrRecognition, 3)) {
                 log(`WARNING: Recognize QR code variation ${statsQrRecognition.ms} ms, avg=${statsQrRecognition.avg.toFixed(1)} ms, stddev=${statsQrRecognition.stddev.toFixed(1)} ms`);
             }
 
