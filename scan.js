@@ -525,7 +525,7 @@ function onScan(content) {
 }
 
 function getFileNameFromPath(path) {
-    const posSlash = path.lastIndexOf("\\");
+    const posSlash = Math.max(path.lastIndexOf("\\"), path.lastIndexOf("/"));
     return path.slice(posSlash + 1);
 }
 
