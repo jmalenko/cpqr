@@ -353,6 +353,7 @@ function tests() {
 
     log("Tests finished in scan.js");
 
+    log("> Tests");
     worker.postMessage({type: MSG_TYPE_TESTS});
 }
 
@@ -426,18 +427,18 @@ const worker = new Worker('scanWorker.js');
 
 worker.onmessage = function (e) {
     const message = e.data;
-    log("Worker result: " + JSON.stringify(message));
     if (message.type === MSG_TYPE_QUEUED) {
-        // Optionally update queue status in UI
-        // status.innerText = "Queued (" + result.queueLength + ")";
-        log("Queued (" + message.queueLength + ")");
-    } else if (message.type === MSG_TYPE_PROCESSED && message.result) {
-        onResult(message.result);
+        log("< Queued. (processing=" + message.processing + ", queueLength=" + message.queueLength + ")");
+    } else if (message.type === MSG_TYPE_PROCESSED) {
+        log("< Frame was processed. (" + resultCodeToString(message.result.resultCode) + ")");
+        // updateInfo(message);
     } else if (message.type === MSG_TYPE_ERROR) {
-        status.innerText = "Worker error: " + message.error;
+        // Error was already logged to console in worker
+        log("< Error: " + message.error.toString() + "\n" +
+            "Stack trace: " + message.error.stack);
     } else if (message.type === MSG_TYPE_SAVE) {
-        const fileNameLast = getFileNameLast(message.fileName);
-        log("Downloading " + message.fileNameLast);
+        const fileNameLast = getFileNameLast(message.fileName); // TODO Refactor to path
+        log("< Download " + fileNameLast);
         if (simulationInProgress()) {
             log("Skipping download in simulation");
             downloadedInSimulation = true;
@@ -449,37 +450,6 @@ worker.onmessage = function (e) {
     }
 };
 
-function onResult(result) {
-    try {
-        log("Processing result: " + resultCodeToString(result.resultCode));
-
-        if (result.resultCode == QR_CODE_SAME_AS_PREVIOUS) {
-            // Do nothing - keep the previous string
-        } else if (result.resultCode == FRAME_DECODED) {
-            status.innerText = result.frames != undefined && 0 < result.frames.length
-                ? "QR code with frame " + result.frame + " and recovered frames " + result.frames
-                : "QR code with frame " + result.frame;
-        } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
-            status.innerText = "QR code with frame " + result.frame + " already known";
-        } else if (result.resultCode == CORRECTION_DECODED) {
-            status.innerText = "QR code with correction used to decode frames " + result.frames;
-        } else if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
-            status.innerText = "QR code with correction not needed - all data already known";
-        } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE) {
-            status.innerText = "QR code with correction not needed - correction already stored";
-        } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING) {
-            status.innerText = "QR code with correction saved to be used later";
-        } else {
-            status.innerText = "Unknown result code " + result.resultCode;
-        }
-    } catch (e) {
-        log("Error processing QR code: " + e.toString() + "\n" +
-            "QR code content: " + code.data + "\n" +
-            "Stack trace:" + "\n" + e.stack);
-        status.innerText = "Unsupported QR code (Error: " + e.toString() + ")";
-    }
-}
-
 function init() {
     contentRead = [];
     hashSaved = undefined;
@@ -488,6 +458,7 @@ function init() {
 
     measureTimeQr = createMeasureTime();
 
+    log("> Init");
     worker.postMessage({type: MSG_TYPE_INIT});
 }
 
@@ -503,6 +474,7 @@ function onScan(content) {
     }
     contentPrevious = content;
 
+    log("> Scanned");
     worker.postMessage({type: MSG_TYPE_SCAN, data: content});
 
     return {resultCode: QR_CODE_ADDED_TO_QUEUE};

@@ -7,8 +7,7 @@ self.onmessage = function (e) {
     const message = e.data;
     if (message.type === MSG_TYPE_SCAN) {
         queue.push(message.data);
-        // console.log("Queued scan, queue length: " + queue.length);
-        self.postMessage({type: MSG_TYPE_QUEUED, queueLength: queue.length});
+        self.postMessage({type: MSG_TYPE_QUEUED, processing, queueLength: queue.length});
         if (!processing) {
             processQueue();
         }
@@ -29,6 +28,7 @@ async function processQueue() {
             let result = processScan(data);
             self.postMessage({type: MSG_TYPE_PROCESSED, result});
         } catch (e) {
+            console.error("Error in processing scan: " + e.toString() + "\n" + e.stack)
             self.postMessage({type: MSG_TYPE_ERROR, error: e.toString()});
         }
     }
@@ -420,19 +420,19 @@ function getMissingFrames() {
 function saveFile() {
     try {
         // If all frames then download
-        console.log("All frames received, trying to save file");
+        console.log("Trying to construct the entire content");
 
         let [hash, fileName, dataURL] = decodeContent();
 
         if (hash !== hashSaved) {
-            console.log("Got all frames");
+            console.log("Constructed the entire content");
 
-            const posComma = dataURL.indexOf(",");
+            const posComma = dataURL.indexOf(","); // Part before comma is mime type and encoding: data:text/plain;base64
             const b64 = dataURL.slice(posComma + 1);
             const fileContent = atob(b64);
 
             hashSaved = hash;
-            return {saved: true, data: fileContent, fileName: fileName};
+            return {save: true, data: fileContent, fileName: fileName};
         }
     } catch (e) {
         if (e instanceof MissingFrameError) {
@@ -442,9 +442,7 @@ function saveFile() {
         } else if (e instanceof NotAllDataError) {
             // Do nothing - it's normal that we do not have all data yet
         } else {
-            console.log("Error when trying to save file" + "\n" +
-                "Error: " + e.toString() + "\n" +
-                "Stack trace: " + e.stack);
+            throw e;
         }
     }
 }
@@ -465,7 +463,7 @@ function processScan(content) {
 
     if (allFramesRead()) {
         let resultSave = saveFile();
-        if (resultSave != undefined && resultSave.saved) {
+        if (resultSave != undefined && resultSave.save) {
             self.postMessage({type: MSG_TYPE_SAVE, data: resultSave.data, fileName: resultSave.fileName}); // TODO Don't send message here, but return a value and send message in processQueue()
         }
     }
