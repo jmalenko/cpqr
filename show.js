@@ -150,7 +150,7 @@ Format of content
   --------------------------------------------------------------------------------------------------------------------------------------------------------
   1. Version      1                                                                  1 1 1
   2. Hash         4065018274                                                         2 10 4065018274
-  3. File name    in.txt                                                             1 6 in.txt
+  3. Path         C:\fakepath\in.txt                                                 2 23 C%3A%5Cfakepath%5Cin.txt
   4. Data         data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh    2 63 data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
      (Base64 encoded)
 
@@ -236,7 +236,7 @@ let duration; // Effective duration to be used in the setTimeout(). Calculated b
 let dateNextFrame; // Date of previous run of nextFrame()
 let durationActual; // Actual duration between frames, in milliseconds.
 
-let fileName;
+let path;
 let data;
 let hash;
 let cacheFrameContent; // Cache of prepared frames. Index is the frame number.
@@ -366,7 +366,7 @@ function getContent() {
 
     content += encodeWithLength(VERSION);
     content += encodeWithLength(hash);
-    const fileNameEncoded = encodeURIComponent(fileName);
+    const fileNameEncoded = encodeURIComponent(path);
     content += encodeWithLength(fileNameEncoded); // filename may contain any unicode characters. We have to encode it to ASCII for QR code.
     content += encodeWithLength(data);
 
@@ -418,20 +418,20 @@ function getCorrection(correction) {
     return content;
 }
 
-function show(fileName_, data_) {
+function show(path_, data_) {
     if (data != undefined && !sending()) {
         // Hide the QR code
         const el = document.getElementById("qrcode");
         el.style.visibility = "visible";
     }
 
-    fileName = fileName_;
+    path = path_;
     data = data_;
 
-    log("File name = " + fileName);
+    log("File path = " + path);
     log("Data length = " + data.length);
 
-    hash = hashFnv32a(fileName + data, false);
+    hash = hashFnv32a(path + data, false);
 
     log("Frames = " + getNumberOfFrames());
 

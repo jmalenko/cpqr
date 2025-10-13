@@ -361,20 +361,20 @@ function tests() {
     ========
  */
 
-function download(strData, strFileName, strMimeType) {
+function download(data, fileName, mimeType) {
     let a = document.createElement("a");
 
     // build download link:
-    a.href = "data:" + strMimeType + "charset=utf-8," + encodeURIComponent(strData);
+    a.href = "data:" + mimeType + "charset=utf-8," + encodeURIComponent(data);
 
     if (window.MSBlobBuilder) { // IE10
         let bb = new MSBlobBuilder();
-        bb.append(strData);
-        return navigator.msSaveBlob(bb, strFileName);
+        bb.append(data);
+        return navigator.msSaveBlob(bb, fileName);
     }
 
     if ('download' in a) { // FF20, CH19
-        a.setAttribute("download", strFileName);
+        a.setAttribute("download", fileName);
         a.innerHTML = "downloading...";
         document.body.appendChild(a);
         setTimeout(function () {
@@ -389,7 +389,7 @@ function download(strData, strFileName, strMimeType) {
     // do iframe dataURL download: (older W3)
     const f = document.createElement("iframe");
     document.body.appendChild(f);
-    f.src = "data:" + (strMimeType ? strMimeType : "application/octet-stream") + (window.btoa ? ";base64" : "") + "," + (window.btoa ? window.btoa : escape)(strData);
+    f.src = "data:" + (mimeType ? mimeType : "application/octet-stream") + (window.btoa ? ";base64" : "") + "," + (window.btoa ? window.btoa : escape)(data);
     setTimeout(function () {
         document.body.removeChild(f);
     }, 333);
@@ -410,7 +410,7 @@ const QR_CODE_ADDED_TO_QUEUE = 3;
 /* Variables */
 
 // Metadata
-let fileName; // Name of the file being received
+let path; // Path to the file being received
 let numberOfFrames; // Number of frames of the file being received
 
 // Status
@@ -443,18 +443,18 @@ worker.onmessage = function (e) {
         log("< Error: " + message.error.toString() + "\n" +
             "Stack trace: " + message.error.stack);
     } else if (message.type === MSG_TYPE_METADATA) {
-        const fileNameLast = getFileNameLast(message.fileName); // TODO Refactor to path
-        log("< File name " + fileNameLast);
-        fileName = message.fileName;
+        const fileName = getFileNameFromPath(message.fileName); // TODO Refactor to path
+        log("< File name " + fileName);
+        path = message.fileName;
         numberOfFrames = message.numberOfFrames;
         // updateInfo(); // Not needed because it's called in MSG_TYPE_PROCESSED
     } else if (message.type === MSG_TYPE_SAVE) {
-        const fileNameLast = getFileNameLast(message.fileName); // TODO Refactor to path
-        log("< Download " + fileNameLast);
+        const fileName = getFileNameFromPath(message.path); // TODO Refactor to path
+        log("< Download " + fileName);
         if (simulationInProgress()) {
             log("Skipping download in simulation");
         } else {
-            download(message.data, fileNameLast, 'text/plain');
+            download(message.data, fileName, 'text/plain');
         }
         downloaded = true;
     } else {
@@ -487,11 +487,11 @@ function setStatus(status) {
 }
 
 function metadataReceived() {
-    return fileName !== undefined;
+    return path !== undefined;
 }
 
 function init() {
-    fileName = undefined;
+    path = undefined;
     numberOfFrames = undefined;
 
     receivedDataFramesCount = 0;
@@ -524,9 +524,9 @@ function onScan(content) {
     return {resultCode: QR_CODE_ADDED_TO_QUEUE};
 }
 
-function getFileNameLast(fileName) {
-    const posSlash = fileName.lastIndexOf("\\");
-    return fileName.slice(posSlash + 1);
+function getFileNameFromPath(path) {
+    const posSlash = path.lastIndexOf("\\");
+    return path.slice(posSlash + 1);
 }
 
 function updateInfo() {
@@ -543,7 +543,7 @@ function updateInfo() {
                 infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames. ";
             }
         }
-        infoStr += getFileNameLast(fileName);
+        infoStr += getFileNameFromPath(path);
     } else {
         infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames. ";
     }

@@ -178,19 +178,19 @@ function decodeContentWithoutChecks(content) {
 
 function decodeContent() {
     const content = getContent();
-    let [version, hash, fileName, data, length, from] = decodeContentWithoutChecks(content);
+    let [version, hash, path, data, length, from] = decodeContentWithoutChecks(content);
 
     if (length !== data.length)
         throw new NotAllDataError("Not all data");
 
     // Verify hash
-    const hashCalculated = hashFnv32a(fileName + data, false);
+    const hashCalculated = hashFnv32a(path + data, false);
     if (hash !== hashCalculated.toString()) {
         console.log("Incorrect hash")
         throw new NotAllDataError("Incorrect hash");
     }
 
-    return [hash, fileName, data];
+    return [hash, path, data];
 }
 
 function getContentInfo() {
@@ -413,12 +413,12 @@ function getMissingFrames() {
     return missing;
 }
 
-function saveFile() {
+function constructData() {
     try {
         // If all frames then download
         console.log("Trying to construct the entire content");
 
-        let [hash, fileName, dataURL] = decodeContent();
+        let [hash, path, dataURL] = decodeContent();
 
         if (hash !== hashSaved) {
             console.log("Constructed the entire content");
@@ -428,7 +428,7 @@ function saveFile() {
             const fileContent = atob(b64);
 
             hashSaved = hash;
-            return {save: true, data: fileContent, fileName: fileName};
+            return {save: true, data: fileContent, path};
         }
     } catch (e) {
         if (e instanceof MissingFrameError) {
@@ -467,11 +467,13 @@ function processScan(content) {
     decodeHeader(frame);
 
     if (allFramesRead()) {
-        let resultSave = saveFile();
-        if (resultSave != undefined && resultSave.save) {
-            self.postMessage({type: MSG_TYPE_SAVE, data: resultSave.data, fileName: resultSave.fileName}); // TODO Don't send message here, but return a value and send message in processQueue()
+        let resultConstructData = constructData();
+        if (resultConstructData != undefined && resultConstructData.save) {
+            self.postMessage({
+                type: MSG_TYPE_SAVE,
+                data: resultConstructData.data,
+                path: resultConstructData.path
+            });
         }
     }
-
-    return result;
 }
