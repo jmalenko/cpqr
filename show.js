@@ -302,8 +302,8 @@ function onLoad() {
 
     onDurationChangeValue(DURATION_TARGET)
 
-    measureTimeProcessing = createMeasureTime();
-    measureTimeQr = createMeasureTime();
+    measureTimeProcessing = createMeasureDuration();
+    measureTimeQr = createMeasureDuration();
 
     // Run tests
     tests();

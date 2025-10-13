@@ -423,16 +423,16 @@ let missing; // List of missing frames
 let downloaded; // Whether the file has been downloaded
 let contentPrevious; // Content of previous data in QR code
 
-let measureTimeQr; // For measuring time taken to process QR codes
-
 const worker = new Worker('scanWorker.js');
 
 worker.onmessage = function (e) {
     const message = e.data;
     if (message.type === MSG_TYPE_QUEUED) {
-        log("< Frame queued. (processing=" + message.processing + ", queueLength=" + message.queueLength + ")");
+        // log("< Frame queued. (processing=" + message.processing + ", queueLength=" + message.queueLength + ")");
     } else if (message.type === MSG_TYPE_PROCESSED) {
         log("< Frame was processed: " + resultToText(message.result));
+
+        log("Processing took " + message.statsProcessFrame.ms + " ms");
 
         if (message.result?.status !== undefined) {
             setStatus(message.result.status);
@@ -501,8 +501,6 @@ function init() {
 
     downloaded = false;
     contentPrevious = undefined;
-
-    measureTimeQr = createMeasureTime();
 
     log("> Init");
     worker.postMessage({type: MSG_TYPE_INIT});
@@ -627,7 +625,8 @@ function resultCodeToString(resultCode) {
 // https://simpl.info/getusermedia/sources/ - getting the selector with cameras
 // https://cozmo.github.io/jsQR/ - getting the video stream and processing video frame by frame
 function initStream() {
-    let scanSpeedStats = createMeasureInterval();
+    let measureDurationQrRecognition = createMeasureDuration();
+    let measureIntervalAnimationFrame = createMeasureInterval();
 
     const cameraSelect = document.getElementById('cameraSelect');
 
@@ -724,14 +723,14 @@ function initStream() {
     function onAnimationFrame() {
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
             // Calculate scan speed
-            let scanStats = scanSpeedStats();
-            if (scanStats.ms !== undefined) {
-                // log(`Duration between animation frames ${scanStats.ms} ms, avg=${scanStats.avg.toFixed(1)} ms, stddev=${scanStats.stddev.toFixed(1)} ms`);
-                let sigma = (scanStats.ms - scanStats.avg) / scanStats.stddev;
+            let statsAnimationFrame = measureIntervalAnimationFrame();
+            if (statsAnimationFrame.ms !== undefined) {
+                // log(`Duration between animation frames ${statsAnimationFrame.ms} ms, avg=${statsAnimationFrame.avg.toFixed(1)} ms, stddev=${statsAnimationFrame.stddev.toFixed(1)} ms`);
+                let sigma = (statsAnimationFrame.ms - statsAnimationFrame.avg) / statsAnimationFrame.stddev;
                 if (2 < Math.abs(sigma)) {
-                    // log("WARNING: Scan speed variation " + sigma.toFixed(1) + " sigma. Avg=" + scanStats.avg.toFixed(1) + " ms, last " + scanStats.ms.toFixed(1) + " ms, stddev=" + scanStats.stddev.toFixed(1) + " ms");
+                    log("WARNING: Scan speed variation " + sigma.toFixed(1) + " sigma. Avg=" + statsAnimationFrame.avg.toFixed(1) + " ms, last " + statsAnimationFrame.ms.toFixed(1) + " ms, stddev=" + statsAnimationFrame.stddev.toFixed(1) + " ms");
                 }
-                document.getElementById("scanSpeed").innerText = "Scan speed: avg " + scanStats.avg.toFixed(1) + " ms; last " + scanStats.ms.toFixed(1) + " ms.";
+                document.getElementById("statsAnimationFrame").innerText = "Scan speed: avg " + statsAnimationFrame.avg.toFixed(1) + " ms; last " + statsAnimationFrame.ms.toFixed(1) + " ms.";
             }
 
             canvasElement.hidden = false;
@@ -750,12 +749,13 @@ function initStream() {
             let imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
 
             let code;
-            let durationStatsQr = measureTimeQr(() => {
+            let statsQrRecognition = measureDurationQrRecognition(() => {
                 code = jsQR(imageData.data, imageData.width, imageData.height, {
                     inversionAttempts: "dontInvert",
                 });
             });
-            // log(`  Recognize QR code duration ${durationStatsQr.ms} ms, avg=${durationStatsQr.avg.toFixed(2)} ms, stddev=${durationStatsQr.stddev.toFixed(2)} ms`);
+            // TODO Log only when variance is more tha 2 sigma
+            // log(`  Recognize QR code duration ${statsQrRecognition.ms} ms, avg=${statsQrRecognition.avg.toFixed(2)} ms, stddev=${statsQrRecognition.stddev.toFixed(2)} ms`);
 
             if (code) {
                 drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");

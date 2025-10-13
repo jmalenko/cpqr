@@ -67,7 +67,7 @@ let headerDecoded; // true if the header (typically in frame 0, but can continue
 
 let unusedCorrectionFrames; // Store correction frames that could not be used immediately, but might be useful later
 
-let measureTimeProcessing;
+let measureDurationProcessFrame;
 
 function tests() {
     assertEqual("decodeWithLength 0", decodeWithLength("10"), [0, "", 2]);
@@ -87,7 +87,7 @@ function init() {
     headerDecoded = false;
     unusedCorrectionFrames = [];
 
-    measureTimeProcessing = createMeasureTime();
+    measureDurationProcessFrame = createMeasureDuration();
 }
 
 function decodeWithLength(str, from) {
@@ -453,12 +453,16 @@ function createStatus() {
 }
 
 function processScan(content) {
-    let result = processFrame(content);
-    if (![FRAME_DECODED, CORRECTION_DECODED].includes(result.resultCode)) {
-        return result;
-    }
+    let result;
+    let statsProcessFrame = measureDurationProcessFrame(() => {
+        result = processFrame(content);
+    });
 
-    self.postMessage({type: MSG_TYPE_PROCESSED, result});
+    self.postMessage({type: MSG_TYPE_PROCESSED, result, statsProcessFrame});
+
+    if (![FRAME_DECODED, CORRECTION_DECODED].includes(result.resultCode)) {
+        return;
+    }
 
     decodeHeader(frame);
 

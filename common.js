@@ -93,7 +93,7 @@ function measureTimeMs(fn) {
     return end - start;
 }
 
-function createMeasureTime() {
+function createMeasureDuration() {
     const stats = {count: 0, sum: 0, sumSq: 0};
     return function (fn) {
         const start = new Date();
