@@ -789,6 +789,6 @@ function onLoad() {
 
     initStream();
 
-    scanSimulated();
+    // scanSimulated();
 }
 
