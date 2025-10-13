@@ -12,15 +12,16 @@ const MSG_TYPE_SCAN = 'scan';
 const MSG_TYPE_QUEUED = "queued";
 const MSG_TYPE_PROCESSED = "processed";
 const MSG_TYPE_ERROR = "error";
+const MSG_TYPE_METADATA = "metadata";
 const MSG_TYPE_SAVE = "save";
 
 // QR data processing result codes
 const FRAME_DECODED = 1;
-const CORRECTION_DECODED = 2;
-const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING = 3;
+const FRAME_ALREADY_KNOWN = 2;
+const CORRECTION_DECODED = 3;
 const CORRECTION_ALL_DATA_KNOWN = 4;
-const CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE = 5;
-const FRAME_ALREADY_KNOWN = 6;
+const CORRECTION_MORE_FRAMES_MISSING = 5;
+const CORRECTION_MORE_FRAMES_MISSING_DUPLICATE = 6;
 
 /*
     Common Functions

@@ -25,8 +25,7 @@ async function processQueue() {
     while (queue.length > 0) {
         try {
             const data = queue.shift();
-            let result = processScan(data);
-            self.postMessage({type: MSG_TYPE_PROCESSED, result});
+            processScan(data);
         } catch (e) {
             console.error("Error in processing scan: " + e.toString() + "\n" + e.stack)
             self.postMessage({type: MSG_TYPE_ERROR, error: e.toString()});
@@ -68,8 +67,6 @@ let headerDecoded; // true if the header (typically in frame 0, but can continue
 
 let unusedCorrectionFrames; // Store correction frames that could not be used immediately, but might be useful later
 
-let contentPrevious; // Content of previous data in QR code
-
 let measureTimeProcessing;
 
 function tests() {
@@ -89,7 +86,6 @@ function init() {
     hashSaved = undefined;
     headerDecoded = false;
     unusedCorrectionFrames = [];
-    contentPrevious = undefined;
 
     measureTimeProcessing = createMeasureTime();
 }
@@ -229,12 +225,11 @@ function decodeCorrectionFrame(content) {
         return {resultCode: CORRECTION_ALL_DATA_KNOWN};
     } else if (missingIndices.length !== 1) {
         if (unusedCorrectionFrames.includes(content)) {
-            return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE};
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE};
         } else {
             unusedCorrectionFrames.push(content);
-            return {resultCode: CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING, frames: missingIndices};
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING, frames: missingIndices};
         }
-
     }
 
     let missingIndex = missingIndices[0];
@@ -341,15 +336,16 @@ function processFrame(content) {
         let result = decodeCorrectionFrame(content);
         if (result.resultCode == CORRECTION_DECODED) {
             console.log("Recovered frame " + result.frame + " with content " + contentRead[result.frame]);
-            let frameList = recoveryWithUnusedCorrectionFrames();
-            frameList.unshift(result.frame);
-            return {resultCode: CORRECTION_DECODED, frames: frameList};
+            let frames = recoveryWithUnusedCorrectionFrames();
+            frames.unshift(result.frame);
+            let status = createStatus();
+            return {resultCode: CORRECTION_DECODED, frames, status};
         } else {
             if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
                 console.log("Correction frame received, but ignored as all the data is known");
-            } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE) {
+            } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING_DUPLICATE) {
                 console.log("Correction frame received, but it's already stored: " + content);
-            } else if (result.resultCode == CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING) {
+            } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING) {
                 console.log("Correction frame received, but cannot be used now (missing " + result.frames.length + " frames: " + result.frames + "), storing for later use");
             }
             return result;
@@ -363,8 +359,9 @@ function processFrame(content) {
                 headerDecoded = false;
             }
 
-            let frameList = recoveryWithUnusedCorrectionFrames();
-            return {resultCode: FRAME_DECODED, frame: result.frame, frames: frameList};
+            let frames = recoveryWithUnusedCorrectionFrames();
+            let status = createStatus();
+            return {resultCode: FRAME_DECODED, frame: result.frame, frames, status};
         } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
             console.log("Read frame " + result.frame + " which was already known");
             return result;
@@ -379,12 +376,11 @@ function decodeHeader(frame) {
     try {
         if (!headerDecoded) {
             let [hash, fileName, numberOfFrames] = getContentInfo();
-            console.log("File name = " + fileName);
-            console.log("Frames = " + numberOfFrames);
             headerDecoded = true;
             if (0 < frame) {
                 console.log("Header decoded");
             }
+            self.postMessage({type: MSG_TYPE_HEADER, fileName, numberOfFrames});
         }
     } catch (e) {
         console.log("Cannot decode header");
@@ -447,17 +443,22 @@ function saveFile() {
     }
 }
 
-function processScan(content) {
-    // End if the same content as previously
-    if (content == contentPrevious) {
-        return {resultCode: QR_CODE_SAME_AS_PREVIOUS};
-    }
-    contentPrevious = content;
+function createStatus() {
+    return {
+        receivedDataFramesCount: Object.keys(contentRead).length,
+        receivedDataFrameMax: Math.max(...Object.keys(contentRead).map(Number)),
+        unusedCorrectionFramesCount: unusedCorrectionFrames.length,
+        missing: getMissingFrames()
+    };
+}
 
+function processScan(content) {
     let result = processFrame(content);
     if (![FRAME_DECODED, CORRECTION_DECODED].includes(result.resultCode)) {
         return result;
     }
+
+    self.postMessage({type: MSG_TYPE_PROCESSED, result});
 
     decodeHeader(frame);
 

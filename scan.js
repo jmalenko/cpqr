@@ -296,19 +296,14 @@ const testFrames = [
 
 let fileSimulated = -1;
 let frameSimulated;
-let downloadedInSimulation;
-
-function simulationInProgress() {
-    return 0 <= fileSimulated && fileSimulated < testFrames.length;
-}
 
 function scanSimulated() {
     if (fileSimulated < 0 || (frameSimulated + 1 === testFrames[fileSimulated].frames.length)) {
         // Check downloaded status of the test that just finished
         if (fileSimulated >= 0) {
             const downloadExpected = testFrames[fileSimulated].expected ?? true;
-            if (downloadExpected !== downloadedInSimulation) {
-                log("Test '" + testFrames[fileSimulated].name + "' failed: expected downloaded = " + downloadExpected + " but got " + downloadedInSimulation);
+            if (downloadExpected !== downloaded) {
+                log("Test '" + testFrames[fileSimulated].name + "' failed: expected downloaded = " + downloadExpected + " but got " + downloaded);
                 throw Error("Test failed");
             }
         }
@@ -316,7 +311,6 @@ function scanSimulated() {
         // Move to next file
         fileSimulated++;
         frameSimulated = 0;
-        downloadedInSimulation = false;
         init();
 
         if (!simulationInProgress()) {
@@ -340,6 +334,10 @@ function scanSimulated() {
     }
 
     setTimeout(scanSimulated, 10);
+}
+
+function simulationInProgress() {
+    return 0 <= fileSimulated && fileSimulated < testFrames.length;
 }
 
 function tests() {
@@ -411,49 +409,97 @@ const QR_CODE_ADDED_TO_QUEUE = 3;
 
 /* Variables */
 
-// TODO Remove unused variables
-let contentRead; // contentRead[frameIndex] contains the content of frame frameIndex
+// Metadata
+let fileName; // Name of the file being received
+let numberOfFrames; // Number of frames of the file being received
 
-let hashSaved; // hash of the last saved file (specifically the received hash (of fileName + data)
+// Status
+let receivedDataFramesCount; // Number of data frames received
+let receivedDataFrameMax; // Maximum id (number) of data frames received
+let unusedCorrectionFramesCount; // Number of correction frames cached
+let missing; // List of missing frames
 
-let unusedCorrectionFrames; // Store correction frames that could not be used immediately, but might be useful later
-
-
+// Internal status
+let downloaded; // Whether the file has been downloaded
 let contentPrevious; // Content of previous data in QR code
 
-let measureTimeQr;
+let measureTimeQr; // For measuring time taken to process QR codes
 
 const worker = new Worker('scanWorker.js');
 
 worker.onmessage = function (e) {
     const message = e.data;
     if (message.type === MSG_TYPE_QUEUED) {
-        log("< Queued. (processing=" + message.processing + ", queueLength=" + message.queueLength + ")");
+        log("< Frame queued. (processing=" + message.processing + ", queueLength=" + message.queueLength + ")");
     } else if (message.type === MSG_TYPE_PROCESSED) {
-        log("< Frame was processed. (" + resultCodeToString(message.result.resultCode) + ")");
-        // updateInfo(message);
+        log("< Frame was processed: " + resultToText(message.result));
+
+        if (message.result?.status !== undefined) {
+            setStatus(message.result.status);
+        }
+        updateInfo();
     } else if (message.type === MSG_TYPE_ERROR) {
         // Error was already logged to console in worker
         log("< Error: " + message.error.toString() + "\n" +
             "Stack trace: " + message.error.stack);
+    } else if (message.type === MSG_TYPE_METADATA) {
+        const fileNameLast = getFileNameLast(message.fileName); // TODO Refactor to path
+        log("< File name " + fileNameLast);
+        fileName = message.fileName;
+        numberOfFrames = message.numberOfFrames;
+        // updateInfo(); // Not needed because it's called in MSG_TYPE_PROCESSED
     } else if (message.type === MSG_TYPE_SAVE) {
         const fileNameLast = getFileNameLast(message.fileName); // TODO Refactor to path
         log("< Download " + fileNameLast);
         if (simulationInProgress()) {
             log("Skipping download in simulation");
-            downloadedInSimulation = true;
         } else {
             download(message.data, fileNameLast, 'text/plain');
         }
+        downloaded = true;
     } else {
         throw new Error("Unsupported message from worker: " + message.type);
     }
-};
+}
+
+function resultToText(result) {
+    if (result.resultCode == FRAME_DECODED) {
+        return result.frames != undefined && 0 < result.frames.length
+            ? "QR code with frame " + result.frame + " and recovered frames " + result.frames
+            : "QR code with frame " + result.frame;
+    } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
+        return "QR code with frame " + result.frame + " already known";
+    } else if (result.resultCode == CORRECTION_DECODED) {
+        return "QR code with correction used to decode frames " + result.frames;
+    } else if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
+        return "QR code with correction not needed - all data already known";
+    } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING) {
+        return "QR code with correction saved to be used later";
+    } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING_DUPLICATE) {
+        return "QR code with correction not needed - correction already stored";
+    } else {
+        throw new Error("Unknown result code " + result.resultCode);
+    }
+}
+
+function setStatus(status) {
+    ({receivedDataFramesCount, receivedDataFrameMax, unusedCorrectionFramesCount, missing} = status);
+}
+
+function metadataReceived() {
+    return fileName !== undefined;
+}
 
 function init() {
-    contentRead = [];
-    hashSaved = undefined;
-    unusedCorrectionFrames = [];
+    fileName = undefined;
+    numberOfFrames = undefined;
+
+    receivedDataFramesCount = 0;
+    receivedDataFrameMax = undefined;
+    unusedCorrectionFramesCount = 0;
+    missing = [];
+
+    downloaded = false;
     contentPrevious = undefined;
 
     measureTimeQr = createMeasureTime();
@@ -485,42 +531,35 @@ function getFileNameLast(fileName) {
     return fileName.slice(posSlash + 1);
 }
 
-function updateInfo(missing) {
+function updateInfo() {
     let infoStr = "";
-    try {
-        let [hash, fileName, numberOfFrames] = getContentInfo();
-        const fileNameLast = getFileNameLast(fileName);
 
-        let infoStr2 = "";
-        if (hash === hashSaved) {
-            infoStr2 += "<span style='color: #008000'>Saved</span> ";
+    if (metadataReceived()) {
+        if (downloaded) {
+            infoStr += "<span style='color: #008000'>Saved</span> ";
         } else {
-            let receivedDataFrames = Object.keys(contentRead).length;
-            let percent = Math.round(receivedDataFrames / numberOfFrames * 100 * 100) / 100; // Round to two decimal places (only if necessary)
-            infoStr2 = percent + "% ... " + receivedDataFrames + " / " + numberOfFrames + " data frames, and " + unusedCorrectionFrames.length + " correction frames. ";
+            if (numberOfFrames != 0) {
+                let percent = 100 * receivedDataFramesCount / numberOfFrames;
+                infoStr += percent.toFixed(2) + "% ... " + receivedDataFramesCount + " / " + numberOfFrames + " data frames, and " + unusedCorrectionFramesCount + " correction frames. ";
+            } else {
+                infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames. ";
+            }
         }
-        infoStr2 += fileNameLast;
-
-        infoStr += infoStr2;
-    } catch (e) {
-        let receivedDataFrames = Object.keys(contentRead).length;
-        infoStr += "?% ..." + receivedDataFrames + " / ? data frames, and " + unusedCorrectionFrames.length + " correction frames";
+        infoStr += getFileNameLast(fileName);
+    } else {
+        infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames. ";
     }
     infoStr += "</br>";
 
-    const elMissingList = document.getElementById("missingList");
-    if (missing !== undefined) {
-        if (0 < contentRead.length) {
-            const maxIndex = Math.max(...Object.keys(contentRead).map(Number));
-            let lossRate = missing.length / maxIndex;
-            if (!isNaN(lossRate)) {
-                infoStr += "Loss rate " + (100 * lossRate).toFixed(2) + "%. ";
-            }
-        }
+    if (receivedDataFrameMax !== undefined) {
+        // TODO If a Correction was encountered, then used numberOfFrames from metadata, otherwise use receivedDataFrameMax + 1
+        let lossRate = missing.length / (receivedDataFrameMax + 1);
+        infoStr += "Loss rate " + (100 * lossRate).toFixed(2) + "%. ";
+    }
 
-        if (0 < missing.length) {
-            infoStr += "Missing " + missing.length + ":";
-        }
+    const elMissingList = document.getElementById("missingList");
+    if (0 < missing.length) {
+        infoStr += "Missing " + missing.length + ":";
 
         elMissingList.innerHTML = formatMissing(missing);
         elMissingList.hidden = false;
@@ -567,22 +606,20 @@ function formatMissing(missing) {
 
 function resultCodeToString(resultCode) {
     switch (resultCode) {
-        case QR_CODE_SAME_AS_PREVIOUS:
-            return "QR code same as previous";
         case FRAME_DECODED:
             return "Frame decoded";
-        case CORRECTION_DECODED:
-            return "Correction decoded";
-        case CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING:
-            return "Correction: more frames missing";
-        case CORRECTION_ALL_DATA_KNOWN:
-            return "Correction: all data known";
-        case CORRECTION_IMPOSSIBLE_MORE_FRAMES_MISSING_DUPLICATE:
-            return "Correction: duplicate, more frames missing";
         case FRAME_ALREADY_KNOWN:
             return "Frame already known";
+        case CORRECTION_DECODED:
+            return "Correction decoded";
+        case CORRECTION_ALL_DATA_KNOWN:
+            return "Correction: all data known";
+        case CORRECTION_MORE_FRAMES_MISSING:
+            return "Correction: more frames missing";
+        case CORRECTION_MORE_FRAMES_MISSING_DUPLICATE:
+            return "Correction: duplicate, more frames missing";
         default:
-            return "Unknown result code";
+            throw new Error("Unknown result code " + resultCode);
     }
 }
 
