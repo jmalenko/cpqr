@@ -400,6 +400,14 @@ function download(strData, strFileName, strMimeType) {
     ============
  */
 
+/* Constants */
+
+const QR_CODE_EMPTY = 1;
+const QR_CODE_SAME_AS_PREVIOUS = 2;
+const QR_CODE_ADDED_TO_QUEUE = 3;
+
+/* Variables */
+
 // TODO Remove unused variables
 let contentRead; // contentRead[frameIndex] contains the content of frame frameIndex
 
@@ -480,9 +488,9 @@ function init() {
 }
 
 function onScan(content) {
-    // TODO End on empty content
+    // End if empty content
     if (content == "") {
-        // return {resultCode: QR_CODE_EMPTY};
+        return {resultCode: QR_CODE_EMPTY};
     }
 
     // End if the same content as previously
@@ -492,6 +500,8 @@ function onScan(content) {
     contentPrevious = content;
 
     worker.postMessage({type: 'scan', data: content});
+
+    return {resultCode: QR_CODE_ADDED_TO_QUEUE};
 }
 
 function getFileNameLast(fileName) {
@@ -740,8 +750,16 @@ function initStream() {
                 drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
                 drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
 
-                onScan(code.data);
-                status.innerText = "QR code scanned and added to processing queue";
+                let result = onScan(code.data);
+                if (result.resultCode === QR_CODE_EMPTY) {
+                    status.innerText = "QR code scanned and it's empty; ignoring";
+                } else if (result.resultCode !== QR_CODE_SAME_AS_PREVIOUS) {
+                    status.innerText = "QR code scanned and it's same as previous; ignoring";
+                } else if (result.resultCode !== QR_CODE_ADDED_TO_QUEUE) {
+                    status.innerText = "QR code scanned and added to processing queue";
+                } else {
+                    throw new Error("Unsupported result " + result);
+                }
             } else {
                 status.innerText = "No QR code";
             }
@@ -760,6 +778,6 @@ function onLoad() {
 
     initStream();
 
-    // scanSimulated();
+    scanSimulated();
 }
 
