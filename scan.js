@@ -728,7 +728,7 @@ function initStream() {
                 if (isAboveSigma(statsAnimationFrame, 2)) {
                     log(`WARNING: Animation frame variation ${statsAnimationFrame.ms} ms, avg=${statsAnimationFrame.avg.toFixed(1)} ms, stddev=${statsAnimationFrame.stddev.toFixed(1)} ms`);
                 }
-                document.getElementById("statsAnimationFrame").innerText = "Scan speed: avg " + statsAnimationFrame.avg.toFixed(1) + " ms; last " + statsAnimationFrame.ms.toFixed(1) + " ms.";
+                document.getElementById("scanSpeed").innerText = "Scan speed: avg " + statsAnimationFrame.avg.toFixed(1) + " ms; last " + statsAnimationFrame.ms.toFixed(1) + " ms.";
             }
 
             canvasElement.hidden = false;
