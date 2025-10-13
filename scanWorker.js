@@ -375,12 +375,12 @@ function decodeHeader(frame) {
     // Log when header decoded later than in first frame (with index 0)
     try {
         if (!headerDecoded) {
-            let [hash, fileName, numberOfFrames] = getContentInfo();
+            let [hash, path, numberOfFrames] = getContentInfo();
             headerDecoded = true;
             if (0 < frame) {
                 console.log("Header decoded");
             }
-            self.postMessage({type: MSG_TYPE_HEADER, fileName, numberOfFrames});
+            self.postMessage({type: MSG_TYPE_METADATA, path, numberOfFrames});
         }
     } catch (e) {
         console.log("Cannot decode header");
@@ -392,7 +392,7 @@ function allFramesRead() {
         return false;
     }
 
-    let [hash, fileName, numberOfFrames] = getContentInfo();
+    let [hash, path, numberOfFrames] = getContentInfo();
     const numberOfFramesReceived = Object.keys(contentRead).length;
 
     return numberOfFrames <= numberOfFramesReceived;

@@ -443,9 +443,9 @@ worker.onmessage = function (e) {
         log("< Error: " + message.error.toString() + "\n" +
             "Stack trace: " + message.error.stack);
     } else if (message.type === MSG_TYPE_METADATA) {
-        const fileName = getFileNameFromPath(message.fileName);
+        const fileName = getFileNameFromPath(message.path);
         log("< File name " + fileName);
-        path = message.fileName;
+        path = message.path;
         numberOfFrames = message.numberOfFrames;
         // updateInfo(); // Not needed because it's called with MSG_TYPE_PROCESSED
     } else if (message.type === MSG_TYPE_SAVE) {
