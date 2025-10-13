@@ -184,12 +184,6 @@ function assertEqual(testName, a, b) {
 function log(str) {
     const MAX_LINES = 100;
 
-    // TODO Hotfix - replace log() with console.log() in worker
-    if (typeof document === "undefined") {
-        console.log(str);
-        return;
-    }
-
     const date = new Date();
     const el = document.getElementById("log");
     const logLine = "[" + formatDate(date) + "] " + str;
