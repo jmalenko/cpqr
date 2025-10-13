@@ -722,13 +722,11 @@ function initStream() {
 
     function onAnimationFrame() {
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            // Calculate scan speed
+            // Measure animation speed
             let statsAnimationFrame = measureIntervalAnimationFrame();
             if (statsAnimationFrame.ms !== undefined) {
-                // log(`Duration between animation frames ${statsAnimationFrame.ms} ms, avg=${statsAnimationFrame.avg.toFixed(1)} ms, stddev=${statsAnimationFrame.stddev.toFixed(1)} ms`);
-                let sigma = (statsAnimationFrame.ms - statsAnimationFrame.avg) / statsAnimationFrame.stddev;
-                if (2 < Math.abs(sigma)) {
-                    log("WARNING: Scan speed variation " + sigma.toFixed(1) + " sigma. Avg=" + statsAnimationFrame.avg.toFixed(1) + " ms, last " + statsAnimationFrame.ms.toFixed(1) + " ms, stddev=" + statsAnimationFrame.stddev.toFixed(1) + " ms");
+                if (isAboveSigma(statsAnimationFrame, 2)) {
+                    log(`WARNING: Animation frame variation ${statsAnimationFrame.ms} ms, avg=${statsAnimationFrame.avg.toFixed(1)} ms, stddev=${statsAnimationFrame.stddev.toFixed(1)} ms`);
                 }
                 document.getElementById("statsAnimationFrame").innerText = "Scan speed: avg " + statsAnimationFrame.avg.toFixed(1) + " ms; last " + statsAnimationFrame.ms.toFixed(1) + " ms.";
             }
@@ -754,8 +752,9 @@ function initStream() {
                     inversionAttempts: "dontInvert",
                 });
             });
-            // TODO Log only when variance is more tha 2 sigma
-            // log(`  Recognize QR code duration ${statsQrRecognition.ms} ms, avg=${statsQrRecognition.avg.toFixed(2)} ms, stddev=${statsQrRecognition.stddev.toFixed(2)} ms`);
+            if (isAboveSigma(statsQrRecognition, 2)) {
+                log(`WARNING: Recognize QR code variation ${statsQrRecognition.ms} ms, avg=${statsQrRecognition.avg.toFixed(1)} ms, stddev=${statsQrRecognition.stddev.toFixed(1)} ms`);
+            }
 
             if (code) {
                 drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");

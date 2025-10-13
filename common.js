@@ -142,6 +142,10 @@ function createMeasureInterval() {
     };
 }
 
+function isAboveSigma(stats, sigmaThreshold) {
+    return stats.stddev && sigmaThreshold < Math.abs((stats.ms - stats.avg) / stats.stddev);
+}
+
 function assertEqual(testName, a, b) {
     if (typeof a !== typeof b) {
         log("Test " + testName + " error: Have different types: got " + typeof a + " but expected " + typeof b);
