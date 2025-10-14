@@ -448,7 +448,8 @@ function createStatus() {
         receivedDataFramesCount: Object.keys(contentRead).length,
         receivedDataFrameMax: Math.max(...Object.keys(contentRead).map(Number)),
         unusedCorrectionFramesCount: unusedCorrectionFrames.length,
-        missing: getMissingFrames()
+        missing: getMissingFrames(),
+        queueLength: queue.length
     };
 }
 

@@ -418,6 +418,7 @@ let receivedDataFramesCount; // Number of data frames received
 let receivedDataFrameMax; // Maximum id (number) of data frames received
 let unusedCorrectionFramesCount; // Number of correction frames cached
 let missing; // List of missing frames
+let queueLength; // Length of the queue in the worker
 
 // Internal status
 let downloaded; // Whether the file has been downloaded
@@ -483,7 +484,7 @@ function resultToText(result) {
 }
 
 function setStatus(status) {
-    ({receivedDataFramesCount, receivedDataFrameMax, unusedCorrectionFramesCount, missing} = status);
+    ({receivedDataFramesCount, receivedDataFrameMax, unusedCorrectionFramesCount, missing, queueLength} = status);
 }
 
 function metadataReceived() {
@@ -498,6 +499,7 @@ function init() {
     receivedDataFrameMax = undefined;
     unusedCorrectionFramesCount = 0;
     missing = [];
+    queueLength = 0;
 
     downloaded = false;
     contentPrevious = undefined;
@@ -538,14 +540,14 @@ function updateInfo() {
         } else {
             if (numberOfFrames != 0) {
                 let percent = 100 * receivedDataFramesCount / numberOfFrames;
-                infoStr += percent.toFixed(2) + "% ... " + receivedDataFramesCount + " / " + numberOfFrames + " data frames, and " + unusedCorrectionFramesCount + " correction frames. ";
+                infoStr += percent.toFixed(2) + "% ... " + receivedDataFramesCount + " / " + numberOfFrames + " data frames, and " + unusedCorrectionFramesCount + " correction frames, queue length " + queueLength + ". ";
             } else {
-                infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames. ";
+                infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames, queue length " + queueLength + ". ";
             }
         }
         infoStr += getFileNameFromPath(path);
     } else {
-        infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames. ";
+        infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames, queue length " + queueLength + ". ";
     }
     infoStr += "</br>";
 
