@@ -316,7 +316,7 @@ function onOpenFile(event) {
     const reader = new FileReader();
     reader.fileName = input.value;
     reader.onload = function () {
-        const dataURL = reader.result;
+        const data = reader.result;
         // If reader.readAsText() was called:
         //    String (probably in UTF-8)
 
@@ -324,7 +324,7 @@ function onOpenFile(event) {
         //    Base64 encoded
         //    Example: data:text/plain;base64,VGVzdCBmaWxlDQpTZWNvbmQgcm93Lg0KVGhpcmQh
 
-        show(reader.fileName, dataURL)
+        show(reader.fileName, data)
     };
     reader.onerror = function () {
         alert("Error reading file");
