@@ -245,6 +245,7 @@ let frame; // From 0. The frames from 0 to frame-1 have been shown.
 let missingFrames; // Contains the frames to show as soon as possible. The frame at index _frame_ will be shown afterward.
 let missingFrameDelta; // When showing missing frames, this is set to a number > 0. It is decreased by one for each correction frame shown. When it reaches 0, the next missing frame is shown.
 const MISSING_FRAME_DELTA_MAX = 3; // Maximum value for missingFrameDelta. Higher values increase the chance of recovery, but also increase the time to show all frames.
+let round; // Round is increased after all correction frames are sent (and frames 0 is about to be sent).
 
 let lossRate;
 let correctionFrame;
@@ -446,6 +447,7 @@ function onStart() {
     missingFrames = [];
     duration = DURATION_TARGET;
     lossRateIndex = -1;
+    round = 1;
 
     let durationMs = measureTimeMs(() => {
         createCache();
@@ -647,6 +649,7 @@ function nextFrame() {
 
         frame = -1;
         lossRateIndex = -1;
+        round++;
 
         timer = setTimeout(nextFrame, 0); // Run immediately
         return;
@@ -828,14 +831,22 @@ function updateInfo() {
     let infoStr = "";
     if (sendingContent()) {
         const numberOfFrames = getNumberOfFrames();
-        const ratio = frame / numberOfFrames * 100;
-        infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
+        if (round == 1) {
+            const ratio = frame / numberOfFrames * 100;
+            infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
 
-        const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) || 0 < duration ? DURATION_TARGET : durationActual));
-        let timeEnd = new Date(Date.now() + timeLeft);
-        infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + formatDate(timeEnd, false) + ". ";
+            const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) || 0 < duration ? DURATION_TARGET : durationActual));
+            let timeEnd = new Date(Date.now() + timeLeft);
+            infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + formatDate(timeEnd, false) + ". ";
+        } else {
+            infoStr += "Data " + frame + " / " + numberOfFrames + ". ";
+        }
     } else if (sendingCorrections()) {
-        infoStr += "Correction for loss rate " + (100 * lossRate) + "%, frame " + correctionFrame + ".";
+        infoStr += "Correction for loss rate " + (100 * lossRate) + "%, frame " + correctionFrame + ". ";
+    }
+
+    if (1 < round) {
+        infoStr += "Round " + round + ".";
     }
 
     const el = document.getElementById("info");
