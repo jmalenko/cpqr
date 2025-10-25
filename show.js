@@ -842,7 +842,7 @@ function updateInfo() {
             infoStr += "Data " + frame + " / " + numberOfFrames + ". ";
         }
     } else if (sendingCorrections()) {
-        infoStr += "Correction for loss rate " + (100 * lossRate) + "%, frame " + correctionFrame + ". ";
+        infoStr += "Correction for loss rate " + Math.round(100 * lossRate) + "%, frame " + correctionFrame + ". ";
     }
 
     if (1 < round) {
