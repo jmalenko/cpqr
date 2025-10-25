@@ -529,14 +529,14 @@ function generateCorrectionForIndices(indices) {
     return btoa(xor);
 }
 
-// Return true when sending content data frames. Otherwise correction frames are sent.
+// Return true when sending content data frames. Otherwise, correction frames are sent.
 function sendingContent() {
     return frame + 1 < getNumberOfFrames();
 }
 
-// Return true when sending correction frames. (Sending stops when loss rate exceeds 100%.)
-function sendingCorrections() {
-    return lossRateIndex < LOSS_RATES.length;
+// Return true when the last frame that was sent was data frame. Otherwise, no frame or correction frame was sent.
+function lastFrameWasDataFrame() {
+    return (frame + 1 == getNumberOfFrames() && lossRate == undefined) || sendingContent();
 }
 
 function sending() {
@@ -612,7 +612,7 @@ function nextFrame() {
 
                 frameContent = getFrameContent(frame);
                 log("Frame " + frame + ": " + frameContent);
-            } else if (sendingCorrections()) {
+            } else {
                 // Show correction frame
                 if (lossRateIndex == -1) {
                     lossRateIndex++;
@@ -649,6 +649,7 @@ function nextFrame() {
 
         frame = -1;
         lossRateIndex = -1;
+        lossRate = undefined;
         round++;
 
         timer = setTimeout(nextFrame, 0); // Run immediately
@@ -710,9 +711,9 @@ function onMissingFramesChange(event) {
                             ? frameNew
                             : getNumberOfFrames() + frameNew;
                         frame--; // -1 as the frame will be increased by one when shown next time
-                        if (!sendingCorrections()) {
-                            lossRateIndex = 0;
-                            lossRate = LOSS_RATES[lossRateIndex];
+                        if (sendingContent()) {
+                            lossRateIndex = -1;
+                            lossRate = undefined;
                             correctionFrame = -1;
                         }
                     }
@@ -829,10 +830,10 @@ function onDurationChangeValue(value) {
 
 function updateInfo() {
     let infoStr = "";
-    if (sendingContent()) {
+    if (lastFrameWasDataFrame()) {
         const numberOfFrames = getNumberOfFrames();
         if (round == 1) {
-            const ratio = frame / numberOfFrames * 100;
+            const ratio = (frame + 1) / numberOfFrames * 100; // This may be confusing to the user as frame starts from 0
             infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
 
             const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) || 0 < duration ? DURATION_TARGET : durationActual));
@@ -841,7 +842,7 @@ function updateInfo() {
         } else {
             infoStr += "Data " + frame + " / " + numberOfFrames + ". ";
         }
-    } else if (sendingCorrections()) {
+    } else {
         infoStr += "Correction for loss rate " + Math.round(100 * lossRate) + "%, frame " + correctionFrame + ". ";
     }
 
