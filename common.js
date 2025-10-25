@@ -47,6 +47,14 @@ function formatDate(date, showMillis) {
     return year + "-" + month + "-" + day + " " + hours + ':' + minutes + ':' + seconds + (showMillis === undefined || showMillis ? "." + millis : "");
 }
 
+function formatDuration(milliseconds) {
+    let seconds = milliseconds / 1000;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return `${h}h ${m}m ${s}s`;
+}
+
 /**
  * Calculate a 32 bit FNV-1a hash
  * Found here: https://gist.github.com/vaiorabbit/5657561

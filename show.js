@@ -831,20 +831,13 @@ function updateInfo() {
         const ratio = frame / numberOfFrames * 100;
         infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
 
-        const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) || 0 < duration ? DURATION_TARGET : durationActual) / 1000);
-        const timeEnd = formatDate(new Date(new Date().getTime() + timeLeft * 1000), false);
-        infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + timeEnd + ". "
+        const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) || 0 < duration ? DURATION_TARGET : durationActual));
+        let timeEnd = new Date(Date.now() + timeLeft);
+        infoStr += "Time left " + formatDuration(timeLeft) + ". End on " + formatDate(timeEnd, false) + ". ";
     } else if (sendingCorrections()) {
         infoStr += "Correction for loss rate " + (100 * lossRate) + "%, frame " + correctionFrame + ".";
     }
 
     const el = document.getElementById("info");
     el.innerHTML = infoStr;
-}
-
-function formatDuration(seconds) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${h}h ${m}m ${s}s`;
 }
