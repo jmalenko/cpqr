@@ -40,7 +40,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.3em;
-    font-size: 2ex;
+    font-size: 4ex;
     min-height: 30%;
 }
 
@@ -71,6 +71,7 @@ body {
     overflow-x: auto;
     white-space: nowrap;
     max-width: 100%;
+    font-size: 4ex;
 }
 
 .controls-row-1 {
@@ -109,6 +110,11 @@ body {
     }
 
     #status-section {
+        font-size: 2ex;
+    }
+
+    #missingList {
+        font-size: 3ex;
     }
 
     #log-section {
