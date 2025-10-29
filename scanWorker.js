@@ -213,14 +213,50 @@ function getContentInfo() {
     return [hash, fileName, numberOfFrames];
 }
 
+function decodeCorrectionIndices(content) {
+    let from = 1; // Skip the initial 'C' character
+    let lossRateLen, lossRateStr, indexLen, indexStr;
+
+    [lossRateLen, lossRateStr, from] = decodeWithLength(content, from);
+    let lossRate = Number(lossRateStr);
+    if (isNaN(lossRate)) {
+        throw new Error("Error decoding content: loss rate is not a number");
+    }
+    lossRate /= 100.0;
+
+    [indexLen, indexStr, from] = decodeWithLength(content, from);
+    let index = Number(indexStr);
+    if (isNaN(index)) {
+        throw new Error("Error decoding content: index is not a number");
+    }
+
+    return [correctionIndices(lossRate, index), from];
+}
+
+function getNumberOfFrames() {
+    let [hash, path, numberOfFrames] = getContentInfo();
+    return numberOfFrames;
+}
+
 function decodeCorrectionFrame(content) {
-    let [indicesLen, indicesStr, from] = decodeWithLength(content, 0);
-    let indices = indicesStr.split(",").map(Number);
-    let payload = content.slice(from)
+    let indices, from;
+    try {
+        [indices, from] = decodeCorrectionIndices(content);
+    } catch (e) {
+        // Typically when frame 0 is missing and we cannot get number of frames
+        if (unusedCorrectionFrames.includes(content)) {
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE};
+        } else {
+            unusedCorrectionFrames.push(content);
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING};
+        }
+    }
+
+    let payload = content.slice(from);
 
     // Find all missing indices
     let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
-    // Only recover if exactly one is missing. If more than one is missing, store the correction for a later use.
+    // Only recover if exactly one is missing in this correction frame. If more than one is missing, store the correction for a later use.
     if (missingIndices.length == 0) {
         return {resultCode: CORRECTION_ALL_DATA_KNOWN};
     } else if (missingIndices.length !== 1) {
@@ -308,8 +344,8 @@ function removeUnneededStoredCorrectionFrames() {
     for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
         const content = unusedCorrectionFrames[i];
 
-        let [indicesLen, indicesStr, from] = decodeWithLength(content, 0);
-        let indices = indicesStr.split(",").map(Number);
+        let indices, from;
+        [indices, from] = decodeCorrectionIndices(content);
 
         // Find all missing indices
         let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
@@ -322,13 +358,8 @@ function removeUnneededStoredCorrectionFrames() {
 }
 
 function isCorrectionFrame(content) {
-    // Simple heuristic: try to decode as correction frame, e.g. if first field is a list of indices
-    try {
-        let [indicesLen, indicesStr] = decodeWithLength(content, 0);
-        return indicesStr.includes(",");
-    } catch {
-        return false;
-    }
+    let firstChar = content.slice(0, 1);
+    return firstChar == "C";
 }
 
 function processFrame(content) {
@@ -346,7 +377,11 @@ function processFrame(content) {
             } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING_DUPLICATE) {
                 console.log("Correction frame received, but it's already stored: " + content);
             } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING) {
-                console.log("Correction frame received, but cannot be used now (missing " + result.frames.length + " frames: " + result.frames + "), storing for later use");
+                if (result.frames !== undefined) {
+                    console.log("Correction frame received, but cannot be used now (missing " + result.frames.length + " frames: " + result.frames + "), storing for later use");
+                } else {
+                    console.log("Correction frame received, but cannot be used now, storing for later use. Correction frame can be used after header is received.");
+                }
             }
             return result;
         }

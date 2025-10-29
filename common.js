@@ -94,6 +94,28 @@ function xorStrings(a, b) {
     return res;
 }
 
+function correctionFramesCount(lossRate) {
+    return Math.ceil(getNumberOfFrames() * lossRate);
+}
+
+function correctionIndices(lossRate, index) {
+    const n = getNumberOfFrames();
+    const numMissing = correctionFramesCount(lossRate);
+
+    // Select subset of frames for XOR
+    let indices = [];
+    for (let j = index; j < n; j += numMissing) {
+        indices.push(j);
+    }
+
+    // There must be at least two frames to make a correction frame useful (and correction frame detection to work in scan)
+    if (indices.length < 2) {
+        // Add first or last frame
+        indices.push(index == 0 ? n - 1 : 0);
+    }
+    return indices;
+}
+
 function measureTimeMs(fn) {
     const start = new Date();
     fn();

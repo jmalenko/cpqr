@@ -14,19 +14,19 @@
 
 // Helper: produce an "incorrect" frame variant by replacing the last character
 const makeIncorrect = (frame, replacement = 'X') =>
-    frame.slice(0, -1) + replacement;
+    frame.slice(0, -replacement.length) + replacement;
 
 // Sample data with 2 data frames
 
 const FRAME_0 = '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base';
 const FRAME_1 = '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=';
-const CORRECTION = '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=';
+const CORRECTION = 'C111110AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=';
 
 // Incorrect frames derived from originals
 const FRAME_0_INCORRECT = makeIncorrect(FRAME_0, 'X'); // Frame 0 incorrect (last character changed to X)
 const FRAME_1_INCORRECT = makeIncorrect(FRAME_1, 'X'); // Frame 1 incorrect (last character changed to X)
-const CORRECTION_INCORRECT = '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc1g='; // Correction frame (last character of frame 1 changed from e to X; then the correction frame was recreated)
-const CORRECTION_INCORRECT2 = '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIAtgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U='; // Correction frame (in frame 1 content, the file namech changed from "a" to "X"; then the correction frame was recreated. The "DJ" in the middle changed to "At".)
+const CORRECTION_INCORRECT = makeIncorrect(CORRECTION,'1g='); // Correction frame (last character of frame 1 changed from e to X; then the correction frame was recreated)
+const CORRECTION_INCORRECT2 = CORRECTION.replace('DJ', 'At'); // Correction frame (in frame 1 content, the file name changed from "a" to "X"; then the correction frame was recreated. The "DJ" in the middle changed to "At".)
 const FRAME_3_INCORRECT = '11211X'; // Frame 3 incorrect
 
 // Sample data with 3 data frames
@@ -34,96 +34,82 @@ const FRAME_3_INCORRECT = '11211X'; // Frame 3 incorrect
 const DATA_3_FRAME_0 = '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279';
 const DATA_3_FRAME_1 = '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM';
 const DATA_3_FRAME_2 = '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=';
-const DATA_3_CORRECTION_1PCT = '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0';  // Correction frame for 1% loss (with index 1 out of 1)
-const DATA_3_CORRECTION_64PCT_1 = '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5';  // Correction frame with index 1 for 64% loss
-const DATA_3_CORRECTION_64PCT_2 = '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0'; // Correction frame with index 2 for 64% loss
+const DATA_3_CORRECTION_1PCT = 'C111110MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0';  // Correction frame for 1% loss (with index 1 out of 1)
+const DATA_3_CORRECTION_34PCT_1 = 'C1234110AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5';  // Correction frame with index 0 for 34% loss
+const DATA_3_CORRECTION_34PCT_2 = 'C1234111AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0'; // Correction frame with index 1 for 34% loss
 
 const testFrames = [
     // Prepared with the same content.
 
     // Content fits 2 frames. (The capacity is 70.)
-
     {
         name: "2 frames, send all the content frames",
         frames: [FRAME_0, FRAME_1]
     },
-
     {
         name: "2 frames, send all the content frames in opposite direction",
         frames: [FRAME_1, FRAME_0]
     },
-
     {
         name: "2 frames, send frame 0 twice",
         frames: [FRAME_0, FRAME_0, FRAME_1]
     },
-
     {
         name: "2 frames, miss frame 0, send correction that allows building the frame",
-        frames: [FRAME_1, CORRECTION]
+        frames: [FRAME_1, CORRECTION],
+        expected: false // We don't know the number of frames
     },
-
     {
         name: "2 frames, miss frame 1, send correction that allows building the frame",
         frames: [FRAME_0, CORRECTION]
     },
 
     // Even more unusual scenarios for 2 frames
-
     {
         name: "2 frames, send only frame 0",
         frames: [FRAME_0],
         expected: false // No file saved, missing frame 1
     },
-
     {
         name: "2 frames, send only frame 1",
         frames: [FRAME_1],
         expected: false // No file saved, missing frame 0
     },
-
     {
         name: "2 frames, send frame 0 correctly and then with incorrect data",
         frames: [FRAME_0, FRAME_0_INCORRECT, FRAME_1],
         expected: false // No file saved, we have frame 0 with incorrect data
         // This situation could be potentially identified with the (existing) correction. But why would we do that? If we have frame 0, we should not need the correction.
     },
-
     {
         name: "2 frames, send frame 0 with incorrect data and then correctly",
         frames: [FRAME_0_INCORRECT, FRAME_0, FRAME_1]
         // Expected: File saved, we have correct data at the moment when all frames were received
     },
-
     {
         name: "2 frames, send frame 1 correctly and then with incorrect data",
         frames: [FRAME_0, FRAME_1, FRAME_1_INCORRECT]
         // Expected: File saved, we have correct data at the moment when all frames were received
     },
-
     {
         name: "2 frames, send frame 1 with incorrect data and then correctly",
         frames: [FRAME_0, FRAME_1_INCORRECT, FRAME_1],
         // Expected: File saved, we have correct data at the moment when all frames were received
     },
-
     {
         name: "2 frames, miss frame 0, send incorrect correction",
         frames: [FRAME_1, CORRECTION_INCORRECT, ],
         expected: false // No file saved, recovered frame 0 with wrong data, fails hash check
     },
-
     {
         name: "2 frames, miss frame 1, send incorrect correction, but the recovered frame 1 is shorter than the correction so the incorrect part is not used",
         frames: [FRAME_0, CORRECTION_INCORRECT, ],
     },
-
     {
         name: "2 frames, miss frame 1, send incorrect correction (with changed 1st character)",
         frames: [FRAME_0, CORRECTION_INCORRECT2],
         expected: false // No file saved, recovered frame 1 with wrong data, fails hash check
     },
-
     {
         name: "2 frames, miss frame 1, send a wrong frame 2 (so download is triggered)",
         frames: [FRAME_0, FRAME_3_INCORRECT],
@@ -131,98 +117,51 @@ const testFrames = [
     },
 
     // Content fits 3 frames. (The capacity is 40.)
-
     {
         name: "3 frames, send all the content frames",
         frames: [DATA_3_FRAME_0, DATA_3_FRAME_1, DATA_3_FRAME_2]
     },
-
     {
         name: "3 frames, send all the content frames, frame 0 as last",
         frames: [DATA_3_FRAME_1, DATA_3_FRAME_2, DATA_3_FRAME_0]
     },
-
     {
         name: "3 frames, miss frame 0, send correction",
-        frames: [DATA_3_FRAME_1, DATA_3_FRAME_2, DATA_3_CORRECTION_1PCT]
+        frames: [DATA_3_FRAME_1, DATA_3_FRAME_2, DATA_3_CORRECTION_1PCT],
+        expected: false // Not saved as number of frames (from header in frame 0) is unknown
     },
-
     {
         name: "3 frames, miss frame 1, send correction",
         frames: [DATA_3_FRAME_0, DATA_3_FRAME_2, DATA_3_CORRECTION_1PCT]
     },
-
     {
         name: "3 frames, miss frame 2, send correction",
         frames: [DATA_3_FRAME_0, DATA_3_FRAME_1, DATA_3_CORRECTION_1PCT]
     },
 
-
     {
         name: "3 frames, send correction trat recovers missing frame 1, then receive frame 1 which should be ignored",
-        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_64PCT_2, DATA_3_FRAME_1, DATA_3_FRAME_2]
+        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_34PCT_2, DATA_3_FRAME_1, DATA_3_FRAME_2]
     },
-
     {
         name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received",
-        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_64PCT_1, DATA_3_CORRECTION_64PCT_2]
+        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_34PCT_1, DATA_3_CORRECTION_34PCT_2]
     },
-
     {
         name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received, swap correction frames",
-        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_64PCT_2, DATA_3_CORRECTION_64PCT_1]
+        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_34PCT_2, DATA_3_CORRECTION_34PCT_1]
     },
-
     {
         name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received",
-        frames: [DATA_3_FRAME_2, DATA_3_CORRECTION_64PCT_1, DATA_3_CORRECTION_64PCT_2]
+        frames: [DATA_3_FRAME_2, DATA_3_CORRECTION_34PCT_1, DATA_3_CORRECTION_34PCT_2],
+        expected: false // Not saved as number of frames (from header in frame 0) is unknown
     },
-
     {
         name: "3 frames, miss frames 1 and 2, send corrections, unused correction frames must be stored for a later correction",
-        frames: [DATA_3_FRAME_2, DATA_3_CORRECTION_64PCT_2, DATA_3_CORRECTION_64PCT_1]
+        frames: [DATA_3_FRAME_2, DATA_3_CORRECTION_34PCT_2, DATA_3_CORRECTION_34PCT_1],
+        expected: false // Not saved as number of frames (from header in frame 0) is unknown
     }
 ];
-
-// Test disabled, because it is too long for practical use
-// let longTest = {
-//     name: "Many frames",
-//     frames: [
-//         '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt599999data:text/plain;base', // Frame 0 incorrect, length of data changed to 99999
-//         '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQoX', // Frame 1 incorrect (last character changed to X)
-//     ],
-//     expected: false // No file saved as after frame 0 and incorrect frame 1, there many frames
-// }
-// for (let i = 2; i < 301; i++) {
-//     const doubleFromIndex = 100
-//     let content = "";
-//
-//     content += encodeWithLength(i < doubleFromIndex ? i : doubleFromIndex + 2 * (i - doubleFromIndex + 1));
-//     content += "214SomeMadeUpData";
-//
-//     longTest.frames.push(content);
-// }
-// testFrames.push(longTest)
-//
-// function encodeWithLength(obj) {
-//     let length;
-//     if (typeof obj === "string")
-//         length = obj.length;
-//     else if (typeof obj === "number")
-//         length = getNumberLength(obj);
-//     else
-//         throw Error("Unsupported type " + typeof obj);
-//
-//     const lengthOfLength = getNumberLength(length);
-//     if (9 < lengthOfLength)
-//         throw Error("Too long length of length");
-//
-//     return lengthOfLength.toString() + length.toString() + obj;
-// }
-//
-// function getNumberLength(number) {
-//     return number.toString().length;
-// }
 
 let fileSimulated = -1;
 let frameSimulated;

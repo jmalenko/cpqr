@@ -169,12 +169,15 @@ Format of one content frame
 Format of one correction frame
 ==============================
 
-     Field            Description                                                   Example value    Example value with Variable-length quantity
-  ----------------------------------------------------------------------------------------------------------------------------------------------
-  1. Frame indices    Comma-separated list of frame numbers included in the XOR.    0,2,5            1 5 0,2,5
-                      (the length includes the commas)
-  2. XOR payload      The result of XOR-ing the content of the listed frames.       A1B2C3D4E5F6     (not used)
-                      (Base64 encoded binary data)
+     Field              Description                                                   Example value    Example value with Variable-length quantity
+  ------------------------------------------------------------------------------------------------------------------------------------------------
+  1. Correction flag    Character C.                                                  C                (not applicable)
+  2. Loss rate          Loss rate.                                                    5                1 1 5
+                        (Integer percentage, e.g., 1 for 1%, 2 for 2%, etc.)
+  3. Correction index   Index of the correction frame for the loss rate.              0                1 1 0
+                        (Integer from 0 to correctionFramesCount(), including both)
+  4. XOR payload        The result of XOR-ing the content of the listed frames.       A1B2C3D4E5F6     (not used)
+                        (Base64 encoded binary data)
 
 
 Note: length of a correction frame is longer than the QR capacity (defined as a parameter, not necessarily the maximum posible QR capacity of 2953 bytes).
@@ -225,6 +228,7 @@ Binary/byte Max. 2,953 characters (8-bit bytes)
 */
 
 let CAPACITY_TOTAL; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
+// TODO Do NOT reserve so much space for correction frames
 let CAPACITY_TOTAL_MAX = Math.floor(2953 / 4 * 3); // Limit the capacity to 3/4 of the maximum, so that we can use Base64 encoding for correction frames.
 let capacityForDataInOneFrame; // Capacity for data in one frame, after frame header. Note that capacity of correction frame is is higher by 33% due to the Base43 encoding.
 setCapacity(50);
@@ -399,21 +403,19 @@ function getFrameContent(index) {
     return content;
 }
 
-function getCorrectionFrameContent(assumedLoss, index) {
-    const correction = generateCorrection(assumedLoss, index);
-    return getCorrection(correction);
-}
-
-function getCorrectionFrameContentForIndices(indices) {
+function getCorrectionFrameContent(lossRate, index) {
+    let indices = correctionIndices(lossRate, index);
     const payload = generateCorrectionForIndices(indices);
-    let correction = {indices, payload};
-    return getCorrection(correction);
+    let correction = {lossRate, index, payload};
+    return getCorrectionFrame(correction);
 }
 
-function getCorrection(correction) {
+function getCorrectionFrame(correction) {
     let content = "";
 
-    content += encodeArrayWithLength(correction.indices);
+    content += "C";
+    content += encodeWithLength(correction.lossRate * 100);
+    content += encodeWithLength(correction.index);
     content += correction.payload;
 
     return content;
@@ -494,32 +496,6 @@ function adjustDuration() {
     dateNextFrame = dateNextFrameCurrent;
 }
 
-function correctionFramesCount(lossRate) {
-    return Math.ceil(getNumberOfFrames() * lossRate);
-}
-
-function generateCorrection(lossRate, index) {
-    const n = getNumberOfFrames();
-    const numMissing = correctionFramesCount(lossRate);
-
-    // Select subset of frames for XOR
-    let indices = [];
-    for (let j = index; j < n; j += numMissing) {
-        indices.push(j);
-    }
-
-    // There must be at least two frames to make a correction frame useful (and correction frame detection to work in scan)
-    if (indices.length < 2) {
-        // Add first or last frame
-        indices.unshift(index == 0 ? n - 1 : 0);
-    }
-
-    let payload = generateCorrectionForIndices(indices);
-
-    // Return correction frame object
-    return {indices, payload};
-}
-
 function generateCorrectionForIndices(indices) {
     // XOR the selected frames
     let xor = getFrameContent(indices[0]);
@@ -581,7 +557,7 @@ function nextFrame() {
 
                 missingFrameDelta = 0;
             } else {
-                // Improvement for higher reliability: send a missing frame as a correction made of two frames: this and another one.
+                // Improvement for higher reliability (achieved by variance in QR code): send a missing frame as a correction made of two frames: this and another one.
                 // Downside: For a correction, we send several frames - that's nice. But often, we should send a sequence of missing frames. Then every frame is sent several times.
                 missingFrameDelta++;
 
@@ -592,18 +568,13 @@ function nextFrame() {
                     missingFrames.shift();
                 }
 
-                let otherFrameIndex = f - delta;
-                if (otherFrameIndex < 0) {
-                    otherFrameIndex = f + delta;
-                }
-                if (getNumberOfFrames() <= otherFrameIndex) {
-                    log("Correction for frame " + f + " skipped because there is no frame with index different by " + delta);
-                    timer = setTimeout(nextFrame, 0); // Run immediately
-                    return;
-                }
-
-                frameContent = getCorrectionFrameContentForIndices([f, otherFrameIndex]);
-                log("Correction for frame " + f + " with frame " + otherFrameIndex + ": " + frameContent);
+                // Create correction frame for two indices: f and some other frame index
+                // Solution: Use loss rate > 50% to ensure that correction has only 2 indices.
+                let lossRateMin = 0.51;
+                let lossRateMax = 0.99;
+                let lossRate2 = lossRateMin + (delta-1) * (lossRateMax - lossRateMin) / (MISSING_FRAME_DELTA_MAX - 1);
+                frameContent = getCorrectionFrameContent(lossRate2, f);
+                log("Correction for frame " + f + " with lossRate " + lossRate2);
             }
         } else {
             if (sendingContent()) {
