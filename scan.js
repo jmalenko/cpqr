@@ -12,6 +12,32 @@
     ==================
  */
 
+// Helper: produce an "incorrect" frame variant by replacing the last character
+const makeIncorrect = (frame, replacement = 'X') =>
+    frame.slice(0, -1) + replacement;
+
+// Sample data with 2 data frames
+
+const FRAME_0 = '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base';
+const FRAME_1 = '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=';
+const CORRECTION = '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=';
+
+// Incorrect frames derived from originals
+const FRAME_0_INCORRECT = makeIncorrect(FRAME_0, 'X'); // Frame 0 incorrect (last character changed to X)
+const FRAME_1_INCORRECT = makeIncorrect(FRAME_1, 'X'); // Frame 1 incorrect (last character changed to X)
+const CORRECTION_INCORRECT = '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc1g='; // Correction frame (last character of frame 1 changed from e to X; then the correction frame was recreated)
+const CORRECTION_INCORRECT2 = '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIAtgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U='; // Correction frame (in frame 1 content, the file namech changed from "a" to "X"; then the correction frame was recreated. The "DJ" in the middle changed to "At".)
+const FRAME_3_INCORRECT = '11211X'; // Frame 3 incorrect
+
+// Sample data with 3 data frames
+
+const DATA_3_FRAME_0 = '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279';
+const DATA_3_FRAME_1 = '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM';
+const DATA_3_FRAME_2 = '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=';
+const DATA_3_CORRECTION_1PCT = '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0';  // Correction frame for 1% loss (with index 1 out of 1)
+const DATA_3_CORRECTION_64PCT_1 = '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5';  // Correction frame with index 1 for 64% loss
+const DATA_3_CORRECTION_64PCT_2 = '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0'; // Correction frame with index 2 for 64% loss
+
 const testFrames = [
     // Prepared with the same content.
 
@@ -19,137 +45,88 @@ const testFrames = [
 
     {
         name: "2 frames, send all the content frames",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-            // '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame
-        ]
+        frames: [FRAME_0, FRAME_1]
     },
 
     {
         name: "2 frames, send all the content frames in opposite direction",
-        frames: [
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-        ]
+        frames: [FRAME_1, FRAME_0]
     },
 
     {
         name: "2 frames, send frame 0 twice",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-        ]
+        frames: [FRAME_0, FRAME_0, FRAME_1]
     },
 
     {
         name: "2 frames, miss frame 0, send correction that allows building the frame",
-        frames: [
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame
-        ]
+        frames: [FRAME_1, CORRECTION]
     },
 
     {
         name: "2 frames, miss frame 1, send correction that allows building the frame",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame
-        ]
+        frames: [FRAME_0, CORRECTION]
     },
 
     // Even more unusual scenarios for 2 frames
 
     {
         name: "2 frames, send only frame 0",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-        ],
+        frames: [FRAME_0],
         expected: false // No file saved, missing frame 1
     },
 
     {
         name: "2 frames, send only frame 1",
-        frames: [
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-        ],
+        frames: [FRAME_1],
         expected: false // No file saved, missing frame 0
     },
 
     {
         name: "2 frames, send frame 0 correctly and then with incorrect data",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;basX', // Frame 0 incorrect (last character changed to X)
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-        ],
+        frames: [FRAME_0, FRAME_0_INCORRECT, FRAME_1],
         expected: false // No file saved, we have frame 0 with incorrect data
         // This situation could be potentially identified with the (existing) correction. But why would we do that? If we have frame 0, we should not need the correction.
     },
 
     {
         name: "2 frames, send frame 0 with incorrect data and then correctly",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;basX', // Frame 0 incorrect (last character changed to X)
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-        ]
+        frames: [FRAME_0_INCORRECT, FRAME_0, FRAME_1]
         // Expected: File saved, we have correct data at the moment when all frames were received
     },
 
     {
         name: "2 frames, send frame 1 correctly and then with incorrect data",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQoX', // Frame 1 incorrect (last character changed to X)
-        ]
+        frames: [FRAME_0, FRAME_1, FRAME_1_INCORRECT]
         // Expected: File saved, we have correct data at the moment when all frames were received
     },
 
     {
         name: "2 frames, send frame 1 with incorrect data and then correctly",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQoX', // Frame 1 incorrect (last character changed to X)
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-        ],
+        frames: [FRAME_0, FRAME_1_INCORRECT, FRAME_1],
         // Expected: File saved, we have correct data at the moment when all frames were received
     },
 
     {
         name: "2 frames, miss frame 0, send incorrect correction",
-        frames: [
-            '11125964,SmVkbmEsDQpEdsSbLg0KVMWZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 1
-            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc1g=', // Correction frame (last character of frame 1 changed from e to X; then the correction frame was recreated)
-        ],
+        frames: [FRAME_1, CORRECTION_INCORRECT, ],
         expected: false // No file saved, recovered frame 0 with wrong data, fails hash check
     },
 
     {
         name: "2 frames, miss frame 1, send incorrect correction, but the recovered frame 1 is shorter than the correction so the incorrect part is not used",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIDJgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc1g=', // Correction frame (last character of frame 1 changed from "e" to "X"; then the correction frame was recreated. The "2U=" at the end changed to "1g=".)
-        ],
+        frames: [FRAME_0, CORRECTION_INCORRECT, ],
     },
 
     {
         name: "2 frames, miss frame 1, send incorrect correction (with changed 1st character)",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '130,1AAABAAMMBwUdYVxmX1JbcEN1aUJyUEFhUQ9CAwpzeBQ8ADpVOxk+HmNaIAtgDCIadEFKK1gDV3IwFxs7XzQ9DlRuO2Jhc2U=', // Correction frame (in frame 1 content, the file namech changed from "a" to "X"; then the correction frame was recreated. The "DJ" in the middle changed to "At".)
-        ],
+        frames: [FRAME_0, CORRECTION_INCORRECT2],
         expected: false // No file saved, recovered frame 1 with wrong data, fails hash check
     },
 
     {
         name: "2 frames, miss frame 1, send a wrong frame 2 (so download is triggered)",
-        frames: [
-            '1102651112104065018274223C%3A%5Cfakepath%5Ca.txt279data:text/plain;base', // Frame 0
-            '11211X', // Frame 3 incorrect
-        ],
+        frames: [FRAME_0, FRAME_3_INCORRECT],
         expected: false // No file saved, missing frame 1
     },
 
@@ -157,100 +134,53 @@ const testFrames = [
 
     {
         name: "3 frames, send all the content frames",
-        frames: [
-            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
-            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
-            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
-            // More correction scenarios are possible
-            // Correction for 1% loss (one frame):
-            // '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0', // Correction frame for 1% loss
-            // Correction for 64% loss (two frames):
-            // '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
-            // '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
-        ]
+        frames: [DATA_3_FRAME_0, DATA_3_FRAME_1, DATA_3_FRAME_2]
     },
 
     {
         name: "3 frames, send all the content frames, frame 0 as last",
-        frames: [
-            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
-            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
-            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
-        ]
+        frames: [DATA_3_FRAME_1, DATA_3_FRAME_2, DATA_3_FRAME_0]
     },
 
     {
         name: "3 frames, miss frame 0, send correction",
-        frames: [
-            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
-            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
-            '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0', // Correction frame for 1% loss
-        ]
+        frames: [DATA_3_FRAME_1, DATA_3_FRAME_2, DATA_3_CORRECTION_1PCT]
     },
 
     {
         name: "3 frames, miss frame 1, send correction",
-        frames: [
-            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
-            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
-            '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0', // Correction frame for 1% loss
-        ]
+        frames: [DATA_3_FRAME_0, DATA_3_FRAME_2, DATA_3_CORRECTION_1PCT]
     },
 
     {
         name: "3 frames, miss frame 2, send correction",
-        frames: [
-            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
-            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
-            '150,1,2MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAEFF/YElQR3RKJWBRMDJMOB9EeWF0', // Correction frame for 1% loss
-        ]
+        frames: [DATA_3_FRAME_0, DATA_3_FRAME_1, DATA_3_CORRECTION_1PCT]
     },
 
 
     {
         name: "3 frames, send correction trat recovers missing frame 1, then receive frame 1 which should be ignored",
-        frames: [
-            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
-            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
-            '111245data:text/plain;base64,SmVkbmEsDQpEdsSbLg0KVM', // Frame 1
-            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
-        ]
+        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_64PCT_2, DATA_3_FRAME_1, DATA_3_FRAME_2]
     },
 
     {
         name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received",
-        frames: [
-            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
-            '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
-            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
-        ]
+        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_64PCT_1, DATA_3_CORRECTION_64PCT_2]
     },
 
     {
         name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received, swap correction frames",
-        frames: [
-            '1102451112104065018274223C%3A%5Cfakepath%5Ca.txt279', // Frame 0
-            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
-            '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
-        ]
+        frames: [DATA_3_FRAME_0, DATA_3_CORRECTION_64PCT_2, DATA_3_CORRECTION_64PCT_1]
     },
 
     {
         name: "3 frames, miss frames 1 and 2, send corrections, recovery as correction frames are received",
-        frames: [
-            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
-            '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
-            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
-        ]
+        frames: [DATA_3_FRAME_2, DATA_3_CORRECTION_64PCT_1, DATA_3_CORRECTION_64PCT_2]
     },
 
     {
         name: "3 frames, miss frames 1 and 2, send corrections, unused correction frames must be stored for a later correction",
-        frames: [
-            '112234WZaQ0KxJvFocSNxZnFvsO9w6HDrcOpDQo=', // Frame 2
-            '130,1AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0', // Correction frame 2 for 64% loss
-            '130,2AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5', // Correction frame 1 for 64% loss
-        ]
+        frames: [DATA_3_FRAME_2, DATA_3_CORRECTION_64PCT_2, DATA_3_CORRECTION_64PCT_1]
     }
 ];
 
@@ -329,9 +259,7 @@ function scanSimulated() {
         frameSimulated++;
     }
     let frameData = testFrames[fileSimulated].frames[frameSimulated]
-    if (frameData != undefined) {
-        onScan(frameData);
-    }
+    onScan(frameData);
 
     setTimeout(scanSimulated, 10);
 }
