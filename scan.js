@@ -471,6 +471,11 @@ function formatMissing(missing) {
     return result.join(", ");
 }
 
+function isMobileDevice() {
+    return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent)
+        || (('ontouchstart' in window) && navigator.maxTouchPoints > 0);
+}
+
 function resultCodeToString(resultCode) {
     switch (resultCode) {
         case FRAME_DECODED:
@@ -616,20 +621,34 @@ function initStream() {
                     canvas.restore();
                 }
             } else {
-                canvasElement.width = video.videoHeight;
-                canvasElement.height = video.videoWidth;
+                const shouldRotate = isMobileDevice();
+                if (shouldRotate) {
+                    // Mobile camera, portrait. Rotate only on mobile when video frame is landscape (camera sensor rotated)
+                    canvasElement.width = video.videoHeight;
+                    canvasElement.height = video.videoWidth;
 
-                canvas.save();
+                    canvas.save();
+                    canvas.translate(canvasElement.width / 2, canvasElement.height / 2);
+                    canvas.rotate(-Math.PI / 2);
+                    if (flipVideo) {
+                        canvas.scale(-1, 1);
+                    }
+                    canvas.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2, video.videoWidth, video.videoHeight);
+                    canvas.restore();
+                } else {
+                    // Desktop camera (landscape) — draw normally and keep flip logic
+                    canvasElement.width = video.videoWidth;
+                    canvasElement.height = video.videoHeight;
 
-                canvas.translate(canvasElement.width / 2, canvasElement.height / 2);
-                canvas.rotate(- Math.PI / 2);
-
-                if (flipVideo) {
-                    canvas.scale(-1, 1);
+                    if (!flipVideo) {
+                        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                    } else {
+                        canvas.save();
+                        canvas.scale(-1, 1);
+                        canvas.drawImage(video, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
+                        canvas.restore();
+                    }
                 }
-                canvas.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2, video.videoWidth, video.videoHeight);
-
-                canvas.restore();
             }
 
             let imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
