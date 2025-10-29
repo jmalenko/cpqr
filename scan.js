@@ -601,18 +601,37 @@ function initStream() {
             }
 
             canvasElement.hidden = false;
-            canvasElement.height = video.videoHeight;
-            canvasElement.width = video.videoWidth;
 
-            // Flip video horizontally
-            if (!flipVideo) {
-                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+            const isLandscape = window.innerWidth > window.innerHeight;
+            if (!isLandscape) { // Portrait
+                canvasElement.width = video.videoWidth;
+                canvasElement.height = video.videoHeight;
+
+                if (!flipVideo) {
+                    canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                } else {
+                    canvas.save();
+                    canvas.scale(-1, 1);
+                    canvas.drawImage(video, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
+                    canvas.restore();
+                }
             } else {
+                canvasElement.width = video.videoHeight;
+                canvasElement.height = video.videoWidth;
+
                 canvas.save();
-                canvas.scale(-1, 1);
-                canvas.drawImage(video, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
+
+                canvas.translate(canvasElement.width / 2, canvasElement.height / 2);
+                canvas.rotate(- Math.PI / 2);
+
+                if (flipVideo) {
+                    canvas.scale(-1, 1);
+                }
+                canvas.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2, video.videoWidth, video.videoHeight);
+
                 canvas.restore();
             }
+
             let imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
 
             let code;
