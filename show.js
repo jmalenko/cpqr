@@ -634,7 +634,7 @@ function nextFrame() {
                 }
 
                 frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
-                log("Correction for " + (lossRate * 100) + "%, frame " + correctionFrame + ": " + frameContent);
+                log("Correction for " + Math.round(100 * lossRate) + "%, frame " + correctionFrame + ": " + frameContent);
             }
         }
     });
