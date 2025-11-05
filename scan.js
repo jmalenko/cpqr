@@ -290,6 +290,7 @@ let queueLength; // Length of the queue in the worker
 // Internal status
 let downloaded; // Whether the file has been downloaded
 let contentPrevious; // Content of previous data in QR code
+let startTime; // Time when the first frame was received
 
 const logTiming = false;
 
@@ -314,19 +315,20 @@ worker.onmessage = function (e) {
             "Stack trace: " + message.error.stack);
     } else if (message.type === MSG_TYPE_METADATA) {
         const fileName = getFileNameFromPath(message.path);
-        log("< File name " + fileName);
+        log("< Metadata decoded, file name " + fileName);
         path = message.path;
         numberOfFrames = message.numberOfFrames;
-        // updateInfo(); // Not needed because it's called with MSG_TYPE_PROCESSED
+        updateInfo();
     } else if (message.type === MSG_TYPE_SAVE) {
         const fileName = getFileNameFromPath(message.path);
-        log("< Download " + fileName);
+        log("< Save " + fileName);
         if (simulationInProgress()) {
             log("Skipping download in simulation");
         } else {
             download(message.data, fileName, 'text/plain');
         }
         downloaded = true;
+        updateInfo();
     } else {
         throw new Error("Unsupported message from worker: " + message.type);
     }
@@ -372,6 +374,7 @@ function init() {
 
     downloaded = false;
     contentPrevious = undefined;
+    startTime = undefined;
 
     log("> Init");
     worker.postMessage({type: MSG_TYPE_INIT});
@@ -389,6 +392,10 @@ function onScan(content) {
     }
     contentPrevious = content;
 
+    if (startTime === undefined) {
+        startTime = new Date();
+    }
+
     log("> Scanned");
     worker.postMessage({type: MSG_TYPE_SCAN, data: content});
 
@@ -401,43 +408,98 @@ function getFileNameFromPath(path) {
 }
 
 function updateInfo() {
+
+    function formatProgress(percent, received, total, unused, queue) {
+        const pct = (typeof percent === 'number' && !Number.isNaN(percent)) ? (100 * percent).toFixed(2) : '?';
+        const totalStr = (total !== undefined && total !== null) ? total : '?';
+        return `${pct}% ... ${received} / ${totalStr} data, ${unused} cor, ${queue} queue`;
+    }
+
     let infoStr = "";
 
     if (metadataReceived()) {
         if (downloaded) {
             infoStr += "<span style='color: #008000'>Saved</span> ";
+            infoStr += getFileNameFromPath(path);
         } else {
-            if (numberOfFrames != 0) {
-                let percent = 100 * receivedDataFramesCount / numberOfFrames;
-                infoStr += percent.toFixed(2) + "% ... " + receivedDataFramesCount + " / " + numberOfFrames + " data frames, and " + unusedCorrectionFramesCount + " correction frames, queue length " + queueLength + ". ";
+            if (numberOfFrames != undefined && numberOfFrames != 0) {
+                let percent = receivedDataFramesCount / numberOfFrames;
+                infoStr += formatProgress(percent, receivedDataFramesCount, numberOfFrames, unusedCorrectionFramesCount, queueLength);
             } else {
-                infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames, queue length " + queueLength + ". ";
+                infoStr += formatProgress(undefined, receivedDataFramesCount, undefined, unusedCorrectionFramesCount, queueLength);
             }
         }
-        infoStr += getFileNameFromPath(path);
     } else {
-        infoStr += "?" + "% ..." + receivedDataFramesCount + " / " + "?" + " data frames, and " + unusedCorrectionFramesCount + " correction frames, queue length " + queueLength + ". ";
+        infoStr += formatProgress(undefined, receivedDataFramesCount, undefined, unusedCorrectionFramesCount, queueLength);
     }
     infoStr += "</br>";
 
-    if (receivedDataFrameMax !== undefined) {
-        // TODO If a Correction was encountered, then used numberOfFrames from metadata, otherwise use receivedDataFrameMax + 1
-        let lossRate = missing.length / (receivedDataFrameMax + 1);
-        infoStr += "Loss rate " + (100 * lossRate).toFixed(2) + "%. ";
-    }
+    // TODO Info is optimized for downloading one file. Improve to support several files.
+    let etc;
+    if (!downloaded) {
+        if (receivedDataFrameMax !== undefined) {
+            // TODO If a Correction was encountered, then used numberOfFrames from metadata, otherwise use receivedDataFrameMax + 1
+            let lossRate = missing.length / (receivedDataFrameMax + 1);
+            infoStr += "Loss rate " + (100 * lossRate).toFixed(2) + "%. ";
+        }
 
-    const elMissingList = document.getElementById("missingList");
-    if (0 < missing.length) {
-        infoStr += "Missing " + missing.length + ":";
+        const elMissingList = document.getElementById("missingList");
+        if (0 < missing.length) {
+            infoStr += "Missing " + missing.length + ":";
 
-        elMissingList.innerHTML = formatMissing(missing);
-        elMissingList.hidden = false;
+            elMissingList.innerHTML = formatMissing(missing);
+            elMissingList.hidden = false;
+        } else {
+            elMissingList.hidden = true;
+        }
+
+        // TODO test and remove
+        if (numberOfFrames !== undefined) {
+            etc = "Summary\n";
+            let ratio = unusedCorrectionFramesCount == 0 // If we are receiving the data frames for the first time
+                ? receivedDataFramesCount / (receivedDataFrameMax + 1)
+                : receivedDataFramesCount / numberOfFrames;
+            etc += "Progress " + (100 * ratio).toFixed(2) + "%";
+            etc += ";\n ";
+
+            let lossRate = missing.length / (receivedDataFrameMax + 1);
+            etc += "Loss rate: " + (100 * lossRate).toFixed(2) + "%";
+            etc += ";\n ";
+            etc += "Non-loss rate: " + (100 * (1 - lossRate)).toFixed(2) + "%";
+            etc += ";\n ";
+
+            let percent = receivedDataFramesCount / numberOfFrames;
+            etc += "Percent received: " + (100 * percent).toFixed(2) + "%";
+            etc += ";\n ";
+
+            let startTimeMs = startTime.getTime();
+            etc += "Time start " + formatDate(startTime);
+            etc += ";\n ";
+            let nowMs = Date.now();
+            etc += "Now        " + formatDate(new Date(nowMs));
+            etc += ";\n ";
+            let endTimeMs = startTimeMs + (nowMs - startTimeMs) / percent;
+            let endTime = new Date(endTimeMs);
+            etc += "Time end   " + formatDate(endTime)
+            etc += ";\n ";
+            let timeLeft = endTimeMs - nowMs;
+            etc += "Time left  " + formatDuration(timeLeft);
+            etc += ";\n ";
+
+            log(etc);
+            etc = "Time left " + formatDuration(timeLeft) + ", ETC " + formatDate(endTime, false);
+        } else {
+            etc = "Cannot estimate ETC because the total number of frames is unknown. Scan frame 0 to get metadata.";
+        }
     } else {
-        elMissingList.hidden = true;
+        etc = "";
     }
 
     const el = document.getElementById("info");
     el.innerHTML = infoStr;
+
+    let elStatus = document.getElementById("status");
+    elStatus.innerHTML = etc;
 }
 
 // Parameter missing must be an ordered array of numbers.
@@ -567,6 +629,10 @@ function initStream() {
             }
         }
 
+        // TODO hide status
+        status.innerText = "";
+        // status.hidden = true; // Hide the initial status
+
         requestAnimationFrame(onAnimationFrame);
     }
 
@@ -672,20 +738,21 @@ function initStream() {
                 drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
 
                 let result = onScan(code.data);
-                if (result.resultCode === QR_CODE_EMPTY) {
-                    status.innerText = "QR code scanned and it's empty; ignoring";
-                } else if (result.resultCode !== QR_CODE_SAME_AS_PREVIOUS) {
-                    status.innerText = "QR code scanned and it's same as previous; ignoring";
-                } else if (result.resultCode !== QR_CODE_ADDED_TO_QUEUE) {
-                    status.innerText = "QR code scanned and added to processing queue";
-                } else {
-                    throw new Error("Unsupported result " + result);
-                }
-            } else {
-                status.innerText = "No QR code";
+                // The fact that the QR is recognized is indicated by the red rectangle. Therefore, no other status is needed.
+                // if (result.resultCode === QR_CODE_EMPTY) {
+                //     status.innerText = "QR code scanned and it's empty; ignoring";
+                // } else if (result.resultCode !== QR_CODE_SAME_AS_PREVIOUS) {
+                //     status.innerText = "QR code scanned and it's same as previous; ignoring";
+                // } else if (result.resultCode !== QR_CODE_ADDED_TO_QUEUE) {
+                //     status.innerText = "QR code scanned and added to processing queue";
+                // } else {
+                //     throw new Error("Unsupported result " + result);
+                // } else {
+                //     status.innerText = "No QR code";
+                // }
             }
-        } else {
-            // status.innerText = "Loading video..."
+            // } else {
+            //     status.innerText = "Loading video..."
         }
         requestAnimationFrame(onAnimationFrame);
     }
