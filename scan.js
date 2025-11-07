@@ -472,22 +472,27 @@ function updateInfo() {
             etc += "Percent received: " + (100 * percent).toFixed(2) + "%";
             etc += ";\n ";
 
-            let startTimeMs = startTime.getTime();
-            etc += "Time start " + formatDate(startTime);
-            etc += ";\n ";
-            let nowMs = Date.now();
-            etc += "Now        " + formatDate(new Date(nowMs));
-            etc += ";\n ";
-            let endTimeMs = startTimeMs + (nowMs - startTimeMs) / percent;
-            let endTime = new Date(endTimeMs);
-            etc += "Time end   " + formatDate(endTime)
-            etc += ";\n ";
-            let timeLeft = endTimeMs - nowMs;
-            etc += "Time left  " + formatDuration(timeLeft);
-            etc += ";\n ";
-
+            if (startTime !== undefined) {
+                let startTimeMs = startTime.getTime();
+                etc += "Time start " + formatDate(startTime);
+                etc += ";\n ";
+                let nowMs = Date.now();
+                etc += "Now        " + formatDate(new Date(nowMs));
+                etc += ";\n ";
+                let endTimeMs = startTimeMs + (nowMs - startTimeMs) / percent;
+                let endTime = new Date(endTimeMs);
+                etc += "Time end   " + formatDate(endTime)
+                etc += ";\n ";
+                let timeLeft = endTimeMs - nowMs;
+                etc += "Time left  " + formatDuration(timeLeft);
+                etc += ";\n ";
+            }
             log(etc);
-            etc = "Time left " + formatDuration(timeLeft) + ", ETC " + formatDate(endTime, false);
+            if (startTime !== undefined) {
+                etc = "Time left " + formatDuration(timeLeft) + ", ETC " + formatDate(endTime, false);
+            } else {
+                etc = "Cannot estimate ETC because the first frame wasn't received yet.";
+            }
         } else {
             etc = "Cannot estimate ETC because the total number of frames is unknown. Scan frame 0 to get metadata.";
         }
