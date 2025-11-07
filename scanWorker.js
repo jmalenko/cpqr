@@ -443,7 +443,7 @@ function processFrame(content) {
         if (result.resultCode == FRAME_DECODED) {
             console.log("Read frame " + result.frame + " with content " + contentRead[result.frame]);
 
-            if (frame == 0) {
+            if (result.frame == 0) {
                 headerDecoded = false;
             }
 
@@ -458,13 +458,13 @@ function processFrame(content) {
     }
 }
 
-function decodeHeader(frame) {
+function decodeHeader() {
     // Log when header decoded later than in first frame (with index 0)
     try {
         if (!headerDecoded) {
             let [hash, path, numberOfFrames] = getContentInfo();
             headerDecoded = true;
-            if (0 < frame) {
+            if (!(1 == Object.keys(contentRead).length && contentRead[0] !== undefined)) {
                 console.log("Header decoded");
             }
             self.postMessage({type: MSG_TYPE_METADATA, path, numberOfFrames});
@@ -553,7 +553,7 @@ function processScan(content) {
         return;
     }
 
-    decodeHeader(frame);
+    decodeHeader();
 
     if (allFramesRead()) {
         let resultConstructData = constructData();
