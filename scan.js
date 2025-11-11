@@ -38,8 +38,17 @@ const DATA_3_CORRECTION_1PCT = 'C111110MTEzMjM0AgokAjsPKQI0XC8+ChUhVT4VNlVcPhpAE
 const DATA_3_CORRECTION_34PCT_1 = 'C1234110AAACAAcBZmtQYwF7THpAc19Sa3xPblx0RTBqCjYTfQcUAiQVNDAbVSU1Q2EudHh0Mjc5';  // Correction frame with index 0 for 34% loss
 const DATA_3_CORRECTION_34PCT_2 = 'C1234111AAABAAAAVVBFUwtEUUhCGkBdWVtZD1BTQCYTB212WBUNAwYgAyUlGGBRMDJMOB9EeWF0'; // Correction frame with index 1 for 34% loss
 
+// Sample data with 4 data frames
+
+const DATA_4_FRAME_0 = "11029511119658157358228C%3A%5Cfakepath%5Carchive.7z3312data:application/x-7z-compressed;base64,N3q8ry";
+const DATA_4_FRAME_1 = "111295ccAASFcPvKiQAAAAAAAAAhAAAAAAAAADKpNuUAJhvKRmda8ne4fSd4SIKMAAAAAIEzB64PzxYxDAfIQ4CDgVv/rHdlPwXQ9";
+const DATA_4_FRAME_2 = "112295TJ5kIra5iDa9wFK2fATIGeYt1EluEDbb3A2CnFGALG6h998XFDs0F7s2DCS30X7mrYz00bypuKTSuTfTj8wuV7zadMKcpdY";
+const DATA_4_FRAME_3 = "113276P3pZhGpTe+7rwuYO1lRumhoTRMbSBRcGEgEJdwAHCwEAASMDAQEFXQAQAAAMgLoKAWo8+scAAA==";
+const DATA_4_CORRECTION_1PCT = "C111110AAAAAA4DVis1QUtFRwlLEQgpdEphDi4vYk4qQEIiRCgkAjY2NAkYY3odLRMkCA8eD3NmOH5DUEUxURtoAFo+IzpcdyFwABhbLxMYO00qAh9dXXZuRAVNR3JCU30+HSxvKGUQRxk=";
+const DATA_4_CORRECTION_34PCT_0 = "C1234110AAACAAAAZXsEWnBEVA1YcVYKQn55AF4CcXoGQGw3VyQHEDUlFgoWdHEiHCUvKDoiGF9DCgtpdCASRCcNEkI0LzpQUSxeAhx2Ah0HGFQTGiYkIRAnFTEOAxUUJVJMVUgDeBJIFiA=";
+const DATA_4_CORRECTION_34PCT_1 = "C1234111AAACAA4DM1AxGzsBEwQTYF4jNjQYDnAtEzQsAC4VEwwjEgMTIgMOFws/MTYLIDU8FywlMnUqJGUjFTxlEhgKDAAMJg0uAgQtLQ4fIxk5GDl5fGZJUTRDRGdWdi9ySGRsUHdYUTk=";
+
 const testFrames = [
-    // Prepared with the same content.
 
     // Content fits 2 frames. (The capacity is 70.)
     {
@@ -160,6 +169,20 @@ const testFrames = [
         name: "3 frames, miss frames 1 and 2, send corrections, unused correction frames must be stored for a later correction",
         frames: [DATA_3_FRAME_2, DATA_3_CORRECTION_34PCT_2, DATA_3_CORRECTION_34PCT_1],
         expected: false // Not saved as number of frames (from header in frame 0) is unknown
+    },
+
+    // Content fits 4 frames (7z, capacity 100)
+    {
+        name: "4 frames, send all the content frames",
+        frames: [DATA_4_FRAME_0, DATA_4_FRAME_1, DATA_4_FRAME_2, DATA_4_FRAME_3]
+    },
+    {
+        name: "4 frames, send all the content frames, frame 0 as last",
+        frames: [DATA_4_FRAME_3, DATA_4_FRAME_2, DATA_4_FRAME_1, DATA_4_FRAME_0]
+    },
+    {
+        name: "4 frames, miss frame 3, send correction",
+        frames: [DATA_4_FRAME_0, DATA_4_FRAME_1, DATA_4_FRAME_2, DATA_4_CORRECTION_1PCT]
     }
 ];
 
@@ -228,39 +251,26 @@ function tests() {
     ========
  */
 
-function download(data, fileName, mimeType) {
-    let a = document.createElement("a");
-
-    // build download link:
-    a.href = "data:" + mimeType + "charset=utf-8," + encodeURIComponent(data);
-
-    if (window.MSBlobBuilder) { // IE10
-        let bb = new MSBlobBuilder();
-        bb.append(data);
-        return navigator.msSaveBlob(bb, fileName);
-    }
-
-    if ('download' in a) { // FF20, CH19
-        a.setAttribute("download", fileName);
-        a.innerHTML = "downloading...";
+function download(data, fileName, mimeType = 'application/octet-stream') {
+    function downloadBlob(blob, name) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name || 'download';
         document.body.appendChild(a);
-        setTimeout(function () {
-            const e = document.createEvent("MouseEvents");
-            e.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-            a.dispatchEvent(e);
-            document.body.removeChild(a);
-        }, 66);
-        return true;
+        a.click();
+        document.body.removeChild(a);
+        // revoke after a short delay to ensure download starts
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
-    // do iframe dataURL download: (older W3)
-    const f = document.createElement("iframe");
-    document.body.appendChild(f);
-    f.src = "data:" + (mimeType ? mimeType : "application/octet-stream") + (window.btoa ? ";base64" : "") + "," + (window.btoa ? window.btoa : escape)(data);
-    setTimeout(function () {
-        document.body.removeChild(f);
-    }, 333);
-    return true;
+    // Treat as binary-string where each char code is a byte (0..255)
+    const len = data.length;
+    const u8 = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        u8[i] = data.charCodeAt(i) & 0xFF;
+    }
+    downloadBlob(new Blob([u8], { type: mimeType }), fileName);
 }
 
 /*
@@ -325,7 +335,7 @@ worker.onmessage = function (e) {
         if (simulationInProgress()) {
             log("Skipping download in simulation");
         } else {
-            download(message.data, fileName, 'text/plain');
+            download(message.data, fileName);
         }
         downloaded = true;
         updateInfo();
