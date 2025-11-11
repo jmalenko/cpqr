@@ -495,32 +495,17 @@ function getMissingFrames() {
 }
 
 function constructData() {
-    try {
-        // If all frames then download
-        console.log("Trying to construct the entire content");
+    let [hash, path, dataURL] = decodeContent();
 
-        let [hash, path, dataURL] = decodeContent();
+    if (hash !== hashSaved) {
+        console.log("Constructed the entire content");
 
-        if (hash !== hashSaved) {
-            console.log("Constructed the entire content");
+        const posComma = dataURL.indexOf(","); // Part before comma is mime type and encoding: data:text/plain;base64
+        const b64 = dataURL.slice(posComma + 1);
+        const fileContent = atob(b64);
 
-            const posComma = dataURL.indexOf(","); // Part before comma is mime type and encoding: data:text/plain;base64
-            const b64 = dataURL.slice(posComma + 1);
-            const fileContent = atob(b64);
-
-            hashSaved = hash;
-            return {save: true, data: fileContent, path};
-        }
-    } catch (e) {
-        if (e instanceof MissingFrameError) {
-            // The dataURL is not complete yet
-            console.log("Missing frames " + e.missing);
-            return {missing: e.missing};
-        } else if (e instanceof NotAllDataError) {
-            // Do nothing - it's normal that we do not have all data yet
-        } else {
-            throw e;
-        }
+        hashSaved = hash;
+        return {save: true, data: fileContent, path};
     }
 }
 
