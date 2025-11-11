@@ -165,11 +165,8 @@ function getContent() {
         } else {
             let [frameStr, contentFrame] = decodeFrameContent(contentRead[i]);
 
-            // Hardening: check that the frame index matches the position in the array
-            frame = Number(frameStr);
-            if (i != frame) {
-                throw new Error("Frame index mismatch: expected " + i + " but got " + frame);
-            }
+            const frame = Number(frameStr);
+            console.assert(i == frame, `Frame index mismatch: expected ${i} but got ${frame}`);
 
             content += contentFrame;
         }
@@ -332,10 +329,7 @@ function decodeCorrectionFrame(content) {
 
     let result = saveFrame(xor);
 
-    // Hardening: check that the frame index matches the position in the array
-    if (missingIndex != result.frame) {
-        console.log("Warning: Frame index mismatch in recovered frame: expected " + missingIndex + " but got " + result.frame);
-    }
+    console.assert(missingIndex === result.frame, `Frame index mismatch in recovered frame: expected ${missingIndex} but got ${result.frame}`);
 
     return {resultCode: CORRECTION_DECODED, frame: result.frame};
 }
