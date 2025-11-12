@@ -328,6 +328,7 @@ worker.onmessage = function (e) {
         log("< Metadata decoded, file name " + fileName);
         path = message.path;
         numberOfFrames = message.numberOfFrames;
+        downloaded = false;
         updateInfo();
     } else if (message.type === MSG_TYPE_SAVE) {
         const fileName = getFileNameFromPath(message.path);
@@ -499,8 +500,6 @@ function updateInfo() {
 
     const el = document.getElementById("info");
     el.innerHTML = infoStr;
-
-    // TODO Info is optimized for downloading one file. Improve to support several files.
 }
 
 // Parameter missing must be an ordered array of numbers.
