@@ -227,11 +227,11 @@ Alphanumeric Max. 4,296 characters
 Binary/byte Max. 2,953 characters (8-bit bytes)
 */
 
-let CAPACITY_TOTAL; // 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes)
-// TODO Do NOT reserve so much space for correction frames
-let CAPACITY_TOTAL_MAX = Math.floor(2953 / 4 * 3); // Limit the capacity to 3/4 of the maximum, so that we can use Base64 encoding for correction frames.
-let capacityForDataInOneFrame; // Capacity for data in one frame, after frame header. Note that capacity of correction frame is is higher by 33% due to the Base43 encoding.
-setCapacity(50);
+// OR code capacity depends on content: 7089 Numeric only,  4296 Alphanumeric, 2953 Binary/byte (8-bit bytes). Binary/byte is used by this program.
+// Explanation of -20: this is for frame format (frame number, data length). Also, the correction must fit there. This cannot be calculated exactly as data may be potentially infinite.
+const CAPACITY_MAX = 2953 - 20;
+
+let capacityForDataInOneFrame = 70; // Capacity for data in one frame, after frame header. Note that capacity of correction frame is is higher by 33% due to the Base43 encoding.
 
 const VERSION = 1;
 
@@ -264,12 +264,11 @@ let measureTimeProcessing;
 let measureTimeQr;
 
 function setCapacity(capacity) {
-    if (CAPACITY_TOTAL_MAX < capacity) {
-        log("Capacity too large, setting to maximum " + CAPACITY_TOTAL_MAX);
-        capacity = CAPACITY_TOTAL_MAX;
+    if (CAPACITY_MAX < capacity) {
+        log("Capacity too large, setting to maximum " + CAPACITY_MAX);
+        capacity = CAPACITY_MAX;
     }
-    CAPACITY_TOTAL = capacity;
-    capacityForDataInOneFrame = capacity - 5; // Explanation of -5: -1 for length of length, -4 for length up to 7089
+    capacityForDataInOneFrame = capacity;
 }
 
 function onLoad() {
