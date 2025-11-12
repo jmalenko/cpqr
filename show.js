@@ -231,11 +231,11 @@ Binary/byte Max. 2,953 characters (8-bit bytes)
 // Explanation of -20: this is for frame format (frame number, data length). Also, the correction must fit there. This cannot be calculated exactly as data may be potentially infinite.
 const CAPACITY_MAX = 2953 - 20;
 
-let capacityForDataInOneFrame = 70; // Capacity for data in one frame, after frame header. Note that capacity of correction frame is is higher by 33% due to the Base43 encoding.
+let capacityForDataInOneFrame = 70; // Capacity for data in one frame, after frame header
 
 const VERSION = 1;
 
-let DURATION_TARGET = 500; // Duration between frames, in milliseconds.
+let DURATION_TARGET = 500; // Duration between frames, in milliseconds
 let duration; // Effective duration to be used in the setTimeout(). Calculated by subtracting "time it takes to do everything" from DURATION_TARGET.
 let dateNextFrame; // Date of previous run of nextFrame()
 let durationActual; // Actual duration between frames, in milliseconds.
