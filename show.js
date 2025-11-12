@@ -243,6 +243,13 @@ let durationActual; // Actual duration between frames, in milliseconds.
 let path;
 let data;
 let hash;
+
+/*
+Performance optimization - Cache of prepared frames. Tested with file of 100 MB.
+Solution 1 "no caching": Fram content is created on the fly. Each frame takes about 520 ms to get the frame data.
+Solution 2 "caching": All frames are prepared when the file is loaded. Preparing all frames takes about 1000 ms, but getting each frame is then 180 ms.
+                      (This is with the data represented as bytes in an Uint8Array.)
+*/
 let cacheFrameContent; // Cache of prepared frames. Index is the frame number.
 
 let frame; // From 0. The frames from 0 to frame-1 have been shown.
