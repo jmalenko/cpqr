@@ -23,6 +23,8 @@ const CORRECTION_ALL_DATA_KNOWN = 4;
 const CORRECTION_MORE_FRAMES_MISSING = 5;
 const CORRECTION_MORE_FRAMES_MISSING_DUPLICATE = 6;
 
+const logTiming = false;
+
 /*
     Common Functions
     ================

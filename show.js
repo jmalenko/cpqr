@@ -641,7 +641,7 @@ function nextFrame() {
         qrcode.makeCode(frameContent);
     });
 
-    if (systemIsSlow()) {
+    if (logTiming && systemIsSlow()) {
         log(`  Get frame content duration ${durationStats.ms} ms, avg=${durationStats.avg.toFixed(2)} ms, stdDev=${durationStats.stddev.toFixed(2)} ms`);
         log(`  Creating QR code duration ${durationStatsQr.ms} ms, avg=${durationStatsQr.avg.toFixed(2)} ms, stddev=${durationStatsQr.stddev.toFixed(2)} ms`);
     }

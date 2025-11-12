@@ -302,8 +302,6 @@ let downloaded; // Whether the file has been downloaded
 let contentPrevious; // Content of previous data in QR code
 let startTime; // Time when the first frame was received
 
-const logTiming = false;
-
 const worker = new Worker('scanWorker.js');
 
 worker.onmessage = function (e) {
