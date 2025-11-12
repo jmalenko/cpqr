@@ -139,7 +139,7 @@ What is transmitted
   - After all content frames are sent, correction frames are transmitted to help recover any lost frames.
   - Correction frames use Progressive Forward Error Correction (PFEC):
     - In each round, the sender assumes a certain frame loss rate (starting at 1% and doubling each round).
-    - For each assumed loss rate, enough correction frames are generated to allow recovery from that level of loss.
+    - For each ss rate, enough correction frames are generated to allow recovery from that level of loss.
     - Correction frames are constructed using XOR-based parity over subsets of content frames.
     - Correction frames are sent indefinitely, increasing redundancy over time.
 
@@ -595,7 +595,7 @@ function nextFrame() {
                     lossRateIndex++;
                     lossRate = LOSS_RATES[lossRateIndex];
                     correctionFrame = 0;
-                    log("All content frames sent. Starting correction frames with assumed loss rate " + (lossRate * 100) + "%");
+                    log("All content frames sent. Starting correction frames with loss rate " + (lossRate * 100) + "%");
                 } else {
                     if (correctionFrame + 1 == correctionFramesCount(lossRate)) {
                         lossRateIndex++;
@@ -604,7 +604,7 @@ function nextFrame() {
                         }
                         lossRate = LOSS_RATES[lossRateIndex];
                         correctionFrame = 0;
-                        log("Assumed loss rate changed to " + (lossRate * 100) + "%");
+                        log("Loss rate changed to " + Math.round(lossRate * 100) + "%");
                     } else {
                         correctionFrame++;
                     }
