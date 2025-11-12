@@ -555,25 +555,6 @@ function isMobileDevice() {
         || (('ontouchstart' in window) && navigator.maxTouchPoints > 0);
 }
 
-function resultCodeToString(resultCode) {
-    switch (resultCode) {
-        case FRAME_DECODED:
-            return "Frame decoded";
-        case FRAME_ALREADY_KNOWN:
-            return "Frame already known";
-        case CORRECTION_DECODED:
-            return "Correction decoded";
-        case CORRECTION_ALL_DATA_KNOWN:
-            return "Correction: all data known";
-        case CORRECTION_MORE_FRAMES_MISSING:
-            return "Correction: more frames missing";
-        case CORRECTION_MORE_FRAMES_MISSING_DUPLICATE:
-            return "Correction: duplicate, more frames missing";
-        default:
-            throw new Error("Unknown result code " + resultCode);
-    }
-}
-
 // Inspired by
 // https://simpl.info/getusermedia/sources/ - getting the selector with cameras
 // https://cozmo.github.io/jsQR/ - getting the video stream and processing video frame by frame
