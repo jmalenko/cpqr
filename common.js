@@ -55,6 +55,16 @@ function formatDuration(milliseconds) {
     return `${h}h ${m}m ${s}s`;
 }
 
+function formatPercent(value) {
+    if (typeof value !== 'number' || !isFinite(value)) return String(value);
+    const sign = value < 0 ? '-' : '';
+    const abs = Math.abs(value);
+    const s = abs.toFixed(2).replace(/\.?0+$/, '');
+    const [whole, frac] = s.split('.');
+    const paddedWhole = whole.padStart(3, ' ');
+    return sign + paddedWhole + (frac !== undefined ? '.' + frac : '');
+}
+
 /**
  * Calculate a 32 bit FNV-1a hash
  * Found here: https://gist.github.com/vaiorabbit/5657561

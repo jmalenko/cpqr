@@ -422,99 +422,85 @@ function updateInfo() {
     function formatProgress(percent, received, total, unused, queue) {
         const pct = (typeof percent === 'number' && !Number.isNaN(percent)) ? (100 * percent).toFixed(2) : '?';
         const totalStr = (total !== undefined && total !== null) ? total : '?';
-        return `${pct}% ... ${received} / ${totalStr} data, ${unused} cor, ${queue} queue`;
+        return `${pct}% = ${received} / ${totalStr} data, ${unused} cor, ${queue} queue`;
+    }
+
+    let progress, lossRate, timeLeft, endTime;
+    let etc = "";
+    try {
+        progress = unusedCorrectionFramesCount == 0 // If we are receiving the data frames for the first time
+            ? receivedDataFramesCount / (receivedDataFrameMax + 1)
+            : receivedDataFramesCount / numberOfFrames;
+        etc += "Progress         " + formatPercent(100 * progress) + "%\n";
+
+        lossRate = missing.length / (receivedDataFrameMax + 1);
+        etc += "Loss rate        " + formatPercent(100 * lossRate) + "%\n";
+        etc += "Non-loss rate    " + formatPercent(100 * (1 - lossRate)) + "%\n";
+
+        let percent = receivedDataFramesCount / numberOfFrames;
+        etc += "Percent received " + formatPercent(100 * percent) + "%\n";
+
+        let startTimeMs = startTime.getTime();
+        etc += "Time start " + formatDate(startTime) + "\n";
+        let nowMs = Date.now();
+        etc += "Now        " + formatDate(new Date(nowMs)) + "\n";
+        let endTimeMs = startTimeMs + (nowMs - startTimeMs) / percent;
+        endTime = new Date(endTimeMs);
+        etc += "Time end   " + formatDate(endTime) + "\n";
+        timeLeft = endTimeMs - nowMs;
+        etc += "Time left  " + formatDuration(timeLeft);
+
+        log("Info summary:\n" + etc);
+    } catch (e) {
+        log("Unable to calculate Estimated Time of Completion: " + e + "\n" +
+            "Intermediate info summary:\n" + etc);
     }
 
     let infoStr = "";
 
-    if (metadataReceived()) {
-        if (downloaded) {
-            infoStr += "<span style='color: #008000'>Saved</span> ";
-            infoStr += getFileNameFromPath(path);
+    if (downloaded) {
+        infoStr += "<span style='color: #008000'>Saved</span> ";
+        infoStr += getFileNameFromPath(path);
+    } else {
+        if (timeLeft !== undefined && !isNaN(timeLeft)) {
+            infoStr += "Time left " + formatDuration(timeLeft) + ", ETC " + formatDate(endTime, false);
         } else {
-            if (numberOfFrames != undefined && numberOfFrames != 0) {
-                let percent = receivedDataFramesCount / numberOfFrames;
-                infoStr += formatProgress(percent, receivedDataFramesCount, numberOfFrames, unusedCorrectionFramesCount, queueLength);
+            if (startTime !== undefined) {
+                infoStr += "Cannot estimate ETC because the total number of frames is unknown. Scan frame 0 to get metadata.";  // More exactly, the header (which may span several frames) wasn't received yet.
+            } else {
+                infoStr += "Cannot estimate ETC because no frame was received yet.";
+            }
+        }
+        infoStr += "</br>";
+
+        if (metadataReceived()) {
+            if (progress != undefined && !isNaN(progress)) {
+                infoStr += formatProgress(progress, receivedDataFramesCount, numberOfFrames, unusedCorrectionFramesCount, queueLength);
             } else {
                 infoStr += formatProgress(undefined, receivedDataFramesCount, undefined, unusedCorrectionFramesCount, queueLength);
             }
+        } else {
+            infoStr += formatProgress(undefined, receivedDataFramesCount, undefined, unusedCorrectionFramesCount, queueLength);
         }
-    } else {
-        infoStr += formatProgress(undefined, receivedDataFramesCount, undefined, unusedCorrectionFramesCount, queueLength);
-    }
-    infoStr += "</br>";
-
-    // TODO Info is optimized for downloading one file. Improve to support several files.
-    let etc;
-    if (!downloaded) {
-        if (receivedDataFrameMax !== undefined) {
-            // TODO If a Correction was encountered, then used numberOfFrames from metadata, otherwise use receivedDataFrameMax + 1
-            let lossRate = missing.length / (receivedDataFrameMax + 1);
-            infoStr += "Loss rate " + (100 * lossRate).toFixed(2) + "%. ";
+        if (lossRate !== undefined) {
+            infoStr += ", " + formatPercent(100 * lossRate) + "% loss rate";
         }
 
         const elMissingList = document.getElementById("missingList");
         if (0 < missing.length) {
-            infoStr += "Missing " + missing.length + ":";
+            infoStr += ", " + missing.length + " missing:";
 
             elMissingList.innerHTML = formatMissing(missing);
             elMissingList.hidden = false;
         } else {
             elMissingList.hidden = true;
         }
-
-        // TODO test and remove
-        if (numberOfFrames !== undefined) {
-            etc = "Summary\n";
-            let ratio = unusedCorrectionFramesCount == 0 // If we are receiving the data frames for the first time
-                ? receivedDataFramesCount / (receivedDataFrameMax + 1)
-                : receivedDataFramesCount / numberOfFrames;
-            etc += "Progress " + (100 * ratio).toFixed(2) + "%";
-            etc += ";\n ";
-
-            let lossRate = missing.length / (receivedDataFrameMax + 1);
-            etc += "Loss rate: " + (100 * lossRate).toFixed(2) + "%";
-            etc += ";\n ";
-            etc += "Non-loss rate: " + (100 * (1 - lossRate)).toFixed(2) + "%";
-            etc += ";\n ";
-
-            let percent = receivedDataFramesCount / numberOfFrames;
-            etc += "Percent received: " + (100 * percent).toFixed(2) + "%";
-            etc += ";\n ";
-
-            if (startTime !== undefined) {
-                let startTimeMs = startTime.getTime();
-                etc += "Time start " + formatDate(startTime);
-                etc += ";\n ";
-                let nowMs = Date.now();
-                etc += "Now        " + formatDate(new Date(nowMs));
-                etc += ";\n ";
-                let endTimeMs = startTimeMs + (nowMs - startTimeMs) / percent;
-                let endTime = new Date(endTimeMs);
-                etc += "Time end   " + formatDate(endTime)
-                etc += ";\n ";
-                let timeLeft = endTimeMs - nowMs;
-                etc += "Time left  " + formatDuration(timeLeft);
-                etc += ";\n ";
-            }
-            log(etc);
-            if (startTime !== undefined) {
-                etc = "Time left " + formatDuration(timeLeft) + ", ETC " + formatDate(endTime, false);
-            } else {
-                etc = "Cannot estimate ETC because the first frame wasn't received yet.";
-            }
-        } else {
-            etc = "Cannot estimate ETC because the total number of frames is unknown. Scan frame 0 to get metadata.";
-        }
-    } else {
-        etc = "";
     }
 
     const el = document.getElementById("info");
     el.innerHTML = infoStr;
 
-    let elStatus = document.getElementById("status");
-    elStatus.innerHTML = etc;
+    // TODO Info is optimized for downloading one file. Improve to support several files.
 }
 
 // Parameter missing must be an ordered array of numbers.
@@ -625,9 +611,8 @@ function initStream() {
             }
         }
 
-        // TODO hide status
-        status.innerText = "";
-        // status.hidden = true; // Hide the initial status
+        status.innerText = ""; // Hide the initial status with "Unable to access camera"
+        status.hidden = true;
 
         requestAnimationFrame(onAnimationFrame);
     }

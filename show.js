@@ -599,7 +599,7 @@ function nextFrame() {
                     lossRateIndex++;
                     lossRate = LOSS_RATES[lossRateIndex];
                     correctionFrame = 0;
-                    log("All content frames sent. Starting correction frames with loss rate " + (lossRate * 100) + "%");
+                    log("All content frames sent. Starting correction frames with loss rate " + formatPercent(lossRate * 100) + "%");
                 } else {
                     if (correctionFrame + 1 == correctionFramesCount(lossRate)) {
                         lossRateIndex++;
@@ -608,14 +608,14 @@ function nextFrame() {
                         }
                         lossRate = LOSS_RATES[lossRateIndex];
                         correctionFrame = 0;
-                        log("Loss rate changed to " + Math.round(lossRate * 100) + "%");
+                        log("Loss rate changed to " + formatPercent(lossRate * 100) + "%");
                     } else {
                         correctionFrame++;
                     }
                 }
 
                 frameContent = getCorrectionFrameContent(lossRate, correctionFrame);
-                log("Correction for " + Math.round(100 * lossRate) + "%, frame " + correctionFrame + ": " + frameContent);
+                log("Correction for " + formatPercent(100 * lossRate) + "%, frame " + correctionFrame + ": " + frameContent);
             }
         }
     });
@@ -714,7 +714,7 @@ function onMissingFramesChange(event) {
                     if (lossRateNew <= 0 || 100 <= lossRateNew) {
                         log("Cannot change loss rate frame to " + lossRateNew + " as it's not a valid loss rate number.");
                     } else {
-                        log("Change loss rate to " + itemNumber + "%");
+                        log("Change loss rate to " + formatPercent(itemNumber) + "%");
                         lossRateIndex = LOSS_RATES.length - 1;
                         lossRate = lossRateNew;
                         correctionFrame = -1;
@@ -816,7 +816,7 @@ function updateInfo() {
         const numberOfFrames = getNumberOfFrames();
         if (round == 1) {
             const ratio = (frame + 1) / numberOfFrames * 100; // This may be confusing to the user as frame starts from 0
-            infoStr += ratio.toFixed(2) + "% ... " + frame + " / " + numberOfFrames + ". ";
+            infoStr += formatPercent(ratio) + "% ... " + frame + " / " + numberOfFrames + ". ";
 
             const timeLeft = Math.round((numberOfFrames - frame) * (isNaN(durationActual) || 0 < duration ? DURATION_TARGET : durationActual));
             let timeEnd = new Date(Date.now() + timeLeft);
@@ -825,7 +825,7 @@ function updateInfo() {
             infoStr += "Data " + frame + " / " + numberOfFrames + ". ";
         }
     } else {
-        infoStr += "Correction for loss rate " + Math.round(100 * lossRate) + "%, frame " + correctionFrame + " / " + correctionFramesCount(lossRate) + ". ";
+        infoStr += "Correction for loss rate " + formatPercent(100 * lossRate) + "%, frame " + correctionFrame + " / " + correctionFramesCount(lossRate) + ". ";
     }
 
     if (1 < round) {
