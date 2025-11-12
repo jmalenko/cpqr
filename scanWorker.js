@@ -265,6 +265,8 @@ function getContentInfo() {
 }
 
 function decodeCorrectionIndices(content) {
+    // If frame 0 (generally: header) is missing, then we cannot get number of frames which is needed to calculate correction indices in the correctionIndices() function.
+
     let from = 1; // Skip the initial 'C' character
     let lossRateLen, lossRateStr, indexLen, indexStr;
 
@@ -294,7 +296,6 @@ function decodeCorrectionFrame(content) {
     try {
         [indices, from] = decodeCorrectionIndices(content);
     } catch (e) {
-        // Typically when frame 0 is missing and we cannot get number of frames
         if (unusedCorrectionFrames.includes(content)) {
             return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE};
         } else {
