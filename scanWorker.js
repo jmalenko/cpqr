@@ -347,7 +347,6 @@ function saveFrame(content) {
         if (contentRead[frame] === content) {
             return {resultCode: FRAME_ALREADY_KNOWN, frame};
         } else {
-            // TODO It seems that when a data frame is 1. recovered from correction and then 2. scanned again, it can have different content. Why?
             console.log("Frame " + frame + " with new content, length " + content.length + ": " + content);
             console.log("       previous content, length " + contentRead[frame].length + ": " + contentRead[frame]);
 
@@ -437,8 +436,11 @@ function processFrame(content) {
         if (result.resultCode == FRAME_DECODED) {
             console.log("Read frame " + result.frame + " with content " + contentRead[result.frame]);
 
-            if (result.frame == 0) {
-                headerDecoded = false;
+            if (result.frame == 0 && hashSaved !== undefined) { // Frame 0 after a file was already saved
+                // Keep the frame after init()
+                const contentFrame0 = contentRead[0];
+                init();
+                contentRead[0] = contentFrame0;
             }
 
             let frames = recoveryWithUnusedCorrectionFrames();
