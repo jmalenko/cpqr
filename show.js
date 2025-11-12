@@ -434,6 +434,8 @@ function show(path_, data_) {
         el.style.visibility = "visible";
     }
 
+    const alreadyRunning = data !== undefined;
+
     path = path_;
     data = data_;
 
@@ -443,12 +445,6 @@ function show(path_, data_) {
     hash = hashFnv32a(path + data, false);
 
     log("Frames = " + getNumberOfFrames());
-
-    onStart();
-}
-
-function onStart() {
-    log("Start showing");
 
     // Initialize
     frame = -1;
@@ -462,7 +458,9 @@ function onStart() {
     });
     log("Cache creation took " + durationMs + " ms");
 
-    nextFrame();
+    if (!alreadyRunning) {
+        nextFrame();
+    }
 }
 
 function systemIsSlow() {
@@ -471,8 +469,14 @@ function systemIsSlow() {
 }
 
 function adjustDuration() {
-    // Adjust duration
     let dateNextFrameCurrent = new Date();
+
+    if (frame == 0) { // Ignore first frame because it's shown for longer
+        dateNextFrame = dateNextFrameCurrent;
+        return;
+    }
+
+    // Adjust duration
     durationActual = dateNextFrameCurrent - dateNextFrame;
     if (systemIsSlow()) {
         log("The system is slow and is not meeting the target duration. Actual duration=" + durationActual + " ms, duration target=" + DURATION_TARGET + " ms.");
@@ -644,7 +648,8 @@ function nextFrame() {
 
     updateInfo();
 
-    timer = setTimeout(nextFrame, duration);
+    const timeoutDuration = frame == 0 ? Math.max(1000, 10 * DURATION_TARGET) : duration; // The first frame is shown for longer
+    timer = setTimeout(nextFrame, timeoutDuration);
 }
 
 /*
