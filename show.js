@@ -293,12 +293,12 @@ function onLoad() {
 
     let durationParam = url.searchParams.get("duration");
     if (durationParam !== null) {
-        DURATION_TARGET = durationParam;
+        DURATION_TARGET = Number(durationParam);
     }
 
     let capacityParam = url.searchParams.get("capacity");
     if (capacityParam !== null) {
-        setCapacity(capacityParam);
+        setCapacity(Number(capacityParam));
     }
 
     // Hide when run from file
