@@ -391,10 +391,10 @@ function getNumberOfFrames() {
 function createCache() {
     cacheFrameContent = [];
     const numberOfFrames = getNumberOfFrames();
-    const data = getContent();
+    const content = getContent();
     for (let index = 0; index < numberOfFrames; index++) {
         const contentFrom = index * capacityForDataInOneFrame;
-        cacheFrameContent[index] = data.slice(contentFrom, contentFrom + capacityForDataInOneFrame);
+        cacheFrameContent[index] = content.slice(contentFrom, contentFrom + capacityForDataInOneFrame);
     }
 }
 
