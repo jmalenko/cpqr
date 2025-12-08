@@ -324,6 +324,7 @@ function decodeCorrectionFrame(content) {
     try {
         [indices, from] = decodeCorrectionIndices(content);
     } catch (e) {
+        // Typically, we get error when the header is not yet decoded, we cannot get number of frames to calculate correction indices.
         if (unusedCorrectionFrames.includes(content)) {
             return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE};
         } else {
