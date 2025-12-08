@@ -480,7 +480,7 @@ function processFrame(content) {
             console.log("Read frame " + result.frame + " which was already known");
             return result;
         } else {
-            throw Erorr("Unsupported result code " + result.resultCode);
+            throw Error("Unsupported result code " + result.resultCode);
         }
     }
 }
