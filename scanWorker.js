@@ -10,6 +10,7 @@ self.onmessage = function (e) {
     const message = e.data;
     if (message.type === MSG_TYPE_SCAN) {
         queue.push(message.data);
+        // TODO The persisted cache is cleared when the file is constructed and saved. There can be subsequent scans that are currently added to the persistence. Improve this by not adding the unneeded scans to persistence.
         persistSave(message.data)
             .catch((e) => { console.error('persistSave failed', e); });
         self.postMessage({type: MSG_TYPE_QUEUED, processing, queueLength: queue.length});
