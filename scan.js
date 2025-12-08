@@ -317,6 +317,9 @@ worker.onmessage = function (e) {
             setStatus(message.result.status);
         }
         updateInfo();
+    } else if (message.type === MSG_TYPE_RESTORED) {
+        log("< Cache restored: " + message.restoredCount + " scans recovered from storage");
+        updateInfo();
     } else if (message.type === MSG_TYPE_ERROR) {
         // Error was already logged to console in worker
         log("< Error: " + message.error.toString() + "\n" +
@@ -745,4 +748,3 @@ function onLoad() {
 
     // scanSimulated();
 }
-

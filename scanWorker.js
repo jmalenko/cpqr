@@ -3,10 +3,15 @@ importScripts('common.js'); // if needed
 let queue = [];
 let processing = false;
 
+initPerisistence();
+addPersistedDataToQueue();
+
 self.onmessage = function (e) {
     const message = e.data;
     if (message.type === MSG_TYPE_SCAN) {
         queue.push(message.data);
+        persistSave(message.data)
+            .catch((e) => { console.error('persistSave failed', e); });
         self.postMessage({type: MSG_TYPE_QUEUED, processing, queueLength: queue.length});
         if (!processing) {
             processQueue();
@@ -104,6 +109,28 @@ function init() {
     unusedCorrectionFrames = [];
 
     measureDurationProcessFrame = createMeasureDuration();
+}
+
+function addPersistedDataToQueue() {
+    // Load persisted scans (if any) and process them.
+    // Do this asynchronously so init() stays synchronous for callers that expect immediate return.
+    persistLoad().then((scanDatas) => {
+        if (!scanDatas || scanDatas.length === 0) return;
+
+        console.log(`Restoring ${scanDatas.length} scans from persisted storage`);
+
+        // Push data frames first, corrections next to optimize performance (so the unneeded corrections are not handled).
+        // Sorting alphabetically puts the data frames first as they start with digits while correction frames start with "C".
+        scanDatas.sort();
+
+        queue.push(...scanDatas);
+
+        self.postMessage({type: MSG_TYPE_RESTORED, restoredCount: scanDatas.length});
+
+        if (!processing && 0 < queue.length) {
+            processQueue();
+        }
+    }).catch((e) => { console.error('Error restoring persisted frames', e); });
 }
 
 function decodeWithLength(str, from) {
@@ -442,6 +469,8 @@ function processFrame(content) {
                 const contentFrame0 = contentRead[0];
                 init();
                 contentRead[0] = contentFrame0;
+                persistSave(content)
+                    .catch((e) => { console.error('persistSave failed', e); });
             }
 
             let frames = recoveryWithUnusedCorrectionFrames();
@@ -545,6 +574,80 @@ function processScan(content) {
                 data: resultConstructData.data,
                 path: resultConstructData.path
             });
+
+            persistClear().catch((e) => { console.error('persistClear failed', e); });
         }
     }
+}
+
+/*
+    Persisted storage
+    =================
+ */
+
+// IndexedDB persistence for received scans so scanning can resume after stop.
+// DB: 'cpqr-scan-cache', store: 'scanData' with autoIncrement
+let persistReady = null;
+function initPerisistence() {
+    if (persistReady) return persistReady;
+    persistReady = new Promise((resolve, reject) => {
+        const req = indexedDB.open('cpqr-scan-cache', 1);
+        req.onupgradeneeded = function (ev) {
+            const db = ev.target.result;
+            if (!db.objectStoreNames.contains('scanData')) {
+                db.createObjectStore('scanData', {autoIncrement: true});
+            }
+        };
+        req.onsuccess = function (ev) {
+            const db = ev.target.result;
+            resolve(db);
+        };
+        req.onerror = function (ev) {
+            console.error('IndexedDB open error', ev);
+            // Resolve with null to allow operation without persistence
+            resolve(null);
+        };
+    });
+    return persistReady;
+}
+
+async function persistGetDB() {
+    const db = await initPerisistence();
+    return db;
+}
+
+async function persistSave(scanData) {
+    const db = await persistGetDB();
+    if (!db) return;
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(['scanData'], 'readwrite');
+        const store = tx.objectStore('scanData');
+        store.add(scanData);
+        tx.oncomplete = function () { resolve(true); };
+        tx.onerror = function (e) { console.error('persistSave error', e); resolve(false); };
+    });
+}
+
+async function persistLoad() {
+    const db = await persistGetDB();
+    if (!db) return [];
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(['scanData'], 'readonly');
+        const store = tx.objectStore('scanData');
+        const req = store.getAll();
+        req.onsuccess = function (ev) { resolve(ev.target.result || []); };
+        req.onerror = function (e) { console.error('persistLoad error', e); resolve([]); };
+    });
+}
+
+async function persistClear() {
+    const db = await persistGetDB();
+    if (!db) return;
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(['scanData'], 'readwrite');
+        const store = tx.objectStore('scanData');
+        const req = store.clear();
+        req.onsuccess = function () { resolve(true); };
+        req.onerror = function (e) { console.error('persistClear error', e); resolve(false); };
+    });
 }

@@ -14,6 +14,7 @@ const MSG_TYPE_PROCESSED = "processed";
 const MSG_TYPE_ERROR = "error";
 const MSG_TYPE_METADATA = "metadata";
 const MSG_TYPE_SAVE = "save";
+const MSG_TYPE_RESTORED = "restored";
 
 // QR data processing result codes
 const FRAME_DECODED = 1;
