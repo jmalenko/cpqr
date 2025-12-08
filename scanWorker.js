@@ -539,7 +539,7 @@ function processScan(content) {
 
     if (allFramesRead()) {
         let resultConstructData = constructData();
-        if (resultConstructData != undefined && resultConstructData.save) {
+        if (resultConstructData?.save) {
             self.postMessage({
                 type: MSG_TYPE_SAVE,
                 data: resultConstructData.data,
