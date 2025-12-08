@@ -452,7 +452,7 @@ function updateInfo() {
         timeLeft = endTimeMs - nowMs;
         etc += "Time left  " + formatDuration(timeLeft);
 
-        log("Info summary:\n" + etc);
+        // log("Info summary:\n" + etc);
     } catch (e) {
         log("Unable to calculate Estimated Time of Completion: " + e + "\n" +
             "Intermediate info summary:\n" + etc);
