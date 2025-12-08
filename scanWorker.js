@@ -271,16 +271,12 @@ function getContentInfo() {
     }
     console.log("Header content for info: " + headerContent);
     let [version, hash, path, data, length, from] = decodeContentWithoutChecks(headerContent, false);
-    console.log("done decodeContentWithoutChecks");
 
     // Get data length
     try {
         [length, data, from] = decodeWithLength(headerContent, from);
-        console.info("done decodeWithLength. from = " + from);
     } catch (e) {
         if (e instanceof InvalidVariableLengthQuantityDataLengthError) {
-            console.info("error in decodeWithLength - InvalidVariableLengthQuantityDataLengthError. from = " + from);
-            // from = from + e.results.length;
             from = from + e.results.lengthOfLengthStr.length + e.results.lengthStr.length + e.results.length;
         } else {
             throw e;
@@ -518,7 +514,8 @@ function decodeHeader() {
             self.postMessage({type: MSG_TYPE_METADATA, path, numberOfFrames});
         }
     } catch (e) {
-        console.log("Cannot decode header. Error: " + e.toString() + "\n" + e.stack);
+        console.log("Cannot decode header. " + e.toString());
+        // console.debug(e.stack);
     }
 }
 
@@ -662,7 +659,7 @@ async function persistRemove(scanData) {
         const tx = db.transaction([PERSISTED_DB_STORE], 'readwrite');
         const store = tx.objectStore(PERSISTED_DB_STORE);
         store.delete(scanData);
-        tx.oncomplete = function () { console.warn("persistRemove: removing"); resolve(true); };
+        tx.oncomplete = function () { resolve(true); };
         tx.onerror = function (e) { console.error('persistRemove error', e); resolve(false); };
     });
 }

@@ -454,8 +454,8 @@ function updateInfo() {
 
         // log("Info summary:\n" + etc);
     } catch (e) {
-        log("Unable to calculate Estimated Time of Completion: " + e + "\n" +
-            "Intermediate info summary:\n" + etc);
+        log("Unable to calculate Estimated Time of Completion: " + e);
+        // log("Intermediate info summary:\n" + etc);
     }
 
     let infoStr = "";
