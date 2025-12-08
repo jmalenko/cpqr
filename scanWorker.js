@@ -292,7 +292,7 @@ function getContentInfo() {
     return [hash, path, numberOfFrames];
 }
 
-function decodeCorrectionIndices(content) {
+function decodeCorrectionHeader(content) {
     // If frame 0 (generally: header) is missing, then we cannot get number of frames which is needed to calculate correction indices in the correctionIndices() function.
 
     let from = 1; // Skip the initial 'C' character
@@ -311,7 +311,7 @@ function decodeCorrectionIndices(content) {
         throw new Error("Error decoding content: index is not a number");
     }
 
-    return [correctionIndices(lossRate, index), from];
+    return [lossRate, index, from];
 }
 
 function getNumberOfFrames() {
@@ -320,16 +320,17 @@ function getNumberOfFrames() {
 }
 
 function decodeCorrectionFrame(content) {
-    let indices, from;
+    let lossRate, index, indices, from;
     try {
-        [indices, from] = decodeCorrectionIndices(content);
+        [lossRate, index, from] = decodeCorrectionHeader(content);
+        indices = correctionIndices(lossRate, index);
     } catch (e) {
         // Typically, we get error when the header is not yet decoded, we cannot get number of frames to calculate correction indices.
         if (unusedCorrectionFrames.includes(content)) {
-            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE};
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE, lossRate, index};
         } else {
             unusedCorrectionFrames.push(content);
-            return {resultCode: CORRECTION_MORE_FRAMES_MISSING};
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING, lossRate, index};
         }
     }
 
@@ -339,13 +340,13 @@ function decodeCorrectionFrame(content) {
     let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
     // Only recover if exactly one is missing in this correction frame. If more than one is missing, store the correction for a later use.
     if (missingIndices.length == 0) {
-        return {resultCode: CORRECTION_ALL_DATA_KNOWN};
+        return {resultCode: CORRECTION_ALL_DATA_KNOWN, lossRate, index};
     } else if (missingIndices.length !== 1) {
         if (unusedCorrectionFrames.includes(content)) {
-            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE};
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE, lossRate, index};
         } else {
             unusedCorrectionFrames.push(content);
-            return {resultCode: CORRECTION_MORE_FRAMES_MISSING, frames: missingIndices};
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING, frames: missingIndices, lossRate, index};
         }
     }
 
@@ -361,7 +362,7 @@ function decodeCorrectionFrame(content) {
 
     console.assert(missingIndex === result.frame, `Frame index mismatch in recovered frame: expected ${missingIndex} but got ${result.frame}`);
 
-    return {resultCode: CORRECTION_DECODED, frame: result.frame};
+    return {resultCode: CORRECTION_DECODED, frame: result.frame, lossRate, index};
 }
 
 function saveFrame(content) {
@@ -421,8 +422,9 @@ function removeUnneededStoredCorrectionFrames() {
     for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
         const content = unusedCorrectionFrames[i];
 
-        let indices, from;
-        [indices, from] = decodeCorrectionIndices(content);
+        let lossRate, index, indices, from;
+        [lossRate, index, from] = decodeCorrectionHeader(content);
+        indices = correctionIndices(lossRate, index);
 
         // Find all missing indices
         let missingIndices = indices.filter(idx => contentRead[idx] === undefined);

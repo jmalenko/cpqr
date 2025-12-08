@@ -354,13 +354,13 @@ function resultToText(result) {
     } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
         return "QR code with frame " + result.frame + " already known";
     } else if (result.resultCode == CORRECTION_DECODED) {
-        return "QR code with correction used to decode frames " + result.frames;
+        return "QR code with correction (lossRate " + result.lossRate + ", index " + result.index + ") used to decode frames " + result.frames;
     } else if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
-        return "QR code with correction not needed - all data already known";
+        return "QR code with correction (lossRate " + result.lossRate + ", index " + result.index + ") not needed - all data already known";
     } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING) {
-        return "QR code with correction saved to be used later";
+        return "QR code with correction (lossRate " + result.lossRate + ", index " + result.index + ") saved to be used later";
     } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING_DUPLICATE) {
-        return "QR code with correction not needed - correction already stored";
+        return "QR code with correction (lossRate " + result.lossRate + ", index " + result.index + ") not needed - correction already stored";
     } else {
         throw new Error("Unknown result code " + result.resultCode);
     }
