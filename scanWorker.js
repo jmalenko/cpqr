@@ -3,9 +3,6 @@ importScripts('common.js'); // if needed
 let queue = [];
 let processing = false;
 
-initPerisistence();
-addPersistedDataToQueue();
-
 self.onmessage = function (e) {
     const message = e.data;
     if (message.type === MSG_TYPE_SCAN) {
@@ -116,7 +113,10 @@ function addPersistedDataToQueue() {
     // Load persisted scans (if any) and process them.
     // Do this asynchronously so init() stays synchronous for callers that expect immediate return.
     persistLoad().then((scanDatas) => {
-        if (!scanDatas || scanDatas.length === 0) return;
+        if (!scanDatas || scanDatas.length === 0) {
+            console.log("No data to load from persisted storage");
+            return;
+        }
 
         console.log(`Restoring ${scanDatas.length} scans from persisted storage`);
 
@@ -589,7 +589,7 @@ function processScan(content) {
 // IndexedDB persistence for received scans so scanning can resume after stop.
 // DB: 'cpqr-scan-cache', store: 'scanData' with autoIncrement
 let persistReady = null;
-function initPerisistence() {
+function initPersistence() {
     if (persistReady) return persistReady;
     persistReady = new Promise((resolve, reject) => {
         const req = indexedDB.open('cpqr-scan-cache', 1);
@@ -613,7 +613,7 @@ function initPerisistence() {
 }
 
 async function persistGetDB() {
-    const db = await initPerisistence();
+    const db = await initPersistence();
     return db;
 }
 
@@ -652,3 +652,5 @@ async function persistClear() {
         req.onerror = function (e) { console.error('persistClear error', e); resolve(false); };
     });
 }
+
+addPersistedDataToQueue();
