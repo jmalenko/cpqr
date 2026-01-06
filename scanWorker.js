@@ -8,7 +8,7 @@ self.onmessage = function (e) {
     if (message.type === MSG_TYPE_SCAN) {
         queue.push(message.data);
 
-        // Persist every scanned data. If this persisted scan data is not needed (because the file was already constructed and downloaded), then the scan data will be removed from persistence when it's processed.
+        // Persist every scanned data. It may be useful for resuming after stop. The persisted data is cleared when a new file starts (frame 0 received).
         persistSave({content: message.data})
             .catch((e) => { console.error('persistSave failed', e); });
 
@@ -20,6 +20,10 @@ self.onmessage = function (e) {
         tests();
     } else if (message.type === MSG_TYPE_INIT) {
         init();
+        if (message.clearPersistedStorage) {
+            persistClear()
+                .catch((e) => { console.error('persistClear failed', e); });
+        }
     } else {
         throw new Error("Unsupported message from worker: " + message.type);
     }
@@ -269,7 +273,7 @@ function getContentInfo() {
         let [frameStr, content] = decodeFrameContent(contentRead[i]);
         headerContent += content;
     }
-    console.log("Header content for info: " + headerContent);
+    console.log("Header content: " + headerContent);
     let [version, hash, path, data, length, from] = decodeContentWithoutChecks(headerContent, false);
 
     // Get data length
@@ -456,12 +460,6 @@ function processFrame(content) {
         } else {
             if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
                 console.log("Correction frame received, but ignored as all the data is known");
-
-                // Remove from persisted storage if this scanned content is for a file that was already saved
-                if (fileAlreadySaved()) {
-                    persistRemove(content)
-                        .catch((e) => { console.error('persistRemove failed', e); });
-                }
             } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING_DUPLICATE) {
                 console.log("Correction frame received, but it's already stored: " + content);
             } else if (result.resultCode == CORRECTION_MORE_FRAMES_MISSING) {
@@ -474,15 +472,19 @@ function processFrame(content) {
             return result;
         }
     } else {
+        const contentFrame0PresentBefore = contentRead[0] !== undefined;
         let result = saveFrame(content);
         if (result.resultCode == FRAME_DECODED) {
             console.log("Read frame " + result.frame + " with content " + contentRead[result.frame]);
 
-            if (result.frame == 0 && fileAlreadySaved()) { // Frame 0 after a file was already saved
-                // Keep the frame after init()
+            if (result.frame == 0 && contentFrame0PresentBefore) {
+                // Keep the frame 0 content after init()
                 const contentFrame0 = contentRead[0];
                 init();
                 contentRead[0] = contentFrame0;
+
+                persistClear()
+                    .catch((e) => { console.error('persistClear failed', e); });
                 persistSave(content)
                     .catch((e) => { console.error('persistSave failed', e); });
             }
@@ -491,13 +493,6 @@ function processFrame(content) {
             return {resultCode: FRAME_DECODED, frame: result.frame, frames};
         } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
             console.log("Read frame " + result.frame + " which was already known");
-
-            // Remove from persisted storage if this scanned content is for a file that was already saved
-            if (fileAlreadySaved()) {
-                persistRemove(content)
-                    .catch((e) => { console.error('persistRemove failed', e); });
-            }
-
             return result;
         } else {
             throw Error("Unsupported result code " + result.resultCode);
@@ -597,7 +592,7 @@ function processScan(content) {
                 path: resultConstructData.path
             });
 
-            persistClear().catch((e) => { console.error('persistClear failed', e); });
+            // Don't clear persistence until a new file starts (frame 0 received).This is because the user may not save the file immediately.
         }
     }
 }
@@ -652,18 +647,6 @@ async function persistSave(scanData) {
         store.put(scanData);
         tx.oncomplete = function () { resolve(true); };
         tx.onerror = function (e) { console.error('persistSave error', e); resolve(false); };
-    });
-}
-
-async function persistRemove(scanData) {
-    const db = await persistGetDB();
-    if (!db) return;
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction([PERSISTED_DB_STORE], 'readwrite');
-        const store = tx.objectStore(PERSISTED_DB_STORE);
-        store.delete(scanData);
-        tx.oncomplete = function () { resolve(true); };
-        tx.onerror = function (e) { console.error('persistRemove error', e); resolve(false); };
     });
 }
 

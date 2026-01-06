@@ -203,10 +203,10 @@ function scanSimulated() {
         // Move to next file
         fileSimulated++;
         frameSimulated = 0;
-        init();
 
         if (!simulationInProgress()) {
             log("=== Simulated scans finished === ");
+            init(true);
             updateInfo();
 
             // Have to clean it manually after tests to really get it to the initial state (as in HTML)
@@ -217,6 +217,7 @@ function scanSimulated() {
         }
 
         log("=== Next simulated scan: " + testFrames[fileSimulated].name + " ===");
+        init(true);
     } else {
         frameSimulated++;
     }
@@ -374,7 +375,7 @@ function metadataReceived() {
     return path !== undefined;
 }
 
-function init() {
+function init(clearPersistedStorage = false) {
     path = undefined;
     numberOfFrames = undefined;
 
@@ -389,7 +390,7 @@ function init() {
     startTime = undefined;
 
     log("> Init");
-    worker.postMessage({type: MSG_TYPE_INIT});
+    worker.postMessage({type: MSG_TYPE_INIT, clearPersistedStorage});
 }
 
 function onScan(content) {
