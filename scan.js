@@ -546,6 +546,11 @@ function isMobileDevice() {
 // https://simpl.info/getusermedia/sources/ - getting the selector with cameras
 // https://cozmo.github.io/jsQR/ - getting the video stream and processing video frame by frame
 function initStream() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        log("Camera API not available (page may need HTTPS, or no camera present)");
+        return;
+    }
+
     let measureDurationQrRecognition = createMeasureDuration();
     let measureIntervalAnimationFrame = createMeasureInterval();
 
