@@ -92,7 +92,9 @@ let hashSaved; // hash of the last saved file (specifically the received hash (o
 
 let headerDecoded; // true if the header (typically in frame 0, but can continue in following frames) was decoded successfully
 
-let unusedCorrectionFrames; // Store correction frames that could not be used immediately, but might be useful later
+let unusedCorrectionFramesSet; // Set<string> — O(1) duplicate detection for stored correction frames
+let correctionsByFrame; // Map<frameIndex, Set<string>> — reverse index: which stored corrections cover each frame
+let pendingCorrectionFrames; // Set<string> — corrections received before frame 0 (header) was available
 
 let measureDurationProcessFrame;
 
@@ -112,7 +114,9 @@ function init() {
     contentRead = [];
     hashSaved = undefined;
     headerDecoded = false;
-    unusedCorrectionFrames = [];
+    unusedCorrectionFramesSet = new Set();
+    correctionsByFrame = new Map();
+    pendingCorrectionFrames = new Set();
 
     measureDurationProcessFrame = createMeasureDuration();
 }
@@ -332,11 +336,11 @@ function decodeCorrectionFrame(content) {
         indices = correctionIndices(lossRate, index);
     } catch (e) {
         // Typically, we get error when the header is not yet decoded, we cannot get number of frames to calculate correction indices.
-        if (unusedCorrectionFrames.includes(content)) {
-            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE, lossRate, index};
+        if (unusedCorrectionFramesSet.has(content)) {
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE};
         } else {
-            unusedCorrectionFrames.push(content);
-            return {resultCode: CORRECTION_MORE_FRAMES_MISSING, lossRate, index};
+            storeUnusedCorrectionFrame(content);
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING};
         }
     }
 
@@ -348,11 +352,11 @@ function decodeCorrectionFrame(content) {
     if (missingIndices.length == 0) {
         return {resultCode: CORRECTION_ALL_DATA_KNOWN, lossRate, index};
     } else if (missingIndices.length !== 1) {
-        if (unusedCorrectionFrames.includes(content)) {
-            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE, lossRate, index};
+        if (unusedCorrectionFramesSet.has(content)) {
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING_DUPLICATE};
         } else {
-            unusedCorrectionFrames.push(content);
-            return {resultCode: CORRECTION_MORE_FRAMES_MISSING, frames: missingIndices, lossRate, index};
+            storeUnusedCorrectionFrame(content);
+            return {resultCode: CORRECTION_MORE_FRAMES_MISSING, frames: missingIndices};
         }
     }
 
@@ -398,48 +402,110 @@ function saveFrame(content) {
     return {resultCode: FRAME_DECODED, frame};
 }
 
-// TODO Recovery with unused frames can be done more effectively: By looking at the indices, we can order them appropriately. The current solution just keeps trying until no correction can be used.
-function recoveryWithUnusedCorrectionFrames() {
-    let frameList = [];
-    let changed = true;
-    while (changed) {
-        changed = false;
-        for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
-            const content = unusedCorrectionFrames[i];
-            let result = decodeCorrectionFrame(content)
-            if (result.resultCode == CORRECTION_DECODED) {
-                console.log("Used a stored correction frame to recover a missing frame " + result.frame + " with content " + contentRead[result.frame]);
-                frameList.push(result.frame);
-                unusedCorrectionFrames.splice(i, 1);
-                changed = true;
-            } else if (result.resultCode == CORRECTION_ALL_DATA_KNOWN) {
-                console.log("A stored correction frame removed as all the data is known");
-                unusedCorrectionFrames.splice(i, 1);
+// Store a correction frame that cannot be applied yet.
+// Indexes it into correctionsByFrame immediately if the header (frame 0) is already available;
+// otherwise parks it in pendingCorrectionFrames to be indexed once frame 0 arrives.
+function storeUnusedCorrectionFrame(content) {
+    unusedCorrectionFramesSet.add(content);
+    try {
+        indexCorrectionFrame(content);
+    } catch (e) {
+        // Header not yet available; will be indexed in indexPendingCorrectionFrames() when frame 0 arrives.
+        pendingCorrectionFrames.add(content);
+    }
+}
+
+// Register a correction frame in the reverse index (correctionsByFrame).
+// Requires the header (frame 0) to be present so decodeCorrectionIndices() can run.
+function indexCorrectionFrame(content) {
+    const [indices] = decodeCorrectionIndices(content);
+    for (const idx of indices) {
+        if (!correctionsByFrame.has(idx)) {
+            correctionsByFrame.set(idx, new Set());
+        }
+        correctionsByFrame.get(idx).add(content);
+    }
+}
+
+// Remove a used (or obsolete) correction frame from all data structures.
+// Caller must supply the already-decoded indices to avoid re-parsing.
+function removeStoredCorrectionFrame(content, indices) {
+    unusedCorrectionFramesSet.delete(content);
+    pendingCorrectionFrames.delete(content);
+    for (const idx of indices) {
+        const candidates = correctionsByFrame.get(idx);
+        if (candidates) {
+            candidates.delete(content);
+            if (candidates.size === 0) {
+                correctionsByFrame.delete(idx);
             }
         }
     }
-    if (0 < frameList.length) {
-        removeUnneededStoredCorrectionFrames();
-    }
-    return frameList;
 }
 
-function removeUnneededStoredCorrectionFrames() {
-    for (let i = unusedCorrectionFrames.length - 1; i >= 0; i--) {
-        const content = unusedCorrectionFrames[i];
-
-        let lossRate, index, indices, from;
-        [lossRate, index, from] = decodeCorrectionHeader(content);
-        indices = correctionIndices(lossRate, index);
-
-        // Find all missing indices
-        let missingIndices = indices.filter(idx => contentRead[idx] === undefined);
-
-        if (missingIndices.length == 0) {
-            console.log("A stored correction frame removed as all the data is known: " + content);
-            unusedCorrectionFrames.splice(i, 1);
+// Index all corrections that were received before frame 0 was available.
+// Called once, immediately after frame 0 is first stored in contentRead.
+function indexPendingCorrectionFrames() {
+    const toIndex = [...pendingCorrectionFrames];
+    for (const content of toIndex) {
+        try {
+            indexCorrectionFrame(content);
+            pendingCorrectionFrames.delete(content);
+        } catch (e) {
+            // Still can't index — leave in pending.
         }
     }
+}
+
+// BFS-based recovery: given a set of frame indices that just became available,
+// look up only the corrections that cover those frames (O(1) via correctionsByFrame),
+// apply any correction where exactly one frame is now missing, and cascade to
+// newly recovered frames.  O(k) total where k = number of applicable corrections.
+function recoveryWithKnownFrames(initialFrameIndices) {
+    const frameList = [];
+    const queue = [...initialFrameIndices];
+    const enqueued = new Set(initialFrameIndices);
+    let head = 0;
+
+    while (head < queue.length) {
+        const frameIndex = queue[head++];
+        const candidates = correctionsByFrame.get(frameIndex);
+        if (!candidates || candidates.size === 0) continue;
+
+        for (const content of [...candidates]) { // snapshot: we may delete from candidates during iteration
+            let indices, from;
+            [indices, from] = decodeCorrectionIndices(content);
+
+            const missingIndices = indices.filter(idx => contentRead[idx] === undefined);
+            if (missingIndices.length === 0) {
+                removeStoredCorrectionFrame(content, indices);
+                console.log("A stored correction frame removed as all the data is known");
+            } else if (missingIndices.length === 1) {
+                const missingIndex = missingIndices[0];
+                const payload = content.slice(from);
+                let xor = atob(payload);
+                for (const idx of indices) {
+                    if (idx !== missingIndex) {
+                        xor = xorStrings(xor, contentRead[idx]);
+                    }
+                }
+                const saveResult = saveFrame(xor);
+                console.assert(missingIndex === saveResult.frame, `Frame index mismatch in recovered frame: expected ${missingIndex} but got ${saveResult.frame}`);
+
+                removeStoredCorrectionFrame(content, indices);
+                console.log("Used a stored correction frame to recover missing frame " + saveResult.frame);
+                frameList.push(saveResult.frame);
+
+                if (!enqueued.has(saveResult.frame)) {
+                    enqueued.add(saveResult.frame);
+                    queue.push(saveResult.frame);
+                }
+            }
+            // else: 2+ still missing → leave in place; will be revisited when another frame arrives
+        }
+    }
+
+    return frameList;
 }
 
 function isCorrectionFrame(content) {
@@ -447,16 +513,12 @@ function isCorrectionFrame(content) {
     return firstChar == "C";
 }
 
-function fileAlreadySaved() {
-    return hashSaved !== undefined;
-}
-
 function processFrame(content) {
     if (isCorrectionFrame(content)) {
         let result = decodeCorrectionFrame(content);
         if (result.resultCode == CORRECTION_DECODED) {
             console.log("Recovered frame " + result.frame + " with content " + contentRead[result.frame]);
-            let frames = recoveryWithUnusedCorrectionFrames();
+            let frames = recoveryWithKnownFrames([result.frame]);
             frames.unshift(result.frame);
             return {resultCode: CORRECTION_DECODED, frames};
         } else {
@@ -491,7 +553,19 @@ function processFrame(content) {
                     .catch((e) => { console.error('persistSave failed', e); });
             }
 
-            let frames = recoveryWithUnusedCorrectionFrames();
+            // Frame 0 just arrived: index any corrections that were stored while frame 0 was missing,
+            // then seed BFS with all currently known frames so every newly indexable correction is tried.
+            if (result.frame == 0 && pendingCorrectionFrames.size > 0) {
+                indexPendingCorrectionFrames();
+                const allKnownFrames = [];
+                for (let i = 0; i < contentRead.length; i++) {
+                    if (contentRead[i] !== undefined) allKnownFrames.push(i);
+                }
+                let frames = recoveryWithKnownFrames(allKnownFrames);
+                return {resultCode: FRAME_DECODED, frame: result.frame, frames};
+            }
+
+            let frames = recoveryWithKnownFrames([result.frame]);
             return {resultCode: FRAME_DECODED, frame: result.frame, frames};
         } else if (result.resultCode == FRAME_ALREADY_KNOWN) {
             console.log("Read frame " + result.frame + " which was already known");
@@ -530,14 +604,11 @@ function allFramesRead() {
     return numberOfFrames <= numberOfFramesReceived;
 }
 
-// Return list if indices till maxIndex index that are missing in contentRead
+// Return list of indices that are missing in contentRead (O(n) — direct slot check)
 function getMissingFrames() {
-    const maxIndex = Math.max(...Object.keys(contentRead).map(Number));
-    const framesRead = Object.keys(contentRead).map(Number);
-
-    let missing = [];
-    for (let i = 0; i <= maxIndex; i++) {
-        if (!framesRead.includes(i)) {
+    const missing = [];
+    for (let i = 0; i < contentRead.length; i++) {
+        if (contentRead[i] === undefined) {
             missing.push(i);
         }
     }
@@ -564,7 +635,7 @@ function createStatus() {
     return {
         receivedDataFramesCount: Object.keys(contentRead).length,
         receivedDataFrameMax: Math.max(...Object.keys(contentRead).map(Number)),
-        unusedCorrectionFramesCount: unusedCorrectionFrames.length,
+        unusedCorrectionFramesCount: unusedCorrectionFramesSet.size,
         missing: getMissingFrames(),
         queueLength: queue.length
     };
@@ -697,48 +768,51 @@ function runTimingTests() {
     const results = [];
 
     // -------------------------------------------------------------------------
-    // Test 1 — recoveryWithUnusedCorrectionFrames()
+    // Test 1 — recoveryWithKnownFrames()  (replaces old recoveryWithUnusedCorrectionFrames)
     //
-    // Scenario: k correction frames are stored (all return CORRECTION_MORE_FRAMES_MISSING_DUPLICATE
-    // because they are already in unusedCorrectionFrames and cannot be decoded due to missing
-    // frame 0).  One call therefore does:
-    //   1 while-iteration × k inner-iterations × O(k) Array.includes() scan = O(k²).
-    // The array is unchanged after each call so we can repeat without re-setup.
+    // Old worst-case scenario: k stored corrections, frame 0 absent → O(k²) full scan.
+    // New algorithm: corrections are in pendingCorrectionFrames (not indexed), so
+    //   correctionsByFrame is empty → O(1) per call regardless of k.
     // -------------------------------------------------------------------------
     const storedCorrectionCounts = [10, 100, 500, 1000, 5000, 10000];
-    const RUNS_RECOVERY = 100; // repeat each size enough times for stable ms measurement
+    const RUNS_RECOVERY = 10000; // large run count needed: each call is now O(1) → sub-microsecond
 
     for (const k of storedCorrectionCounts) {
         const savedContentRead = contentRead;
-        const savedUnused = unusedCorrectionFrames;
+        const savedUnusedSet = unusedCorrectionFramesSet;
+        const savedCorrectionsByFrame = correctionsByFrame;
+        const savedPending = pendingCorrectionFrames;
 
-        contentRead = [];                   // frame 0 absent → decodeCorrectionIndices() throws
-        unusedCorrectionFrames = [];
+        contentRead = [];                   // frame 0 absent → indexCorrectionFrame() throws
+        unusedCorrectionFramesSet = new Set();
+        correctionsByFrame = new Map();
+        pendingCorrectionFrames = new Set();
         for (let i = 0; i < k; i++) {
-            unusedCorrectionFrames.push(makeSyntheticCorrection(i));
+            const c = makeSyntheticCorrection(i);
+            unusedCorrectionFramesSet.add(c);
+            pendingCorrectionFrames.add(c);  // not indexed yet
         }
 
         // Warm-up pass
-        recoveryWithUnusedCorrectionFrames();
+        recoveryWithKnownFrames([1]);
 
-        const t0 = Date.now();
+        const t0 = performance.now();
         for (let r = 0; r < RUNS_RECOVERY; r++) {
-            // Array is never mutated in this scenario (all frames return DUPLICATE),
-            // so repeated calls measure exactly the algorithm, not setup overhead.
-            recoveryWithUnusedCorrectionFrames();
+            // correctionsByFrame is empty so lookup is O(1), array unchanged between runs.
+            recoveryWithKnownFrames([1]);
         }
-        const t1 = Date.now();
+        const t1 = performance.now();
 
         results.push({
-            test: 'recoveryWithUnusedCorrectionFrames',
+            test: 'recoveryWithKnownFrames',
             storedCorrectionCount: k,
-            runs: RUNS_RECOVERY,
-            totalMs: t1 - t0,
             durationMs: (t1 - t0) / RUNS_RECOVERY
         });
 
         contentRead = savedContentRead;
-        unusedCorrectionFrames = savedUnused;
+        unusedCorrectionFramesSet = savedUnusedSet;
+        correctionsByFrame = savedCorrectionsByFrame;
+        pendingCorrectionFrames = savedPending;
     }
 
     // -------------------------------------------------------------------------
@@ -767,18 +841,16 @@ function runTimingTests() {
         // Warm-up
         getMissingFrames();
 
-        const t0 = Date.now();
+        const t0 = performance.now();
         for (let r = 0; r < RUNS_MISSING; r++) {
             getMissingFrames();
         }
-        const t1 = Date.now();
+        const t1 = performance.now();
 
         results.push({
             test: 'getMissingFrames',
             frameCount: n,
             missingCount: m,
-            runs: RUNS_MISSING,
-            totalMs: t1 - t0,
             durationMs: (t1 - t0) / RUNS_MISSING
         });
 

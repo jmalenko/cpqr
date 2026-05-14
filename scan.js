@@ -350,10 +350,10 @@ worker.onmessage = function (e) {
     } else if (message.type === MSG_TYPE_TIMING_RESULT) {
         log("=== Timing Results ===");
         for (const r of message.results) {
-            if (r.test === 'recoveryWithUnusedCorrectionFrames') {
-                log(`[Timing] recoveryWithUnusedCorrectionFrames  corrections=${String(r.storedCorrectionCount).padStart(5)}: ${r.durationMs.toFixed(3).padStart(8)} ms/call  (${r.runs} runs, ${r.totalMs} ms total)`);
+            if (r.test === 'recoveryWithKnownFrames') {
+                log(`[Timing] recoveryWithKnownFrames             corrections=${String(r.storedCorrectionCount).padStart(5)}: ${r.durationMs.toFixed(6).padStart(11)} ms/call`);
             } else if (r.test === 'getMissingFrames') {
-                log(`[Timing] getMissingFrames                    frames=${String(r.frameCount).padStart(5)}, missing=${String(r.missingCount).padStart(4)}: ${r.durationMs.toFixed(4).padStart(9)} ms/call  (${r.runs} runs, ${r.totalMs} ms total)`);
+                log(`[Timing] getMissingFrames                    frames=${String(r.frameCount).padStart(5)}, missing=${String(r.missingCount).padStart(4)}: ${r.durationMs.toFixed(6).padStart(11)} ms/call`);
             }
         }
         log("=== End of Timing Results ===");
