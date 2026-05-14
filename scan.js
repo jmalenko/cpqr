@@ -308,6 +308,7 @@ let downloaded; // Whether the file has been downloaded
 let contentPrevious; // Content of previous data in QR code
 let startTime; // Time when the first frame was received
 let lastStatsProcessFrame; // Duration stats of the last processed frame
+let lastStatsAnimationFrame; // Duration stats of the last camera frame interval
 
 const worker = new Worker('scanWorker.js');
 
@@ -406,6 +407,7 @@ function init(clearPersistedStorage = false) {
     contentPrevious = undefined;
     startTime = undefined;
     lastStatsProcessFrame = undefined;
+    lastStatsAnimationFrame = undefined;
 
     log("> Init");
     worker.postMessage({type: MSG_TYPE_INIT, clearPersistedStorage});
@@ -496,6 +498,11 @@ function updateInfo() {
 
         if (lastStatsProcessFrame !== undefined) {
             infoStr += "Frame processing: avg " + lastStatsProcessFrame.avg + " ms, last " + lastStatsProcessFrame.ms + " ms";
+            infoStr += "</br>";
+        }
+
+        if (lastStatsAnimationFrame !== undefined) {
+            infoStr += "Camera frame: avg " + lastStatsAnimationFrame.avg + " ms, last " + lastStatsAnimationFrame.ms + " ms";
             infoStr += "</br>";
         }
 
@@ -677,6 +684,7 @@ function initStream() {
             // Measure animation speed
             let statsAnimationFrame = measureIntervalAnimationFrame();
             if (statsAnimationFrame.ms !== undefined) {
+                lastStatsAnimationFrame = statsAnimationFrame;
                 if (logTiming && isAboveSigma(statsAnimationFrame, 3)) {
                     log(`WARNING: Animation frame variation ${statsAnimationFrame.ms} ms, avg=${statsAnimationFrame.avg.toFixed(1)} ms, stddev=${statsAnimationFrame.stddev.toFixed(1)} ms`);
                 }
