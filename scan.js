@@ -497,12 +497,12 @@ function updateInfo() {
         infoStr += "</br>";
 
         if (lastStatsProcessFrame !== undefined) {
-            infoStr += "Frame processing: avg " + lastStatsProcessFrame.avg + " ms, last " + lastStatsProcessFrame.ms + " ms";
+            infoStr += "Frame processing: avg " + Math.round(lastStatsProcessFrame.avg) + " ms, last " + Math.round(lastStatsProcessFrame.ms) + " ms";
             infoStr += "</br>";
         }
 
         if (lastStatsAnimationFrame !== undefined) {
-            infoStr += "Camera frame: avg " + lastStatsAnimationFrame.avg + " ms, last " + lastStatsAnimationFrame.ms + " ms";
+            infoStr += "Camera frame: avg " + Math.round(lastStatsAnimationFrame.avg) + " ms, last " + Math.round(lastStatsAnimationFrame.ms) + " ms";
             infoStr += "</br>";
         }
 

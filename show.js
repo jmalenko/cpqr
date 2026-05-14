@@ -855,9 +855,9 @@ function updateInfo() {
         infoStr += "</br>";
         const totalAvg = lastDurationStatsProcessing.avg + lastDurationStatsQr.avg;
         const totalLast = lastDurationStatsProcessing.ms + lastDurationStatsQr.ms;
-        infoStr += "Frame processing: avg " + totalAvg + " ms, last " + totalLast + " ms"
-            + " = content avg " + lastDurationStatsProcessing.avg + " ms, last " + lastDurationStatsProcessing.ms + " ms"
-            + " + QR avg " + lastDurationStatsQr.avg + " ms, last " + lastDurationStatsQr.ms + " ms";
+        infoStr += "Frame processing: avg " + Math.round(totalAvg) + " ms, last " + Math.round(totalLast) + " ms"
+            + " = content avg " + Math.round(lastDurationStatsProcessing.avg) + " ms, last " + Math.round(lastDurationStatsProcessing.ms) + " ms"
+            + " + QR avg " + Math.round(lastDurationStatsQr.avg) + " ms, last " + Math.round(lastDurationStatsQr.ms) + " ms";
     }
 
     const el = document.getElementById("info");
