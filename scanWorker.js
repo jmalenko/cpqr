@@ -416,9 +416,10 @@ function storeUnusedCorrectionFrame(content) {
 }
 
 // Register a correction frame in the reverse index (correctionsByFrame).
-// Requires the header (frame 0) to be present so decodeCorrectionIndices() can run.
+// Requires the header (frame 0) to be present so correction indices can be calculated.
 function indexCorrectionFrame(content) {
-    const [indices] = decodeCorrectionIndices(content);
+    const [lossRate, index] = decodeCorrectionHeader(content);
+    const indices = correctionIndices(lossRate, index);
     for (const idx of indices) {
         if (!correctionsByFrame.has(idx)) {
             correctionsByFrame.set(idx, new Set());
@@ -473,8 +474,9 @@ function recoveryWithKnownFrames(initialFrameIndices) {
         if (!candidates || candidates.size === 0) continue;
 
         for (const content of [...candidates]) { // snapshot: we may delete from candidates during iteration
-            let indices, from;
-            [indices, from] = decodeCorrectionIndices(content);
+            let lossRate, index, from;
+            [lossRate, index, from] = decodeCorrectionHeader(content);
+            const indices = correctionIndices(lossRate, index);
 
             const missingIndices = indices.filter(idx => contentRead[idx] === undefined);
             if (missingIndices.length === 0) {
