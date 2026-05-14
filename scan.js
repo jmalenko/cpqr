@@ -760,7 +760,31 @@ function initStream() {
     }
 }
 
+function setLogVisible(visible) {
+    const logSection = document.getElementById('log-section');
+    const toggleBtn = document.getElementById('toggleLogBtn');
+    
+    if (visible) {
+        logSection.classList.remove('hidden');
+        toggleBtn.textContent = 'Hide Log';
+    } else {
+        logSection.classList.add('hidden');
+        toggleBtn.textContent = 'Show Log';
+    }
+}
+
+function toggleLogVisibility() {
+    const logSection = document.getElementById('log-section');
+    const isHidden = logSection.classList.contains('hidden');
+    setLogVisible(isHidden);
+}
+
 function onLoad() {
+    // Initialize log visibility based on URL parameter
+    const params = new URLSearchParams(window.location.search);
+    const logVisible = params.has('log');
+    setLogVisible(logVisible);
+
     init();
 
     tests();

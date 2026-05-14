@@ -54,6 +54,10 @@ body {
     overflow-y: auto;
 }
 
+#log-section.hidden {
+    display: none;
+}
+
 #canvas {
     display: block;
     margin: 0;

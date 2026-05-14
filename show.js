@@ -278,6 +278,25 @@ function setCapacity(capacity) {
     capacityForDataInOneFrame = capacity;
 }
 
+function setLogVisible(visible) {
+    const logSection = document.getElementById('log-section');
+    const toggleBtn = document.getElementById('toggleLogBtn');
+
+    if (visible) {
+        logSection.classList.remove('hidden');
+        toggleBtn.textContent = 'Hide Log';
+    } else {
+        logSection.classList.add('hidden');
+        toggleBtn.textContent = 'Show Log';
+    }
+}
+
+function toggleLogVisibility() {
+    const logSection = document.getElementById('log-section');
+    const isHidden = logSection.classList.contains('hidden');
+    setLogVisible(isHidden);
+}
+
 function onLoad() {
     const scale = 10; // Scale factor to make the QR code large. On screen, this will be scaled to available area.
     qrcode = new QRCode("qrcode", {
@@ -288,22 +307,25 @@ function onLoad() {
         correctLevel: QRCode.CorrectLevel.L // Lowest error correction
     });
 
-    // Set parameters from URL
-    let url = new URL(window.location.href);
+    // Set parameters from URL query string
+    const params = new URLSearchParams(window.location.search);
 
-    let durationParam = url.searchParams.get("duration");
+    let durationParam = params.get("duration");
     if (durationParam !== null) {
         DURATION_TARGET = Number(durationParam);
     }
 
-    let capacityParam = url.searchParams.get("capacity");
+    let capacityParam = params.get("capacity");
     if (capacityParam !== null) {
         setCapacity(Number(capacityParam));
     }
 
+    const logVisible = params.has('log');
+    setLogVisible(logVisible);
+
     // Hide when run from file
-    let startParam = url.searchParams.get("start");
-    if (url.protocol === "file:" && startParam === null) {
+    let startParam = params.get("start");
+    if (window.location.protocol === "file:" && startParam === null) {
         const el = document.getElementsByTagName("body")[0];
         el.style.visibility = "hidden";
     }

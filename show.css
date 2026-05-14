@@ -76,6 +76,10 @@ body {
     min-width: 0;
 }
 
+#log-section.hidden {
+    display: none;
+}
+
 @media (orientation: portrait) {
     #main-layout {
         flex-direction: column;
