@@ -18,6 +18,8 @@ self.onmessage = function (e) {
         }
     } else if (message.type === MSG_TYPE_TESTS) {
         tests();
+    } else if (message.type === MSG_TYPE_TIMING_TEST) {
+        runTimingTests();
     } else if (message.type === MSG_TYPE_INIT) {
         init();
         if (message.clearPersistedStorage) {
@@ -674,4 +676,118 @@ async function persistClear() {
     });
 }
 
+/*
+    Timing Tests
+    ============
+    Measure the performance of the hot-path algorithms before and after the optimization.
+    The tests run entirely inside the worker (where the algorithms live) to avoid
+    postMessage overhead skewing the numbers.
+ */
+
+// Synthetic correction-frame string: starts with 'C', unique per index (so includes() cannot
+// short-circuit early), ~CORRECTION_STRING_LENGTH chars to mimic real frame strings.
+const CORRECTION_STRING_LENGTH = 1000;
+function makeSyntheticCorrection(i) {
+    // Index encoded at positions 1-7 so strings differ early but are still realistic length.
+    return 'C' + String(i).padStart(6, '0') + 'A'.repeat(CORRECTION_STRING_LENGTH - 7);
+}
+
+function runTimingTests() {
+    console.log("[Timing] Starting timing tests in worker...");
+    const results = [];
+
+    // -------------------------------------------------------------------------
+    // Test 1 — recoveryWithUnusedCorrectionFrames()
+    //
+    // Scenario: k correction frames are stored (all return CORRECTION_MORE_FRAMES_MISSING_DUPLICATE
+    // because they are already in unusedCorrectionFrames and cannot be decoded due to missing
+    // frame 0).  One call therefore does:
+    //   1 while-iteration × k inner-iterations × O(k) Array.includes() scan = O(k²).
+    // The array is unchanged after each call so we can repeat without re-setup.
+    // -------------------------------------------------------------------------
+    const storedCorrectionCounts = [10, 100, 500, 1000, 5000, 10000];
+    const RUNS_RECOVERY = 100; // repeat each size enough times for stable ms measurement
+
+    for (const k of storedCorrectionCounts) {
+        const savedContentRead = contentRead;
+        const savedUnused = unusedCorrectionFrames;
+
+        contentRead = [];                   // frame 0 absent → decodeCorrectionIndices() throws
+        unusedCorrectionFrames = [];
+        for (let i = 0; i < k; i++) {
+            unusedCorrectionFrames.push(makeSyntheticCorrection(i));
+        }
+
+        // Warm-up pass
+        recoveryWithUnusedCorrectionFrames();
+
+        const t0 = Date.now();
+        for (let r = 0; r < RUNS_RECOVERY; r++) {
+            // Array is never mutated in this scenario (all frames return DUPLICATE),
+            // so repeated calls measure exactly the algorithm, not setup overhead.
+            recoveryWithUnusedCorrectionFrames();
+        }
+        const t1 = Date.now();
+
+        results.push({
+            test: 'recoveryWithUnusedCorrectionFrames',
+            storedCorrectionCount: k,
+            runs: RUNS_RECOVERY,
+            totalMs: t1 - t0,
+            durationMs: (t1 - t0) / RUNS_RECOVERY
+        });
+
+        contentRead = savedContentRead;
+        unusedCorrectionFrames = savedUnused;
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 2 — getMissingFrames()
+    //
+    // Scenario: contentRead is a sparse JS array with n slots and m missing entries
+    // (every 10th frame missing, 10% loss).  Current implementation uses
+    //   Array.includes() inside a for-loop → O(n²).
+    // -------------------------------------------------------------------------
+    const frameCounts = [100, 500, 1000, 5000, 10000/*, 50000, 100000*/];
+    const RUNS_MISSING = 100;
+    const LOSS_RATE = 0.1;
+    const MISSING_EVERY_NTH = Math.round(1 / LOSS_RATE); // every Nth frame is missing
+
+    for (const n of frameCounts) {
+        const savedContentRead = contentRead;
+        const m = Math.floor(n / MISSING_EVERY_NTH);
+
+        contentRead = [];
+        for (let i = 0; i < n; i++) {
+            if (i % MISSING_EVERY_NTH !== 0) {
+                contentRead[i] = 'dummy';
+            }
+        }
+
+        // Warm-up
+        getMissingFrames();
+
+        const t0 = Date.now();
+        for (let r = 0; r < RUNS_MISSING; r++) {
+            getMissingFrames();
+        }
+        const t1 = Date.now();
+
+        results.push({
+            test: 'getMissingFrames',
+            frameCount: n,
+            missingCount: m,
+            runs: RUNS_MISSING,
+            totalMs: t1 - t0,
+            durationMs: (t1 - t0) / RUNS_MISSING
+        });
+
+        contentRead = savedContentRead;
+    }
+
+    console.log("[Timing] Tests done, posting results.");
+    self.postMessage({ type: MSG_TYPE_TIMING_RESULT, results });
+}
+
 addPersistedDataToQueue();
+

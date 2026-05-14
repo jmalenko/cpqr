@@ -8,6 +8,7 @@
 const MSG_TYPE_INIT = 'init';
 const MSG_TYPE_TESTS = 'tests';
 const MSG_TYPE_SCAN = 'scan';
+const MSG_TYPE_TIMING_TEST = "timing_test";
 // scan.js <-- scanWorker.js
 const MSG_TYPE_QUEUED = "queued";
 const MSG_TYPE_PROCESSED = "processed";
@@ -15,6 +16,7 @@ const MSG_TYPE_ERROR = "error";
 const MSG_TYPE_METADATA = "metadata";
 const MSG_TYPE_SAVE = "save";
 const MSG_TYPE_RESTORED = "restored";
+const MSG_TYPE_TIMING_RESULT = "timing_result";
 
 // QR data processing result codes
 const FRAME_DECODED = 1;

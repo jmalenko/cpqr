@@ -227,6 +227,11 @@ function scanSimulated() {
     setTimeout(scanSimulated, 10);
 }
 
+function startTimingTests() {
+    log("> Timing tests");
+    worker.postMessage({type: MSG_TYPE_TIMING_TEST});
+}
+
 function simulationInProgress() {
     return 0 <= fileSimulated && fileSimulated < testFrames.length;
 }
@@ -342,6 +347,16 @@ worker.onmessage = function (e) {
         }
         downloaded = true;
         updateInfo();
+    } else if (message.type === MSG_TYPE_TIMING_RESULT) {
+        log("=== Timing Results ===");
+        for (const r of message.results) {
+            if (r.test === 'recoveryWithUnusedCorrectionFrames') {
+                log(`[Timing] recoveryWithUnusedCorrectionFrames  corrections=${String(r.storedCorrectionCount).padStart(5)}: ${r.durationMs.toFixed(3).padStart(8)} ms/call  (${r.runs} runs, ${r.totalMs} ms total)`);
+            } else if (r.test === 'getMissingFrames') {
+                log(`[Timing] getMissingFrames                    frames=${String(r.frameCount).padStart(5)}, missing=${String(r.missingCount).padStart(4)}: ${r.durationMs.toFixed(4).padStart(9)} ms/call  (${r.runs} runs, ${r.totalMs} ms total)`);
+            }
+        }
+        log("=== End of Timing Results ===");
     } else {
         throw new Error("Unsupported message from worker: " + message.type);
     }
@@ -749,8 +764,8 @@ function onLoad() {
     init();
 
     tests();
+    startTimingTests();
+    // scanSimulated();
 
     initStream();
-
-    // scanSimulated();
 }
