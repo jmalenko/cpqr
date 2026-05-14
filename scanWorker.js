@@ -551,7 +551,7 @@ function processFrame(content) {
 
                 persistClear()
                     .catch((e) => { console.error('persistClear failed', e); });
-                persistSave(content)
+                persistSave({content})
                     .catch((e) => { console.error('persistSave failed', e); });
             }
 
