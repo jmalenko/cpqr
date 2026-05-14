@@ -364,14 +364,6 @@ function encodeWithLength(obj) {
     return lengthOfLength.toString() + length.toString() + obj;
 }
 
-function encodeArrayWithLength(arr) {
-    if (!Array.isArray(arr))
-        throw Error("Input is not an array");
-    const str = arr.join(",");
-    return encodeWithLength(str);
-}
-
-
 function getContent() {
     let content = "";
 
