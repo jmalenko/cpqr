@@ -269,6 +269,8 @@ let timer;
 
 let measureTimeProcessing;
 let measureTimeQr;
+let lastDurationStatsProcessing; // Duration stats of the last frame processing
+let lastDurationStatsQr; // Duration stats of the last QR code creation
 
 function setCapacity(capacity) {
     if (CAPACITY_MAX < capacity) {
@@ -660,6 +662,9 @@ function nextFrame() {
         log(`  Creating QR code duration ${durationStatsQr.ms} ms, avg=${durationStatsQr.avg.toFixed(2)} ms, stddev=${durationStatsQr.stddev.toFixed(2)} ms`);
     }
 
+    lastDurationStatsProcessing = durationStats;
+    lastDurationStatsQr = durationStatsQr;
+
     updateInfo();
 
     const timeoutDuration = frame == 0 ? Math.max(1000, 10 * DURATION_TARGET) : duration; // The first frame is shown for longer
@@ -844,6 +849,15 @@ function updateInfo() {
 
     if (1 < round) {
         infoStr += "Round " + round + ".";
+    }
+
+    if (lastDurationStatsProcessing !== undefined && lastDurationStatsQr !== undefined) {
+        infoStr += "</br>";
+        const totalAvg = lastDurationStatsProcessing.avg + lastDurationStatsQr.avg;
+        const totalLast = lastDurationStatsProcessing.ms + lastDurationStatsQr.ms;
+        infoStr += "Frame processing: avg " + totalAvg + " ms, last " + totalLast + " ms"
+            + " = content avg " + lastDurationStatsProcessing.avg + " ms, last " + lastDurationStatsProcessing.ms + " ms"
+            + " + QR avg " + lastDurationStatsQr.avg + " ms, last " + lastDurationStatsQr.ms + " ms";
     }
 
     const el = document.getElementById("info");

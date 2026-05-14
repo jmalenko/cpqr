@@ -307,6 +307,7 @@ let queueLength; // Length of the queue in the worker
 let downloaded; // Whether the file has been downloaded
 let contentPrevious; // Content of previous data in QR code
 let startTime; // Time when the first frame was received
+let lastStatsProcessFrame; // Duration stats of the last processed frame
 
 const worker = new Worker('scanWorker.js');
 
@@ -318,6 +319,7 @@ worker.onmessage = function (e) {
         log("< Frame was processed: " + resultToText(message.result));
 
         log("Processing took " + message.statsProcessFrame.ms + " ms");
+        lastStatsProcessFrame = message.statsProcessFrame;
 
         if (message.result?.status !== undefined) {
             setStatus(message.result.status);
@@ -403,6 +405,7 @@ function init(clearPersistedStorage = false) {
     downloaded = false;
     contentPrevious = undefined;
     startTime = undefined;
+    lastStatsProcessFrame = undefined;
 
     log("> Init");
     worker.postMessage({type: MSG_TYPE_INIT, clearPersistedStorage});
@@ -490,6 +493,11 @@ function updateInfo() {
             }
         }
         infoStr += "</br>";
+
+        if (lastStatsProcessFrame !== undefined) {
+            infoStr += "Frame processing: avg " + lastStatsProcessFrame.avg + " ms, last " + lastStatsProcessFrame.ms + " ms";
+            infoStr += "</br>";
+        }
 
         if (metadataReceived()) {
             if (progress != undefined && !isNaN(progress)) {
