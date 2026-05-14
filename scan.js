@@ -788,7 +788,7 @@ function onLoad() {
     init();
 
     tests();
-    startTimingTests();
+    // startTimingTests();
     // scanSimulated();
 
     initStream();
