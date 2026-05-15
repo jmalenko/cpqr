@@ -111,6 +111,7 @@ body {
 
     #right-section {
         flex: 1;
+        min-width: 0;
     }
 
     #status-section {
