@@ -122,5 +122,6 @@ body {
     }
 
     #log-section {
+        overflow-x: auto;
     }
 }
