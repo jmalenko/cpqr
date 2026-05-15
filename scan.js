@@ -279,6 +279,29 @@ function download(data, fileName, mimeType = 'application/octet-stream') {
     downloadBlob(new Blob([u8], { type: mimeType }), fileName);
 }
 
+function hideRedownloadButton() {
+    const btn = document.getElementById('redownloadBtn');
+    btn.hidden = true;
+}
+
+function showRedownloadButton() {
+    const btn = document.getElementById('redownloadBtn');
+    btn.hidden = false;
+}
+
+function onRedownloadClick() {
+    if (!pendingDownload) {
+        log("No file pending for redownload");
+        return;
+    }
+
+    download(pendingDownload.data, pendingDownload.fileName);
+    downloaded = true;
+    pendingDownload = undefined;
+    hideRedownloadButton();
+    updateInfo();
+}
+
 /*
     Main content
     ============
@@ -305,6 +328,8 @@ let queueLength; // Length of the queue in the worker
 
 // Internal status
 let downloaded; // Whether the file has been downloaded
+let pendingDownload; // Pending payload for manual redownload
+let hasScannedFrameSinceLoad; // True after first non-empty frame scan since page load/init
 let contentPrevious; // Content of previous data in QR code
 let startTime; // Time when the first frame was received
 
@@ -342,10 +367,21 @@ worker.onmessage = function (e) {
         log("< Save " + fileName);
         if (simulationInProgress()) {
             log("Skipping download in simulation");
+            downloaded = true;
         } else {
-            download(message.data, fileName);
+            if (!hasScannedFrameSinceLoad) {
+                log("< File ready from worker local storage before first scan; showing Redownload");
+                downloaded = false;
+                pendingDownload = {
+                    data: message.data,
+                    fileName
+                };
+                showRedownloadButton();
+            } else {
+                download(message.data, fileName);
+                downloaded = true;
+            }
         }
-        downloaded = true;
         updateInfo();
     } else if (message.type === MSG_TYPE_TIMING_RESULT) {
         log("=== Timing Results ===");
@@ -401,6 +437,8 @@ function init(clearPersistedStorage = false) {
     queueLength = 0;
 
     downloaded = false;
+    pendingDownload = undefined;
+    hasScannedFrameSinceLoad = false;
     contentPrevious = undefined;
     startTime = undefined;
 
@@ -413,6 +451,11 @@ function onScan(content) {
     if (content == "") {
         return {resultCode: QR_CODE_EMPTY};
     }
+
+    // As soon as any non-empty frame is seen, hide redownload UI from restored state.
+    hasScannedFrameSinceLoad = true;
+    pendingDownload = undefined;
+    hideRedownloadButton();
 
     // End if the same content as previously
     if (content == contentPrevious) {
@@ -479,6 +522,9 @@ function updateInfo() {
     if (downloaded) {
         infoStr += "<span style='color: #008000'>Saved</span> ";
         infoStr += getFileNameFromPath(path);
+    } else if (pendingDownload) {
+        infoStr += "<span style='color: #8a6d3b'>File in browser storage available </span> ";
+        infoStr += pendingDownload.fileName;
     } else {
         if (timeLeft !== undefined && !isNaN(timeLeft)) {
             infoStr += "Time left " + formatDuration(timeLeft) + ", ETC " + formatDate(endTime, false);
